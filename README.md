@@ -1,0 +1,3 @@
+# OneFTV - Tournament Management Platform
+
+Initializing repository...
