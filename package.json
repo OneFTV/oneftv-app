@@ -1,0 +1,44 @@
+{
+  "name": "oneftv",
+  "version": "1.0.0",
+  "description": "Footvolley tournament management application",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:seed": "npx ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "typescript": "^5",
+    "@prisma/client": "^5",
+    "next-auth": "^4.24.5",
+    "bcryptjs": "^2.4.3",
+    "@types/bcryptjs": "^2.4.2",
+    "recharts": "^2.10.3",
+    "date-fns": "^2.30.0",
+    "zod": "^3.22.4",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.7"
+  },
+  "devDependencies": {
+    "prisma": "^5",
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16",
+    "@tailwindcss/forms": "^0.5.7",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "ts-node": "^10.9.2"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"
+  }
+}

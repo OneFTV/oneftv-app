@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("user") @db.VarChar(20)
+  nationality   String?
+  phone         String?
+  street        String?
+  number        String?
+  complement    String?
+  state         String?
+  country       String?
+  level         String?   @db.VarChar(20) // "Beginner", "Intermediate", "Advanced", "Pro"
+  avatar        String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  organizedTournaments Tournament[]       @relation("Organizer")
+  tournamentPlayers    TournamentPlayer[]
+  gamePlayer1Home      Game[]             @relation("Player1Home")
+  gamePlayer2Home      Game[]             @relation("Player2Home")
+  gamePlayer1Away      Game[]             @relation("Player1Away")
+  gamePlayer2Away      Game[]             @relation("Player2Away")
+}
+
+model Tournament {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  date            DateTime
+  endDate         DateTime?
+  location        String
+  city            String?
+  state           String?
+  country         String?
+  format          String   @db.VarChar(30) // "king_of_the_beach", "bracket", "group_knockout", "round_robin"
+  status          String   @default("draft") @db.VarChar(20)
+  maxPlayers      Int      @default(16)
+  numCourts       Int      @default(1)
+  numDays         Int      @default(1)
+  hoursPerDay     Float    @default(8)
+  avgGameMinutes  Int      @default(20)
+  pointsPerSet    Int      @default(18)
+  numSets         Int      @default(1)
+  groupSize       Int      @default(4)
+  organizerId     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizer       User     @relation("Organizer", fields: [organizerId], references: [id])
+  players         TournamentPlayer[]
+  groups          Group[]
+  games           Game[]
+  rounds          Round[]
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([format])
+  @@index([date])
+}
+
+model TournamentPlayer {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  seed         Int?
+  groupId      String?
+  points       Int      @default(0)
+  wins         Int      @default(0)
+  losses       Int      @default(0)
+  pointDiff    Int      @default(0)
+  status       String   @default("registered") @db.VarChar(20)
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+  group        Group?     @relation(fields: [groupId], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model Group {
+  id           String   @id @default(cuid())
+  name         String
+  tournamentId String
+
+  tournament   Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players      TournamentPlayer[]
+  games        Game[]
+
+  @@index([tournamentId])
+}
+
+model Round {
+  id           String   @id @default(cuid())
+  name         String
+  roundNumber  Int
+  tournamentId String
+  type         String   @db.VarChar(20) // "group", "knockout"
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  games        Game[]
+
+  @@index([tournamentId])
+}
+
+model Game {
+  id           String   @id @default(cuid())
+  tournamentId String
+  groupId      String?
+  roundId      String?
+  courtNumber  Int      @default(1)
+  scheduledTime DateTime?
+
+  // For KotB: 2v2 with rotating partners
+  player1HomeId String?
+  player2HomeId String?
+  player1AwayId String?
+  player2AwayId String?
+
+  scoreHome    Int?
+  scoreAway    Int?
+  set2Home     Int?
+  set2Away     Int?
+  SetHme     Int?
+  set3Away     Int?
+
+  status       String   @default("scheduled") @db.VarChar(20)
+  winningSide   String?  @db.VarChar(10) // "home" or "away"
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  group        Group?     @relation(fields: [groupId], references: [id])
+  round        Round?     @relation(fields: [roundId], references: [id])
+  player1Home  User?      @relation("Player1Home", fields: [player1HomeId], references: [id])
+  player2Home  User?      @relation("Player2Home", fields: [player2HomeId], references: [id])
+  player1Away  User?      @relation("Player1Away", fields: [player1AwayId], references: [id])
+  player2Away  User?      @relation("Player2Away", fields: [player2AwayId], references: [id])
+
+  @@index([tournamentId])
+  @@index([groupId])
+  @@index([roundId])
+  @@index([player1HomeId])
+  @@index([player2HomeId])
+  @@index([player1AwayId])
+  @@index([player2AwayId])
+  @@index([status])
+}
