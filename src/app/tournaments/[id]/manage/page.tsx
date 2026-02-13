@@ -155,13 +155,12 @@ export default function ManageTournamentPage() {
 
     try {
       setSaving(true);
-      const res = await fetch(`/api/tournaments/${tournamentId}/games/${gameId}`, {
+      const res = await fetch(`/api/games/${gameId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          score1: scores.score1,
-          score2: scores.score2,
-          status: 'completed',
+          scoreHome: scores.score1,
+          scoreAway: scores.score2,
         }),
       });
 

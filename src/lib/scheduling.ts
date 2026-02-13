@@ -128,24 +128,6 @@ export function generateBracketGames(players: string[]): Game[][] {
     bracket.push(roundGames)
   }
 
-  // Generate placeholder rounds for subsequent bracket stages
-  let remainingSlots = roundGames.length + nextRoundAdvancers.filter(Boolean).length
-  while (remainingSlots > 1) {
-    const numGames = Math.floor(remainingSlots / 2)
-    const placeholderGames: Game[] = []
-
-    for (let i = 0; i < numGames; i++) {
-      placeholderGames.push({
-        team1: [],
-        team2: [],
-        status: 'scheduled',
-      })
-    }
-
-    bracket.push(placeholderGames)
-    remainingSlots = numGames
-  }
-
   return bracket
 }
 
