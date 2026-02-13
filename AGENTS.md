@@ -65,6 +65,15 @@ The feed is also available via API at `/api/livefeed`:
 
 Visit `/livefeed` in the browser to see a real-time dashboard of all agent activity.
 
+## IMPORTANT: Build Rules
+
+**Codex: DO NOT run `npm run build`, `next build`, or any command that writes to `.next/`.**
+The dev server runs live on this machine and shares the `.next/` directory. Running a build from Codex corrupts the cache and crashes the dev server.
+
+**For type checking, use:** `npx tsc --noEmit`
+**For static analysis, use:** grep, file reads, AST parsing
+**Do NOT use:** `npm run build`, `next build`, `next dev`, `next lint` (prompts interactively)
+
 ## Codex Role: Testing
 
 Codex is responsible for **writing and running automated tests**. Priority areas:
