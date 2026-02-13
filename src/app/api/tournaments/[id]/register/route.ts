@@ -35,7 +35,7 @@ export async function POST(
     }
 
     // Check tournament status
-    if (tournament.status !== "REGISTRATION") {
+    if (tournament.status !== "registration") {
       return NextResponse.json(
         { error: "Tournament is not accepting registrations" },
         { status: 400 }

@@ -25,7 +25,7 @@ export async function GET(
         player2Home: { select: { id: true, name: true } },
         player1Away: { select: { id: true, name: true } },
         player2Away: { select: { id: true, name: true } },
-        round: { select: { name: true, roundNumber: true } },
+        round: { select: { name: true, roundNumber: true, type: true } },
         group: { select: { name: true } },
       },
       orderBy: [
@@ -34,7 +34,7 @@ export async function GET(
       ],
     })
 
-    // Map to shape expected by manage page
+    // Map to shape expected by manage page and bracket view
     const mappedGames = games.map((game) => {
       const homePlayers = [game.player1Home?.name, game.player2Home?.name]
         .filter(Boolean)
@@ -46,13 +46,20 @@ export async function GET(
       return {
         id: game.id,
         roundName: game.round?.name || "Unassigned",
+        roundNumber: game.round?.roundNumber ?? null,
+        roundType: game.round?.type ?? null,
         court: game.courtNumber,
         scheduledTime: game.scheduledTime?.toISOString() || null,
         player1: homePlayers || "TBD",
         player2: awayPlayers || "TBD",
+        player1HomeId: game.player1HomeId,
+        player2HomeId: game.player2HomeId,
+        player1AwayId: game.player1AwayId,
+        player2AwayId: game.player2AwayId,
         score1: game.scoreHome,
         score2: game.scoreAway,
         status: game.status,
+        winningSide: game.winningSide ?? null,
         groupName: game.group?.name || null,
       }
     })

@@ -7,7 +7,7 @@ import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
 interface FormData {
   name: string;
   description: string;
-  format: 'King of the Beach' | 'Bracket' | 'Group+Knockout' | 'Round Robin';
+  format: 'king_of_the_beach' | 'bracket' | 'group_knockout' | 'round_robin';
   location: string;
   city: string;
   state: string;
@@ -28,7 +28,12 @@ interface FormErrors {
   [key: string]: string;
 }
 
-const FORMATS = ['King of the Beach', 'Bracket', 'Group+Knockout', 'Round Robin'] as const;
+const FORMATS = [
+  { value: 'king_of_the_beach', label: 'King of the Beach' },
+  { value: 'bracket', label: 'Bracket' },
+  { value: 'group_knockout', label: 'Group+Knockout' },
+  { value: 'round_robin', label: 'Round Robin' },
+] as const;
 const COUNTRIES = [
   'United States',
   'Canada',
@@ -53,7 +58,7 @@ export default function CreateTournamentPage() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    format: 'King of the Beach',
+    format: 'king_of_the_beach',
     location: '',
     city: '',
     state: '',
@@ -278,7 +283,7 @@ export default function CreateTournamentPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {FORMATS.map((f) => (
-                    <option key={f} value={f}>{f}</option>
+                    <option key={f.value} value={f.value}>{f.label}</option>
                   ))}
                 </select>
               </div>

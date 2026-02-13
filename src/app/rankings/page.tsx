@@ -6,24 +6,24 @@ import { RefreshCw } from 'lucide-react';
 
 interface RankingEntry {
   rank: number;
-  playerName: string;
-  yearlyTournamentsWon: number;
-  monthlyTournamentsWon: number;
-  gamesWon: number;
-  totalPoints: number;
-}
-
-interface RankingsData {
-  overall: RankingEntry[];
-  kingOfTheBeach: RankingEntry[];
-  bracket: RankingEntry[];
+  userId: string;
+  name: string;
+  stats: {
+    totalPoints: number;
+    totalWins: number;
+    totalLosses: number;
+    totalPointDiff: number;
+    gamesPlayed: number;
+    winRate: number;
+    tournamentsPlayed: number;
+    tournamentsWon: number;
+  };
 }
 
 export default function RankingsPage() {
-  const [rankingsData, setRankingsData] = useState<RankingsData | null>(null);
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overall' | 'kingOfTheBeach' | 'bracket'>('overall');
 
   useEffect(() => {
     fetchRankings();
@@ -33,8 +33,8 @@ export default function RankingsPage() {
     try {
       setLoading(true);
       const response = await fetch('/api/rankings');
-      const data = await response.json();
-      setRankingsData(data);
+      const json = await response.json();
+      setRankings(json.data || json || []);
     } catch (error) {
       console.error('Failed to fetch rankings:', error);
     } finally {
@@ -73,17 +73,11 @@ export default function RankingsPage() {
     return 'bg-white border-l-4 border-gray-200 hover:bg-gray-50';
   };
 
-  const currentRankings = activeTab === 'overall'
-    ? rankingsData?.overall || []
-    : activeTab === 'kingOfTheBeach'
-    ? rankingsData?.kingOfTheBeach || []
-    : rankingsData?.bracket || [];
-
-  const chartData = currentRankings
+  const chartData = rankings
     .slice(0, 10)
     .map((entry) => ({
-      name: entry.playerName,
-      points: entry.totalPoints,
+      name: entry.name,
+      points: entry.stats.totalPoints,
     }));
 
   const RankingTableSkeleton = () => (
@@ -111,29 +105,8 @@ export default function RankingsPage() {
       {/* Controls */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            {/* Tabs */}
-            <div className="flex gap-2">
-              {(['overall', 'kingOfTheBeach', 'bracket'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-                    activeTab === tab
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tab === 'overall'
-                    ? 'Overall'
-                    : tab === 'kingOfTheBeach'
-                    ? 'King of the Beach'
-                    : 'Bracket'}
-                </button>
-              ))}
-            </div>
-
-            {/* Refresh Button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Overall Rankings</h2>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -152,7 +125,7 @@ export default function RankingsPage() {
           <div className="bg-white rounded-lg shadow-sm p-8">
             <RankingTableSkeleton />
           </div>
-        ) : currentRankings.length === 0 ? (
+        ) : rankings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-2xl font-bold text-gray-900 mb-2">
               No rankings available
@@ -173,26 +146,28 @@ export default function RankingsPage() {
                         Rank
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                        Player Name
+                        Player
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        Yearly Tournaments Won
+                        W
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        Monthly Tournaments Won
+                        L
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        Games Won
+                        Win %
+                      </th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
+                        Tournaments
                       </th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                        Total Points
+                        Points
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentRankings.map((entry) => {
+                    {rankings.map((entry) => {
                       const medalIcon = getMedalIcon(entry.rank);
-                      const isNegative = entry.totalPoints < 0;
 
                       return (
                         <tr
@@ -213,54 +188,39 @@ export default function RankingsPage() {
                           </td>
                           <td className="px-6 py-4">
                             <span className="font-semibold text-gray-900">
-                              {entry.playerName}
+                              {entry.name}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              {entry.yearlyTournamentsWon > 0 && (
-                                <>
-                                  <span className="text-xl">🏆</span>
-                                  <span className="font-semibold text-gray-900">
-                                    {entry.yearlyTournamentsWon}
-                                  </span>
-                                </>
-                              )}
-                              {entry.yearlyTournamentsWon === 0 && (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              {entry.monthlyTournamentsWon > 0 && (
-                                <>
-                                  <span className="text-xl">👑</span>
-                                  <span className="font-semibold text-gray-900">
-                                    {entry.monthlyTournamentsWon}
-                                  </span>
-                                </>
-                              )}
-                              {entry.monthlyTournamentsWon === 0 && (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </div>
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className="font-semibold text-gray-900">
-                              {entry.gamesWon}
+                              {entry.stats.totalWins}
                             </span>
                           </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="font-semibold text-gray-900">
+                              {entry.stats.totalLosses}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="font-semibold text-gray-900">
+                              {entry.stats.winRate}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="font-semibold text-gray-900">
+                                {entry.stats.tournamentsPlayed}
+                              </span>
+                              {entry.stats.tournamentsWon > 0 && (
+                                <span className="text-sm text-yellow-600 font-bold">
+                                  ({entry.stats.tournamentsWon} won)
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 text-right">
-                            <span
-                              className={`text-lg font-bold ${
-                                isNegative
-                                  ? 'text-red-600'
-                                  : 'text-blue-600'
-                              }`}
-                            >
-                              {isNegative ? '' : '+'}
-                              {entry.totalPoints}
+                            <span className="text-lg font-bold text-blue-600">
+                              {entry.stats.totalPoints}
                             </span>
                           </td>
                         </tr>

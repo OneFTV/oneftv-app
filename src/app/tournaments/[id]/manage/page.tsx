@@ -88,7 +88,8 @@ export default function ManageTournamentPage() {
           throw new Error('Failed to fetch tournament');
         }
 
-        const tournamentData = await tournamentRes.json();
+        const tournamentJson = await tournamentRes.json();
+        const tournamentData = tournamentJson.data || tournamentJson;
         setTournament(tournamentData);
 
         // Check authorization
