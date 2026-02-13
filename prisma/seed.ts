@@ -671,6 +671,266 @@ async function main() {
   }
 
   console.log("Updated player stats for Copa Footvolley");
+
+  // ================================================================
+  // TOURNAMENT 5: TAFC Pipa 2026 - Professional League
+  // 32 teams (64 players), proLeague=true
+  // Semis & Final are best-of-3 sets, all others single set to 18
+  // ================================================================
+
+  const tafcTournament = await prisma.tournament.create({
+    data: {
+      name: "TAFC Pipa 2026",
+      description: "Professional League tournament in Pipa, Brazil. 32 teams compete in a single-elimination bracket. Semifinals and Final are played best-of-3 sets.",
+      date: new Date("2026-03-10"),
+      endDate: new Date("2026-03-15"),
+      location: "Praia do Amor, Pipa",
+      city: "Pipa",
+      state: "RN",
+      country: "Brazil",
+      format: "bracket",
+      status: "completed",
+      maxPlayers: 64,
+      numCourts: 4,
+      numDays: 6,
+      hoursPerDay: 10,
+      avgGameMinutes: 25,
+      pointsPerSet: 18,
+      numSets: 1,
+      groupSize: 4,
+      proLeague: true,
+      organizerId: organizerUser.id,
+    },
+  });
+
+  console.log("Created TAFC Pipa 2026 (Professional League):", tafcTournament.id);
+
+  // Register 64 players
+  for (let i = 0; i < 64; i++) {
+    await prisma.tournamentPlayer.create({
+      data: {
+        tournamentId: tafcTournament.id,
+        userId: createdAthletes[i].id,
+        seed: i + 1,
+        status: "checked_in",
+      },
+    });
+  }
+
+  console.log("Registered 64 players to TAFC Pipa 2026");
+
+  // Create 5 rounds: R32, R16, QF, SF (bestOf3), Final (bestOf3)
+  const tafcRoundDefs = [
+    { name: "Round of 32", roundNumber: 1, bestOf3: false },
+    { name: "Round of 16", roundNumber: 2, bestOf3: false },
+    { name: "Quarterfinals", roundNumber: 3, bestOf3: false },
+    { name: "Semifinals", roundNumber: 4, bestOf3: true },
+    { name: "Final", roundNumber: 5, bestOf3: true },
+  ];
+
+  const tafcRounds: { id: string; name: string; roundNumber: number; bestOf3: boolean }[] = [];
+  for (const rd of tafcRoundDefs) {
+    const round = await prisma.round.create({
+      data: {
+        name: rd.name,
+        roundNumber: rd.roundNumber,
+        tournamentId: tafcTournament.id,
+        type: "knockout",
+        bestOf3: rd.bestOf3,
+      },
+    });
+    tafcRounds.push({ ...round, bestOf3: rd.bestOf3 });
+  }
+
+  console.log("Created 5 rounds (SF + Final are bestOf3)");
+
+  // Build teams (pairs)
+  const tafcTeams: { p1: string; p2: string; name: string }[] = [];
+  for (let i = 0; i < 64; i += 2) {
+    tafcTeams.push({
+      p1: createdAthletes[i].id,
+      p2: createdAthletes[i + 1].id,
+      name: `${createdAthletes[i].name} & ${createdAthletes[i + 1].name}`,
+    });
+  }
+
+  // Helper: generate a valid score with 2-point advantage
+  function genSetScore(targetPts: number, tight: boolean): { winner: number; loser: number } {
+    if (tight && Math.random() > 0.5) {
+      // Deuce scenario: e.g. 20-18, 22-20, 19-17 (for 15-pt sets: 17-15, 16-14)
+      const extra = Math.floor(Math.random() * 3); // 0, 1, or 2 extra pairs
+      return { winner: targetPts + extra, loser: targetPts - 2 + extra };
+    }
+    // Clean win
+    const loserMin = tight ? targetPts - 5 : targetPts - 10;
+    const loser = Math.max(0, loserMin + Math.floor(Math.random() * (targetPts - 2 - loserMin + 1)));
+    return { winner: targetPts, loser };
+  }
+
+  // Simulate bracket
+  let tafcCurrentTeams = [...tafcTeams]; // 32 teams
+  const tafcBaseDate = new Date("2026-03-10T09:00:00");
+
+  for (let r = 0; r < 5; r++) {
+    const round = tafcRounds[r];
+    const winners: typeof tafcCurrentTeams = [];
+    const gamesInRound = tafcCurrentTeams.length / 2;
+    const isBo3 = round.bestOf3;
+    const isTight = r >= 2; // QF+ are tighter games
+
+    for (let g = 0; g < gamesInRound; g++) {
+      const home = tafcCurrentTeams[g * 2];
+      const away = tafcCurrentTeams[g * 2 + 1];
+      const homeWins = Math.random() > 0.45;
+      const courtNum = (g % 4) + 1;
+      const gameTime = new Date(tafcBaseDate.getTime() + r * 86400000 + g * 1800000);
+
+      if (isBo3) {
+        // Best of 3 sets
+        // Decide match outcome: 2-0 or 2-1
+        const straightSets = Math.random() > 0.55; // ~45% chance of going to 3 sets
+
+        let s1Home: number, s1Away: number;
+        let s2Home: number, s2Away: number;
+        let s3Home: number | null = null, s3Away: number | null = null;
+        let winningSide: string;
+
+        if (straightSets) {
+          // Winner takes both sets (2-0)
+          if (homeWins) {
+            const set1 = genSetScore(18, true);
+            s1Home = set1.winner; s1Away = set1.loser;
+            const set2 = genSetScore(18, true);
+            s2Home = set2.winner; s2Away = set2.loser;
+            winningSide = "home";
+          } else {
+            const set1 = genSetScore(18, true);
+            s1Home = set1.loser; s1Away = set1.winner;
+            const set2 = genSetScore(18, true);
+            s2Home = set2.loser; s2Away = set2.winner;
+            winningSide = "away";
+          }
+        } else {
+          // Goes to 3 sets (2-1) — loser wins one set
+          if (homeWins) {
+            // Home wins set 1, loses set 2, wins set 3
+            const set1 = genSetScore(18, true);
+            s1Home = set1.winner; s1Away = set1.loser;
+            const set2 = genSetScore(18, true);
+            s2Home = set2.loser; s2Away = set2.winner;
+            const set3 = genSetScore(15, true); // deciding set to 15
+            s3Home = set3.winner; s3Away = set3.loser;
+            winningSide = "home";
+          } else {
+            // Away wins set 1, loses set 2, wins set 3
+            const set1 = genSetScore(18, true);
+            s1Home = set1.loser; s1Away = set1.winner;
+            const set2 = genSetScore(18, true);
+            s2Home = set2.winner; s2Away = set2.loser;
+            const set3 = genSetScore(15, true); // deciding set to 15
+            s3Home = set3.loser; s3Away = set3.winner;
+            winningSide = "away";
+          }
+        }
+
+        await prisma.game.create({
+          data: {
+            tournamentId: tafcTournament.id,
+            roundId: round.id,
+            courtNumber: courtNum,
+            player1HomeId: home.p1,
+            player2HomeId: home.p2,
+            player1AwayId: away.p1,
+            player2AwayId: away.p2,
+            scoreHome: s1Home,
+            scoreAway: s1Away,
+            set2Home: s2Home,
+            set2Away: s2Away,
+            set3Home: s3Home,
+            set3Away: s3Away,
+            status: "completed",
+            winningSide,
+            scheduledTime: gameTime,
+          },
+        });
+
+        winners.push(homeWins ? home : away);
+      } else {
+        // Single set to 18
+        const set = genSetScore(18, isTight);
+        const scoreHome = homeWins ? set.winner : set.loser;
+        const scoreAway = homeWins ? set.loser : set.winner;
+
+        await prisma.game.create({
+          data: {
+            tournamentId: tafcTournament.id,
+            roundId: round.id,
+            courtNumber: courtNum,
+            player1HomeId: home.p1,
+            player2HomeId: home.p2,
+            player1AwayId: away.p1,
+            player2AwayId: away.p2,
+            scoreHome,
+            scoreAway,
+            status: "completed",
+            winningSide: homeWins ? "home" : "away",
+            scheduledTime: gameTime,
+          },
+        });
+
+        winners.push(homeWins ? home : away);
+      }
+    }
+
+    const setsInfo = isBo3 ? " (best-of-3)" : " (single set)";
+    console.log(`TAFC Round ${r + 1} (${tafcRoundDefs[r].name}): ${gamesInRound} games${setsInfo}`);
+    tafcCurrentTeams = winners;
+  }
+
+  // Update player stats for TAFC
+  const tafcGames = await prisma.game.findMany({
+    where: { tournamentId: tafcTournament.id },
+  });
+
+  const tafcStats = new Map<string, { wins: number; losses: number; pf: number; pa: number }>();
+  for (const game of tafcGames) {
+    const homeIds = [game.player1HomeId, game.player2HomeId].filter(Boolean) as string[];
+    const awayIds = [game.player1AwayId, game.player2AwayId].filter(Boolean) as string[];
+    const homeWon = game.winningSide === "home";
+
+    // Sum all set scores
+    const totalHome = (game.scoreHome ?? 0) + (game.set2Home ?? 0) + (game.set3Home ?? 0);
+    const totalAway = (game.scoreAway ?? 0) + (game.set2Away ?? 0) + (game.set3Away ?? 0);
+
+    for (const pid of homeIds) {
+      if (!tafcStats.has(pid)) tafcStats.set(pid, { wins: 0, losses: 0, pf: 0, pa: 0 });
+      const s = tafcStats.get(pid)!;
+      s.pf += totalHome;
+      s.pa += totalAway;
+      if (homeWon) s.wins++; else s.losses++;
+    }
+    for (const pid of awayIds) {
+      if (!tafcStats.has(pid)) tafcStats.set(pid, { wins: 0, losses: 0, pf: 0, pa: 0 });
+      const s = tafcStats.get(pid)!;
+      s.pf += totalAway;
+      s.pa += totalHome;
+      if (homeWon) s.losses++; else s.wins++;
+    }
+  }
+
+  for (const [userId, stats] of tafcStats.entries()) {
+    await prisma.tournamentPlayer.updateMany({
+      where: { tournamentId: tafcTournament.id, userId },
+      data: {
+        wins: stats.wins,
+        losses: stats.losses,
+        points: stats.pf,
+        pointDiff: stats.pf - stats.pa,
+      },
+    });
+  }
+
+  console.log("Updated player stats for TAFC Pipa 2026");
   console.log("Seed completed successfully!");
 }
 

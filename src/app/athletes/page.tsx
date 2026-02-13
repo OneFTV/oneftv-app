@@ -41,8 +41,9 @@ export default function AthletesPage() {
       try {
         setLoading(true);
         const response = await fetch('/api/athletes');
-        const data = await response.json();
-        setAthletes(data);
+        const json = await response.json();
+        const data = json.data || json || [];
+        setAthletes(Array.isArray(data) ? data : []);
 
         // Extract unique countries
         const uniqueCountries = Array.from(

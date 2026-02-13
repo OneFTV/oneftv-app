@@ -8,15 +8,15 @@ import { Search, Plus, Calendar, MapPin, Users } from 'lucide-react';
 interface Tournament {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   location: string;
-  city: string;
-  state: string;
-  country: string;
+  city: string | null;
+  state: string | null;
+  country: string | null;
   startDate: string;
-  endDate: string;
-  format: 'King of the Beach' | 'Bracket' | 'Group+Knockout' | 'Round Robin';
-  status: 'draft' | 'registration' | 'in_progress' | 'completed';
+  endDate: string | null;
+  format: string;
+  status: string;
   maxPlayers: number;
   registeredPlayers: number;
   organizerId: string;
@@ -43,9 +43,20 @@ const statusColors: Record<string, string> = {
 
 const formatColors: Record<string, string> = {
   'King of the Beach': 'bg-yellow-100 text-yellow-800',
+  'king_of_the_beach': 'bg-yellow-100 text-yellow-800',
   'Bracket': 'bg-indigo-100 text-indigo-800',
+  'bracket': 'bg-indigo-100 text-indigo-800',
   'Group+Knockout': 'bg-pink-100 text-pink-800',
+  'group_knockout': 'bg-pink-100 text-pink-800',
   'Round Robin': 'bg-cyan-100 text-cyan-800',
+  'round_robin': 'bg-cyan-100 text-cyan-800',
+};
+
+const formatLabels: Record<string, string> = {
+  'king_of_the_beach': 'King of the Beach',
+  'bracket': 'Bracket',
+  'group_knockout': 'Group+Knockout',
+  'round_robin': 'Round Robin',
 };
 
 export default function TournamentsPage() {
@@ -104,14 +115,16 @@ export default function TournamentsPage() {
       const matchesSearch =
         searchTerm === '' ||
         tournament.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tournament.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tournament.city.toLowerCase().includes(searchTerm.toLowerCase());
+        (tournament.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tournament.city || '').toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         selectedStatus === 'All' ||
         statusMap[tournament.status] === selectedStatus;
 
-      const matchesFormat = selectedFormat === 'All' || tournament.format === selectedFormat;
+      const matchesFormat = selectedFormat === 'All' ||
+        tournament.format === selectedFormat ||
+        (formatLabels[tournament.format] || tournament.format) === selectedFormat;
 
       return matchesSearch && matchesStatus && matchesFormat;
     });
@@ -213,14 +226,14 @@ export default function TournamentsPage() {
               >
                 <h3 className="text-xl font-bold text-white mb-2">{tournament.name}</h3>
                 <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
-                  <MapPin size={14} /> {tournament.city}, {tournament.country}
+                  <MapPin size={14} /> {tournament.city || 'Unknown'}{tournament.country ? `, ${tournament.country}` : ''}
                 </div>
                 <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
                   <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString()}
                 </div>
                 <div className="flex gap-2 mb-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${formatColors[tournament.format] || 'bg-gray-100 text-gray-800'}`}>
-                    {tournament.format}
+                    {formatLabels[tournament.format] || tournament.format}
                   </span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[tournament.status] || 'bg-gray-100 text-gray-800'}`}>
                     {statusMap[tournament.status] || tournament.status}

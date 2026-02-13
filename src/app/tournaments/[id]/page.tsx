@@ -293,13 +293,13 @@ export default function TournamentDetailPage() {
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Location</p>
               <p className="text-sm font-medium text-gray-900">
-                {tournament.city}, {tournament.state}
+                {tournament.city || 'TBD'}{tournament.state ? `, ${tournament.state}` : ''}
               </p>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Courts</p>
-              <p className="text-sm font-medium text-gray-900">{tournament.numCourts}</p>
+              <p className="text-sm font-medium text-gray-900">{tournament.numCourts || '-'}</p>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4">
@@ -359,7 +359,7 @@ export default function TournamentDetailPage() {
                       <div>
                         <dt className="text-sm font-medium text-gray-600">City</dt>
                         <dd className="text-gray-900">
-                          {tournament.city}, {tournament.state}, {tournament.country}
+                          {[tournament.city, tournament.state, tournament.country].filter(Boolean).join(', ') || 'Not specified'}
                         </dd>
                       </div>
                       <div>

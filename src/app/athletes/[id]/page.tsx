@@ -62,8 +62,41 @@ export default function AthleteProfilePage() {
       try {
         setLoading(true);
         const response = await fetch(`/api/athletes/${athleteId}`);
-        const data = await response.json();
-        setAthlete(data);
+        const json = await response.json();
+        const raw = json.data || json;
+
+        // Map API response to AthleteProfile interface
+        const stats = raw.overallStats || {};
+        const profile: AthleteProfile = {
+          id: raw.id,
+          name: raw.name,
+          nationality: raw.nationality || '',
+          level: raw.level || 'Beginner',
+          country: raw.country || '',
+          flagEmoji: raw.flagEmoji || '',
+          totalPoints: stats.points ?? raw.totalPoints ?? 0,
+          gamesPlayed: stats.gamesPlayed ?? raw.gamesPlayed ?? 0,
+          gamesWon: stats.wins ?? raw.gamesWon ?? 0,
+          winRate: stats.winRate != null ? stats.winRate / 100 : (raw.winRate ?? 0),
+          tournamentsPlayed: stats.tournamentsPlayed ?? raw.tournamentsPlayed ?? 0,
+          bestFinish: stats.bestFinish ?? raw.bestFinish ?? 0,
+          tournamentHistory: (raw.tournamentHistory || []).map((th: Record<string, unknown>) => {
+            const t = (th.tournament || th) as Record<string, unknown>;
+            const s = (th.stats || th) as Record<string, unknown>;
+            return {
+              id: (t.id || th.id) as string,
+              name: (t.name || th.name || '') as string,
+              date: (t.startDate || t.date || th.date || '') as string,
+              format: (t.format || th.format || '') as string,
+              placement: (th.placement ?? 0) as number,
+              wins: (s.wins ?? th.wins ?? 0) as number,
+              losses: (s.losses ?? th.losses ?? 0) as number,
+              pointsEarned: (s.points ?? th.pointsEarned ?? 0) as number,
+            };
+          }),
+          pointsOverTime: raw.pointsOverTime || [],
+        };
+        setAthlete(profile);
       } catch (error) {
         console.error('Failed to fetch athlete:', error);
       } finally {
