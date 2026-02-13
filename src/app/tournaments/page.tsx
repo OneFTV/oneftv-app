@@ -140,240 +140,115 @@ export default function TournamentsPage() {
       </div>
       <div className="h-3 bg-gray-200 rounded w-1/2"></div>
     </div>
-  ïˆú65/c”U¦epspyJQ2dFEZÎ
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
-            <p className="text-gray-600 mt-2">Browse and manage footvolley tournaments</p>
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-12">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <TournamentSkeleton key={i} />)}
         </div>
-        {user && (
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-white">Tournaments</h1>
           <Link
             href="/tournaments/create"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-semibold hover:shadow-lg transition-all"
           >
-            <Plus size={20} />
-            Create Tournament
+            <Plus size={20} /> Create Tournament
           </Link>
+        </div>
+
+        {/* Search & Filters */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search tournaments..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg placeholder-slate-500 focus:outline-none focus:border-blue-400"
+            />
+          </div>
+          <select
+            value={selectedFormat}
+            onChange={(e) => { setSelectedFormat(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg focus:outline-none focus:border-blue-400"
+          >
+            {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <select
+            value={selectedStatus}
+            onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
+            className="px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg focus:outline-none focus:border-blue-400"
+          >
+            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4 mb-6">
+            <p className="text-red-300">{error}</p>
+          </div>
         )}
-      </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Search by tournament name, location, or city..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Tournament Status
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {STATUSES.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    setSelectedStatus(status);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    selectedStatus === status
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
+        {paginatedTournaments.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-slate-400 text-lg">No tournaments found.</p>
           </div>
-
-          {/* Format Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Tournament Format
-            </label>
-            <div className="flex flex-wrap gap-2">
-              { FORMATS.map((format) => (
-                <button
-                  key={format}
-                  onClick={() => {
-                    setSelectedFormat(format);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    selectedFormat === format
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {format}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      { error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-          {error}
-        </div>
-      )}
-
-      {/* Tournament Grid */}
-      {+loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <TournamentSkeleton key={i} />
-          ))}
-        </div>
-      ) : paginatedTournaments.length === 0 ? (
-        <div className="text-center py-12">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No tournaments found</h3>
-          <p className="text-gray-600 mb-6">
-            {filteredTournaments().length === 0 && tournaments.length > 0
-              ? 'Try adjusting your filters'
-              : 'Get started by creating a new tournament'}
-          </p>
-          {user && filteredTournaments().length === 0 && tournaments.length === 0 && (
-            <Link
-              href="/tournaments/create"
-              className="ihline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition"
-            >
-              <Plus size={20} />
-              Create First Tournament
-            </Link>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {paginatedTournaments.map((tournament) => (
               <Link
                 key={tournament.id}
                 href={`/tournaments/${tournament.id}`}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden group"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-blue-400/20 rounded-xl p-6 hover:border-blue-400/50 transition-all"
               >
-                <div className="p-6">
-                  {/* Title and Status */}
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition mb-2">
-                      {tournament.name}
-                    </h3>
-                    <div className="flex gap-2 flex-wrap">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusColors[tournament.status]}`}
-                      >
-                        {statusMap[tournament.status]}
-                      </span>
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${formatColors[tournament.format]}`}
-                      >
-                        {tournament.format}
-                      </span>
-                      </div>
-                    </div>
-
-                    {/* Date and Location */}
-                    <div className="space-y-2 mb-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        {new Date(tournament.startDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={16} />
-                        {tournament.location}, {tournament.city}
-                      </div>
-                    </div>
-
-                    {/* Players and Organizer */}
-                    <div className="space-y-2 text-sm text-gray-700 border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Users size={16} />
-                          <span>
-                            {tournament.registeredPlayers}/{tournament.maxPlayers} players
-                          </span>
-                        </div>
-                        <div className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                          {tournament.courts} courts
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Organized by {tournament.organizerName}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                <h3 className="text-xl font-bold text-white mb-2">{tournament.name}</h3>
+                <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
+                  <MapPin size={14} /> {tournament.city}, {tournament.country}
+                </div>
+                <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
+                  <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString()}
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${formatColors[tournament.format] || 'bg-gray-100 text-gray-800'}`}>
+                    {tournament.format}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[tournament.status] || 'bg-gray-100 text-gray-800'}`}>
+                    {statusMap[tournament.status] || tournament.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-slate-400 text-sm">
+                  <Users size={14} /> {tournament.registeredPlayers}/{tournament.maxPlayers} players
+                </div>
+              </Link>
             ))}
           </div>
+        )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-8">
+            {Array.from({ length: totalPages }).map((_, i) => (
               <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                key={i}
+                onClick={() => handlePageChange(i + 1)}
+                className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
               >
-                Previous
+                {i + 1}
               </button>
-              <div className="flex gap-1">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => handlePageChange(i + 1)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                      currentPage === i + 1
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          )}
-
-          {/* Results summary */}
-          <div className="text-center text-sm text-gray-600 mt-6">
-            Showing {paginatedTournaments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
-            â‰‹
-            {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} results
+            ))}
           </div>
-        </>
-      )}
-  
-   5•dbö>
-  </div>
-  )
+        )}
+      </div>
+    </div>
+  );
 }

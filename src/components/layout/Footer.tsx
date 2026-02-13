@@ -13,10 +13,10 @@ export default function Footer() {
       { label: 'Dashboard', href: '/dashboard' },
     ],
     company: [
-      { label: 'About', href: '/about' },
-      { label: 'Contact', href: '/contact' },
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Terms of Service', href: '/terms' },
+      { label: 'About', href: '#' },
+      { label: 'Contact', href: '#' },
+      { label: 'Privacy Policy', href: '#' },
+      { label: 'Terms of Service', href: '#' },
     ],
     social: [
       {
@@ -27,7 +27,7 @@ export default function Footer() {
       },
       {
         label: 'Facebook',
-        icon: 'facebook",
+        icon: 'facebook',
         href: 'https://facebook.com',
         external: true,
       },
@@ -120,7 +120,7 @@ export default function Footer() {
               <p className="text-sm text-gray-400 mb-4">
                 Professional tournament management platform for footvolley athletes and organizers worldwide.
               </p>
-              <p className="text-xs text-gray-500"mb-6">
+              <p className="text-xs text-gray-500 mb-6">
                 Inspired by NFA - National Footvolley Association
               </p>
               {/* Social Links */}
@@ -184,13 +184,13 @@ export default function Footer() {
               &copy; {currentYear} OneFTV. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
-              <a href="/privacy" className="hover:text-white transition-colors duration-200">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 Privacy
               </a>
-              <a href="/terms" className="hover:text-white transition-colors duration-200">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 Terms
               </a>
-              <a href="/contact" className="hover:text-white transition-colors duration-200">
+              <a href="#" className="hover:text-white transition-colors duration-200">
                 Contact
               </a>
             </div>

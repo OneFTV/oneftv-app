@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import prisma from "A/lib/db"
+import prisma from "@/lib/db"
 
 export async function GET(
   req: NextRequest,
@@ -9,14 +9,14 @@ export async function GET(
     const user = await prisma.user.findUnique({
       where: { id: params.id },
       include: {
-        tournaments: {
+        tournamentPlayers: {
           include: {
             tournament: {
               select: {
                 id: true,
                 name: true,
                 format: true,
-                startDate: true,
+                date: true,
                 endDate: true,
                 location: true,
               },
@@ -24,7 +24,7 @@ export async function GET(
           },
           orderBy: {
             tournament: {
-              startDate: "desc",
+              date: "desc",
             },
           },
         },
@@ -39,62 +39,39 @@ export async function GET(
     }
 
     // Calculate overall stats
-    const totalWins = user.tournaments.reduce((sum, tp) => sum + (tp.wins || 0), 0)
-    const totalLosses = user.tournaments.reduce(
+    const totalWins = user.tournamentPlayers.reduce((sum, tp) => sum + (tp.wins || 0), 0)
+    const totalLosses = user.tournamentPlayers.reduce(
       (sum, tp) => sum + (tp.losses || 0),
       0
     )
-    const totalPoints = user.tournaments.reduce(
+    const totalPoints = user.tournamentPlayers.reduce(
       (sum, tp) => sum + (tp.points || 0),
       0
     )
-    const totalPointDiff = user.tournaments.reduce(
+    const totalPointDiff = user.tournamentPlayers.reduce(
       (sum, tp) => sum + (tp.pointDiff || 0),
       0
     )
-    const tournamentsPlayed = user.tournaments.length
+    const tournamentsPlayed = user.tournamentPlayers.length
 
-    // Count tournaments won (where player has wins but no losses)
-    const tournamentsWon = user.tournaments.filter((tp) => {
+    const tournamentsWon = user.tournamentPlayers.filter((tp) => {
       const winRate =
         tp.wins && tp.losses
           ? tp.wins / (tp.wins + tp.losses)
           : 0
-      return winRate > 0.5 // Player won more games than lost in that tournament
+      return winRate > 0.5
     }).length
 
     const gamesPlayed = totalWins + totalLosses
     const winRate = gamesPlayed > 0 ? (totalWins / gamesPlayed) * 100 : 0
 
-    // Calculate by tournament format
-    const kotbStats = user.tournaments
-      .filter((tp) => tp.tournament.format === "KOTB")
-      .reduce(
-        (acc, tp) => ({
-          gamesPlayed: acc.gamesPlayed + (tp.wins || 0) + (tp.losses || 0),
-          wins: acc.wins + (tp.wins || 0),
-          losses: acc.losses + (tp.losses || 0),
-          points: acc.points + (tp.points || 0),
-        }),
-        { gamesPlayed: 0, wins: 0, losses: 0, points: 0 }
-      )
-
-    const bracketStats = user.tournaments
-      .filter((tp) => tp.tournament.format === "BRACKET")
-      .reduce(
-        (acc, tp) => ({
-          gamesPlayed: acc.gamesPlayed + (tp.wins || 0) + (tp.losses || 0),
-          wins: acc.wins + (tp.wins || 0),
-          losses: acc.losses + (tp.losses || 0),
-          points: acc.points + (tp.points || 0),
-        }),
-        { gamesPlayed: 0, wins: 0, losses: 0, points: 0 }
-      )
-
     const athleteProfile = {
       id: user.id,
       name: user.name,
       email: user.email,
+      nationality: user.nationality,
+      country: user.country,
+      level: user.level,
       createdAt: user.createdAt,
       overallStats: {
         gamesPlayed,
@@ -106,39 +83,13 @@ export async function GET(
         tournamentsPlayed,
         tournamentsWon,
       },
-      statsByFormat: {
-        KOTB: {
-          gamesPlayed: kotbStats.gamesPlayed,
-          wins: kotbStats.wins,
-          losses: kotbStats.losses,
-          points: kotbStats.points,
-          winRate:
-            kotbStats.gamesPlayed > 0
-              ? Number(
-                  ((kotbStats.wins / kotbStats.gamesPlayed) * 100).toFixed(2)
-                )
-              : 0,
-        },
-        BRACKET: {
-          gamesPlayed: bracketStats.gamesPlayed,
-          wins: bracketStats.wins,
-          losses: bracketStats.losses,
-          points: bracketStats.points,
-          winRate:
-            bracketStats.gamesPlayed > 0
-              ? Number(
-                  ((bracketStats.wins / bracketStats.gamesPlayed) * 100).toFixed(2)
-                )
-              : 0,
-        },
-      },
-      tournamentHistory: user.tournaments.map((tp) => ({
+      tournamentHistory: user.tournamentPlayers.map((tp) => ({
         id: tp.id,
         tournament: {
           id: tp.tournament.id,
           name: tp.tournament.name,
           format: tp.tournament.format,
-          startDate: tp.tournament.startDate,
+          startDate: tp.tournament.date,
           endDate: tp.tournament.endDate,
           location: tp.tournament.location,
         },

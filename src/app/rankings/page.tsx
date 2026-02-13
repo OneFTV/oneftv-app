@@ -318,5 +318,5 @@ export default function RankingsPage() {
         )}
       </div>
     </div>
-    
-=
+  );
+}

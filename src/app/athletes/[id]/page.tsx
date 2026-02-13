@@ -313,7 +313,7 @@ export default function AthleteProfilePage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-right text-blue-600">
-                        ¯»tournament.pointsEarned}
+                        {tournament.pointsEarned}
                       </td>
                     </tr>
                   ))}

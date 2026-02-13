@@ -27,6 +27,7 @@ export default function Navbar() {
     { href: '/tournaments', label: 'Tournaments' },
     { href: '/rankings', label: 'Rankings' },
     { href: '/athletes', label: 'Athletes' },
+    { href: '/live-feed', label: 'Live Feed' },
   ];
 
   const handleSignOut = async () => {
@@ -112,10 +113,10 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <Link href="/auth/login" className="btn-outline btn-sm">
+                <Link href="/login" className="btn-outline btn-sm">
                   Login
                 </Link>
-                <Link href="/auth/register" className="btn-primary btn-sm">
+                <Link href="/register" className="btn-primary btn-sm">
                   Register
                 </Link>
               </div>
@@ -130,7 +131,7 @@ export default function Navbar() {
           >
             <svg
               className={`w-6 h-6 transition-transform duration-300 ${
-                isOpen ? 'rotate-90" : ''
+                isOpen ? 'rotate-90' : ''
               }`}
               fill="none"
               stroke="currentColor"
@@ -200,14 +201,14 @@ export default function Navbar() {
                 ) : (
                   <>
                     <Link
-                      href="/auth/login"
+                      href="/login"
                       onClick={() => setIsOpen(false)}
                       className="block btn-outline w-full text-center"
                     >
                       Login
                     </Link>
                     <Link
-                      href="/auth/register"
+                      href="/register"
                       onClick={() => setIsOpen(false)}
                       className="block btn-primary w-full text-center"
                     >

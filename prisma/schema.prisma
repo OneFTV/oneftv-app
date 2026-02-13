@@ -134,7 +134,7 @@ model Game {
   scoreAway    Int?
   set2Home     Int?
   set2Away     Int?
-  SetHme     Int?
+  set3Home     Int?
   set3Away     Int?
 
   status       String   @default("scheduled") @db.VarChar(20)

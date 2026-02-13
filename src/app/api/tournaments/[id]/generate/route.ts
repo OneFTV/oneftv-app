@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/db"
-import { generateKOTBSchedule, generateBracketSchedule } from "@/lib/scheduling"
+import {
+  generateKotBGroups,
+  generateKotBGames,
+  generateBracketGames,
+  generateRoundRobinGames,
+  scheduleGames,
+} from "@/lib/scheduling"
 
 export async function POST(
   req: NextRequest,
@@ -46,14 +52,6 @@ export async function POST(
       )
     }
 
-    // Check status
-    if (tournament.status !== "REGISTRATION") {
-      return NextResponse.json(
-        { error: "Tournament must be in registration status" },
-        { status: 400 }
-      )
-    }
-
     // Check minimum players
     if (tournament.players.length < 2) {
       return NextResponse.json(
@@ -62,117 +60,146 @@ export async function POST(
       )
     }
 
-    const playerIds = tournament.players.map((p) => p.id)
+    const playerIds = tournament.players.map((p) => p.userId)
 
-    if (tournament.format === "KOTB") {
-      // Generate KOTB schedule
-      const schedule = generateKOTBSchedule(playerIds)
+    // Delete existing games and rounds for regeneration
+    await prisma.game.deleteMany({ where: { tournamentId: params.id } })
+    await prisma.round.deleteMany({ where: { tournamentId: params.id } })
+    await prisma.group.deleteMany({ where: { tournamentId: params.id } })
 
-      // Create groups
-      const groupsData = []
-      for (let i = 0; i < schedule.groups.length; i++) {
+    const format = tournament.format
+
+    if (format === "king_of_the_beach") {
+      // Generate KotB groups and games
+      const groups = generateKotBGroups(playerIds, tournament.groupSize || 4)
+
+      for (let i = 0; i < groups.length; i++) {
         const group = await prisma.group.create({
           data: {
             tournamentId: params.id,
             name: `Group ${String.fromCharCode(65 + i)}`,
           },
         })
-        groupsData.push(group)
 
-        // Add players to group
-        await prisma.groupPlayer.createMany({
-          data: schedule.groups[i].map((playerId) => ({
-            groupId: group.id,
-            tournamentPlayerId: playerId,
-          })),
-        })
-      }
-
-      // Create rounds and games
-      let roundNumber = 1
-      for (const round of schedule.rounds) {
-        const roundRecord = await prisma.round.create({
-          data: {
-            tournamentId: params.id,
-            roundNumber,
-          },
-        })
-
-        for (const match of round) {
-          await prisma.game.create({
-            data: {
+        // Assign players to group
+        for (const userId of groups[i]) {
+          await prisma.tournamentPlayer.updateMany({
+            where: {
               tournamentId: params.id,
-              roundId: roundRecord.id,
-              team1Id: match.player1Id,
-              team2Id: match.player2Id,
-              status: "SCHEDULED",
+              userId: userId,
+            },
+            data: {
+              groupId: group.id,
             },
           })
         }
 
-        roundNumber++
-      }
-    } else if (tournament.format === "BRACKET") {
-      // Generate bracket schedule
-      const schedule = generateBracketSchedule(playerIds)
+        // Generate games for this group
+        const groupGames = generateKotBGames(groups[i])
 
-      // Create round 1 games
-      const roundRecord = await prisma.round.create({
+        const round = await prisma.round.create({
+          data: {
+            name: `Group ${String.fromCharCode(65 + i)} - Round`,
+            roundNumber: i + 1,
+            tournamentId: params.id,
+            type: "group",
+          },
+        })
+
+        for (const game of groupGames) {
+          await prisma.game.create({
+            data: {
+              tournamentId: params.id,
+              groupId: group.id,
+              roundId: round.id,
+              courtNumber: 1,
+              player1HomeId: game.team1[0] || null,
+              player2HomeId: game.team1[1] || null,
+              player1AwayId: game.team2[0] || null,
+              player2AwayId: game.team2[1] || null,
+              status: "scheduled",
+            },
+          })
+        }
+      }
+    } else if (format === "bracket") {
+      // Generate bracket games
+      const rounds = generateBracketGames(playerIds)
+
+      for (let r = 0; r < rounds.length; r++) {
+        const round = await prisma.round.create({
+          data: {
+            name: `Round ${r + 1}`,
+            roundNumber: r + 1,
+            tournamentId: params.id,
+            type: "knockout",
+          },
+        })
+
+        for (const game of rounds[r]) {
+          await prisma.game.create({
+            data: {
+              tournamentId: params.id,
+              roundId: round.id,
+              courtNumber: 1,
+              player1HomeId: game.team1[0] || null,
+              player2HomeId: game.team1[1] || null,
+              player1AwayId: game.team2[0] || null,
+              player2AwayId: game.team2[1] || null,
+              status: "scheduled",
+            },
+          })
+        }
+      }
+    } else if (format === "round_robin") {
+      const games = generateRoundRobinGames(playerIds)
+
+      const round = await prisma.round.create({
         data: {
-          tournamentId: params.id,
+          name: "Round Robin",
           roundNumber: 1,
+          tournamentId: params.id,
+          type: "group",
         },
       })
 
-      for (const match of schedule.firstRound) {
+      for (const game of games) {
         await prisma.game.create({
           data: {
             tournamentId: params.id,
-            roundId: roundRecord.id,
-            team1Id: match.player1Id,
-            team2Id: match.player2Id,
-            status: "SCHEDULED",
+            roundId: round.id,
+            courtNumber: 1,
+            player1HomeId: game.team1[0] || null,
+            player2HomeId: game.team1[1] || null,
+            player1AwayId: game.team2[0] || null,
+            player2AwayId: game.team2[1] || null,
+            status: "scheduled",
           },
         })
       }
     }
 
     // Update tournament status
-    const updatedTournament = await prisma.tournament.update({
+    await prisma.tournament.update({
       where: { id: params.id },
-      data: {
-        status: "IN_PROGRESS",
-      },
+      data: { status: "in_progress" },
+    })
+
+    // Return updated tournament
+    const updatedTournament = await prisma.tournament.findUnique({
+      where: { id: params.id },
       include: {
         groups: true,
         games: {
           include: {
-            team1: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-            team2: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
+            player1Home: { select: { id: true, name: true } },
+            player2Home: { select: { id: true, name: true } },
+            player1Away: { select: { id: true, name: true } },
+            player2Away: { select: { id: true, name: true } },
           },
         },
         rounds: {
-          include: {
-            games: true,
-          },
+          include: { games: true },
         },
       },
     })

@@ -170,7 +170,7 @@ export function scheduleGames(
   }
 
   for (const game of games) {
-    let earliestAvailableCount = 1
+    let earliestAvailableCourt = 1
     let earliestTime = courtAvailability[1]
 
     for (let court = 2; court <= numCourts; court++) {

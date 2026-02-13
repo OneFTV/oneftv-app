@@ -177,27 +177,53 @@ export default function CreateAthleteePage() {
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  
-)"üT} => {
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    // Clear error for this field when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/athletes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        router.push('/athletes');
+      } else {
+        const data = await res.json();
+        setErrors({ submit: data.error || 'Failed to create athlete' });
+      }
+    } catch {
+      setErrors({ submit: 'An error occurred' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (!validateForm()) {
-      return;J    }
-  
-  
-(¤‚ã,Šb
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-12">
+      <div className="max-w-2xl mx-auto px-4">
+        <button onClick={() => router.back()} className="text-slate-400 hover:text-white mb-6 flex items-center gap-2">
+          <ArrowLeft size={20} /> Back
+        </button>
+        <h1 className="text-3xl font-bold text-white mb-8">Create Athlete Profile</h1>
+        <p className="text-slate-400">This page is being reconstructed. Please check back soon.</p>
+      </div>
+    </div>
+  );
+}

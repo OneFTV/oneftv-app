@@ -7,20 +7,18 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")))
     const search = searchParams.get("search")
-    const level = searchParams.get("level")
-    const country = searchParams.get("country")
 
     // Build filter
-    const where: any = {
-      tournaments: {
-        some: {}, // Only users who participated in tournaments
+    const where: Record<string, unknown> = {
+      tournamentPlayers: {
+        some: {},
       },
     }
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
+        { name: { contains: search } },
+        { email: { contains: search } },
       ]
     }
 
@@ -31,14 +29,14 @@ export async function GET(req: NextRequest) {
     const users = await prisma.user.findMany({
       where,
       include: {
-        tournaments: {
+        tournamentPlayers: {
           include: {
             tournament: {
               select: {
                 id: true,
                 name: true,
                 format: true,
-                startDate: true,
+                date: true,
               },
             },
           },
@@ -51,23 +49,33 @@ export async function GET(req: NextRequest) {
 
     // Calculate aggregated stats for each athlete
     const athletes = users.map((user) => {
-      const allGames = user.tournaments
-      const totalWins = allGames.reduce((sum, tp) => sum + (tp.wins || 0), 0)
-      const totalLosses = allGames.reduce((sum, tp) => sum + (tp.losses || 0), 0)
-      const totalPoints = allGames.reduce((sum, tp) => sum + (tp.points || 0), 0)
-      const totalPointDiff = allGames.reduce(
+      const allTPs = user.tournamentPlayers
+      const totalWins = allTPs.reduce((sum, tp) => sum + (tp.wins || 0), 0)
+      const totalLosses = allTPs.reduce((sum, tp) => sum + (tp.losses || 0), 0)
+      const totalPoints = allTPs.reduce((sum, tp) => sum + (tp.points || 0), 0)
+      const totalPointDiff = allTPs.reduce(
         (sum, tp) => sum + (tp.pointDiff || 0),
         0
       )
-      const tournamentsPlayed = user.tournaments.length
-      const tournamentsWon = user.tournaments.filter(
-        (tp) => tp.tournament && tp.wins && tp.losses !== undefined && tp.losses === 0
+      const tournamentsPlayed = allTPs.length
+      const tournamentsWon = allTPs.filter(
+        (tp) => tp.wins && tp.losses === 0
       ).length
+
+      const gamesPlayed = totalWins + totalLosses
 
       return {
         id: user.id,
         name: user.name,
         email: user.email,
+        nationality: user.nationality,
+        country: user.country,
+        level: user.level,
+        flagEmoji: "",
+        totalPoints,
+        gamesWon: totalWins,
+        gamesPlayed,
+        winRate: gamesPlayed > 0 ? totalWins / gamesPlayed : 0,
         stats: {
           totalWins,
           totalLosses,
@@ -75,13 +83,13 @@ export async function GET(req: NextRequest) {
           totalPointDiff,
           tournamentsPlayed,
           tournamentsWon,
-          winRate: tournamentsPlayed > 0 ? (totalWins / (totalWins + totalLosses)) * 100 : 0,
+          winRate: gamesPlayed > 0 ? (totalWins / gamesPlayed) * 100 : 0,
         },
-        tournaments: user.tournaments.map((tp) => ({
+        tournaments: allTPs.map((tp) => ({
           id: tp.tournament.id,
           name: tp.tournament.name,
           format: tp.tournament.format,
-          startDate: tp.tournament.startDate,
+          date: tp.tournament.date,
           wins: tp.wins,
           losses: tp.losses,
           points: tp.points,
