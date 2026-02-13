@@ -16,6 +16,12 @@ We use `LIVEFEED.md` in the project root to coordinate between agents (Claude Co
 
 **Before starting work**, read `LIVEFEED.md` to see what other agents are doing.
 
+Codex should run this before each testing cycle:
+```bash
+npm run tester:preflight
+```
+This flags new Claude Code completions and Codex-targeted requests since the last Codex completion entry.
+
 **While working**, append entries to the `## Feed` section using this format:
 ```
 [YYYY-MM-DD HH:MM] [AGENT_NAME] [TYPE] message

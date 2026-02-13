@@ -126,13 +126,36 @@ export async function POST(
       // Generate bracket games
       const rounds = generateBracketGames(playerIds)
 
+      // Calculate total rounds needed for the full bracket
+      const totalBracketRounds = Math.ceil(Math.log2(playerIds.length))
+
       for (let r = 0; r < rounds.length; r++) {
+        // Determine round name and whether it's bestOf3
+        const roundsFromEnd = totalBracketRounds - r
+        let roundName = `Round ${r + 1}`
+        let isBestOf3 = false
+
+        if (roundsFromEnd === 1) {
+          roundName = "Final"
+          isBestOf3 = tournament.proLeague
+        } else if (roundsFromEnd === 2) {
+          roundName = "Semifinals"
+          isBestOf3 = tournament.proLeague
+        } else if (roundsFromEnd === 3) {
+          roundName = "Quarterfinals"
+        } else if (roundsFromEnd === 4) {
+          roundName = "Round of 16"
+        } else if (roundsFromEnd === 5) {
+          roundName = "Round of 32"
+        }
+
         const round = await prisma.round.create({
           data: {
-            name: `Round ${r + 1}`,
+            name: roundName,
             roundNumber: r + 1,
             tournamentId: params.id,
             type: "knockout",
+            bestOf3: isBestOf3,
           },
         })
 

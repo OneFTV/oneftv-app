@@ -104,9 +104,31 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
         </span>
       </div>
 
+      {/* Set scores for bestOf3 */}
+      {game.bestOf3 && isCompleted && game.set2Home != null && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1 bg-gray-50 border-t border-gray-100">
+          <span className="text-[10px] font-medium text-gray-500">
+            {game.score1}-{game.score2}
+          </span>
+          <span className="text-[10px] font-medium text-gray-500">
+            {game.set2Home}-{game.set2Away}
+          </span>
+          {game.set3Home != null && (
+            <span className="text-[10px] font-medium text-amber-600">
+              {game.set3Home}-{game.set3Away}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Footer: court + time + live indicator */}
       <div className="flex items-center justify-between px-3 py-1 bg-gray-50 text-[11px] text-gray-400 border-t border-gray-100">
-        <span>Court {game.court}</span>
+        <span className="flex items-center gap-1">
+          Court {game.court}
+          {game.bestOf3 && (
+            <span className="px-1 py-px rounded text-[9px] font-bold bg-[#1a2744] text-[#c4a35a]">Bo3</span>
+          )}
+        </span>
         <div className="flex items-center gap-1.5">
           {isLive && (
             <span className="flex h-1.5 w-1.5">

@@ -13,6 +13,11 @@ export interface BracketGame {
   player2AwayId: string | null;
   score1?: number;
   score2?: number;
+  set2Home?: number;
+  set2Away?: number;
+  set3Home?: number;
+  set3Away?: number;
+  bestOf3?: boolean;
   status: 'pending' | 'scheduled' | 'completed' | 'in_progress';
   winningSide: string | null;
   groupName?: string | null;

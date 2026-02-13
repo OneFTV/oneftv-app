@@ -22,6 +22,7 @@ interface FormData {
   pointsPerSet: number;
   sets: 1 | 3;
   groupSize: number;
+  proLeague: boolean;
 }
 
 interface FormErrors {
@@ -73,6 +74,7 @@ export default function CreateTournamentPage() {
     pointsPerSet: 18,
     sets: 1,
     groupSize: 4,
+    proLeague: false,
   });
 
   // Check authentication
@@ -286,6 +288,40 @@ export default function CreateTournamentPage() {
                     <option key={f.value} value={f.value}>{f.label}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Professional League Toggle */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tournament Tier</label>
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, proLeague: false }))}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium transition ${
+                      !formData.proLeague
+                        ? 'bg-[#1a2744] text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, proLeague: true }))}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium transition ${
+                      formData.proLeague
+                        ? 'bg-[#1a2744] text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    Professional League
+                  </button>
+                </div>
+                {formData.proLeague && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Semifinals and Finals will use best-of-3 sets (3rd set to 15 points). All other games remain single set.
+                  </p>
+                )}
               </div>
             </div>
           </div>

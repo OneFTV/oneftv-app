@@ -54,6 +54,7 @@ model Tournament {
   pointsPerSet    Int      @default(18)
   numSets         Int      @default(1)
   groupSize       Int      @default(4)
+  proLeague       Boolean  @default(false)
   organizerId     String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -109,6 +110,7 @@ model Round {
   roundNumber  Int
   tournamentId String
   type         String   @db.VarChar(20) // "group", "knockout"
+  bestOf3      Boolean  @default(false)
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   games        Game[]

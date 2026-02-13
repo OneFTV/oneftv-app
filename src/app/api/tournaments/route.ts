@@ -22,6 +22,7 @@ const createTournamentSchema = z.object({
   pointsPerSet: z.number().int().optional(),
   sets: z.number().int().optional(),
   groupSize: z.number().int().optional(),
+  proLeague: z.boolean().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest) {
         pointsPerSet: d.pointsPerSet ?? 18,
         numSets: d.sets ?? 1,
         groupSize: d.groupSize ?? 4,
+        proLeague: d.proLeague ?? false,
         organizerId: session.user.id,
         status: "registration",
       },

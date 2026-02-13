@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "tester:preflight": "bash scripts/livefeed-preflight.sh",
+    "tester:types": "npx tsc --noEmit",
+    "tester:run": "npm run tester:preflight || true && npm run tester:types",
     "db:push": "prisma db push",
     "db:seed": "npx ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts",
     "postinstall": "prisma generate"

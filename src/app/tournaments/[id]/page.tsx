@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import TournamentBracketView from '@/components/tournament/TournamentBracketView';
 
 interface Tournament {
@@ -23,6 +23,7 @@ interface Tournament {
   avgGameMinutes: number;
   pointsPerSet: number;
   numSets: number;
+  proLeague: boolean;
   organizerId: string;
   organizer: { id: string; name: string; email: string };
   players: { id: string; user: { id: string; name: string; email: string } }[];
@@ -58,6 +59,11 @@ interface Game {
   player2AwayId: string | null;
   score1?: number;
   score2?: number;
+  set2Home?: number;
+  set2Away?: number;
+  set3Home?: number;
+  set3Away?: number;
+  bestOf3?: boolean;
   status: 'pending' | 'scheduled' | 'completed' | 'in_progress';
   winningSide: string | null;
 }
@@ -107,6 +113,7 @@ export default function TournamentDetailPage() {
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [registering, setRegistering] = useState(false);
   const [registerMsg, setRegisterMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -370,15 +377,92 @@ export default function TournamentDetailPage() {
                         <dd className="text-gray-900">{tournament.pointsPerSet}</dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-gray-600">Sets</dt>
-                        <dd className="text-gray-900">Best of {tournament.numSets}</dd>
+                        <dt className="text-sm font-medium text-gray-600">Tournament Tier</dt>
+                        <dd className="text-gray-900">
+                          {tournament.proLeague ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
+                              Professional League
+                            </span>
+                          ) : 'Standard'}
+                        </dd>
                       </div>
+                      {tournament.proLeague && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-600">Semis & Finals</dt>
+                          <dd className="text-gray-900">Best of 3 sets (3rd set to 15 pts)</dd>
+                        </div>
+                      )}
                       <div>
                         <dt className="text-sm font-medium text-gray-600">Organizer</dt>
                         <dd className="text-gray-900">{tournament.organizer?.name}</dd>
                       </div>
                     </dl>
                   </div>
+                </div>
+
+                {/* Footvolley Rules Card */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setRulesExpanded(!rulesExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <Info size={16} className="text-[#1a2744]" />
+                      Footvolley Rules
+                    </span>
+                    {rulesExpanded ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                  </button>
+                  {rulesExpanded && (
+                    <div className="px-4 py-4 space-y-4 text-sm text-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Scoring</h4>
+                          <ul className="space-y-1.5 text-gray-600">
+                            <li>Sets played to <strong>{tournament.pointsPerSet} points</strong></li>
+                            <li>Winner must lead by <strong>2 points</strong> minimum</li>
+                            {tournament.proLeague && (
+                              <>
+                                <li>Semis & Finals: <strong>best of 3 sets</strong></li>
+                                <li>Deciding set (3rd): played to <strong>15 points</strong></li>
+                              </>
+                            )}
+                            <li>Rally scoring — point on every play</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Teams & Play</h4>
+                          <ul className="space-y-1.5 text-gray-600">
+                            <li><strong>2 players</strong> per team</li>
+                            <li>Max <strong>3 touches</strong> per side</li>
+                            <li>No hands or arms — feet, head, chest, knees only</li>
+                            <li>Serve must be <strong>kicked with the foot</strong></li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Court & Net</h4>
+                          <ul className="space-y-1.5 text-gray-600">
+                            <li>Court: <strong>16m x 8m</strong> (sand)</li>
+                            <li>Net height (men): <strong>2.20m</strong></li>
+                            <li>Net height (women): <strong>2.10m</strong></li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2">Faults</h4>
+                          <ul className="space-y-1.5 text-gray-600">
+                            <li>Touching the net during play</li>
+                            <li>4+ touches before returning the ball</li>
+                            <li>Same player touching ball twice in a row</li>
+                            <li>Ball landing outside court boundaries</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                        Based on European Footvolley League 2025 Official Rules
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
