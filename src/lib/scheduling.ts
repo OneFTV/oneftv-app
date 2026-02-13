@@ -88,27 +88,63 @@ export function generateKotBGames(group: string[]): Game[] {
 
 export function generateBracketGames(players: string[]): Game[][] {
   const bracket: Game[][] = []
+
+  if (players.length < 2) return bracket
+
   const validPlayerCount = Math.pow(2, Math.ceil(Math.log2(players.length)))
-  const roundPlayers = [...players]
+  const seeded: (string | null)[] = [...players]
 
-  while (roundPlayers.length < validPlayerCount) {
-    roundPlayers.push('')
+  // Pad with null byes to reach next power of 2
+  while (seeded.length < validPlayerCount) {
+    seeded.push(null)
   }
 
-  let currentRound = roundPlayers
-  let roundGames: Game[] = []
+  // First round: pair players, skip bye-vs-bye, auto-advance bye matchups
+  const roundGames: Game[] = []
+  const nextRoundAdvancers: (string | null)[] = []
 
-  for (let i = 0; i < currentRound.length; i += 2) {
-    const team1 = currentRound[i] ? [currentRound[i]] : []
-    const team2 = currentRound[i + 1] ? [currentRound[i + 1]] : []
+  for (let i = 0; i < seeded.length; i += 2) {
+    const p1 = seeded[i]
+    const p2 = seeded[i + 1]
 
-    roundGames.push({
-      team1,
-      team2,
-    })
+    if (p1 && p2) {
+      // Real matchup
+      roundGames.push({
+        team1: [p1],
+        team2: [p2],
+      })
+      nextRoundAdvancers.push(null) // winner TBD
+    } else if (p1) {
+      // p1 gets a bye (auto-advance, no game needed)
+      nextRoundAdvancers.push(p1)
+    } else if (p2) {
+      // p2 gets a bye
+      nextRoundAdvancers.push(p2)
+    }
+    // both null = skip entirely
   }
 
-  bracket.push(roundGames)
+  if (roundGames.length > 0) {
+    bracket.push(roundGames)
+  }
+
+  // Generate placeholder rounds for subsequent bracket stages
+  let remainingSlots = roundGames.length + nextRoundAdvancers.filter(Boolean).length
+  while (remainingSlots > 1) {
+    const numGames = Math.floor(remainingSlots / 2)
+    const placeholderGames: Game[] = []
+
+    for (let i = 0; i < numGames; i++) {
+      placeholderGames.push({
+        team1: [],
+        team2: [],
+        status: 'scheduled',
+      })
+    }
+
+    bracket.push(placeholderGames)
+    remainingSlots = numGames
+  }
 
   return bracket
 }
