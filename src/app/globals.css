@@ -338,3 +338,21 @@
 .bg-accent {
   @apply bg-orange-500;
 }
+
+/* Dark scrollbar for public viewer */
+.bg-dark-bg ::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+.bg-dark-bg ::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+.bg-dark-bg ::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+
+.bg-dark-bg ::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}

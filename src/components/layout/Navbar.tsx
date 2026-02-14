@@ -35,6 +35,8 @@ export default function Navbar() {
     await signOut({ callbackUrl: '/' });
   };
 
+  if (pathname?.startsWith('/e/')) return null;
+
   return (
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
