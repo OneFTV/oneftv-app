@@ -50,7 +50,22 @@ export default async function ScoreboardPage({ params }: PageProps) {
     include: {
       categories: {
         orderBy: { sortOrder: 'asc' },
-        include: { _count: { select: { players: true } } },
+        include: {
+          _count: { select: { players: true } },
+          games: {
+            where: { status: { in: ['in_progress', 'completed'] } },
+            include: {
+              player1Home: { select: { name: true } },
+              player2Home: { select: { name: true } },
+              player1Away: { select: { name: true } },
+              player2Away: { select: { name: true } },
+              round: { select: { name: true } },
+              category: { select: { id: true, name: true } },
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 4,
+          },
+        },
       },
       games: {
         where: { status: { in: ['in_progress', 'completed'] } },
@@ -74,7 +89,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
   const recentGames = tournament.games.filter((g) => g.status === 'completed');
   const hasCategories = tournament.categories.length > 0;
 
-  const formatPlayerNames = (g: typeof tournament.games[number]) => {
+  const formatPlayerNames = (g: { player1Home?: { name: string } | null; player2Home?: { name: string } | null; player1Away?: { name: string } | null; player2Away?: { name: string } | null }) => {
     const home = [g.player1Home?.name, g.player2Home?.name].filter(Boolean).join(' & ') || 'TBD';
     const away = [g.player1Away?.name, g.player2Away?.name].filter(Boolean).join(' & ') || 'TBD';
     return { home, away };
@@ -90,15 +105,6 @@ export default async function ScoreboardPage({ params }: PageProps) {
     : '';
   const locationStr = [tournament.city, tournament.state].filter(Boolean).join(', ');
 
-  // Get recent games per category for category sections
-  const gamesByCategory = new Map<string, typeof tournament.games>();
-  for (const g of tournament.games) {
-    const catId = g.category?.id || '__none__';
-    if (!gamesByCategory.has(catId)) gamesByCategory.set(catId, []);
-    if (gamesByCategory.get(catId)!.length < 4) {
-      gamesByCategory.get(catId)!.push(g);
-    }
-  }
 
   return (
     <>
@@ -194,8 +200,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Categories</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {tournament.categories.map((cat) => {
-                const catGames = gamesByCategory.get(cat.id) || [];
-                const catLive = catGames.filter((g) => g.status === 'in_progress');
+                const catGames = cat.games;
                 return (
                   <div key={cat.id} className="rounded-xl border border-dark-border bg-dark-surface overflow-hidden hover:border-dark-divider transition-colors">
                     {/* Category header */}

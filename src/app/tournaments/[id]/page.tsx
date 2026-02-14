@@ -6,6 +6,19 @@ import Link from 'next/link';
 import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import TournamentBracketView from '@/components/tournament/TournamentBracketView';
 
+interface CategoryInfo {
+  id: string;
+  name: string;
+  format: string;
+  gender: string | null;
+  skillLevel: string | null;
+  maxTeams: number;
+  pointsPerSet: number;
+  status: string;
+  proLeague: boolean;
+  _count: { players: number; teamRegistrations: number };
+}
+
 interface Tournament {
   id: string;
   name: string;
@@ -16,17 +29,19 @@ interface Tournament {
   country: string | null;
   date: string;
   endDate: string | null;
-  format: string;
+  format: string | null;
   status: string;
-  maxPlayers: number;
+  maxPlayers: number | null;
   numCourts: number;
   avgGameMinutes: number;
-  pointsPerSet: number;
+  pointsPerSet: number | null;
   numSets: number;
   proLeague: boolean;
+  allowMultiCategory: boolean;
   organizerId: string;
   organizer: { id: string; name: string; email: string };
   players: { id: string; user: { id: string; name: string; email: string } }[];
+  categories?: CategoryInfo[];
 }
 
 interface Player {
@@ -114,6 +129,7 @@ export default function TournamentDetailPage() {
   const [registering, setRegistering] = useState(false);
   const [registerMsg, setRegisterMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -137,10 +153,12 @@ export default function TournamentDetailPage() {
         setLoading(true);
         setError(null);
 
+        const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
+
         const [tournamentRes, playersRes, gamesRes] = await Promise.all([
           fetch(`/api/tournaments/${tournamentId}`),
-          fetch(`/api/tournaments/${tournamentId}/players`),
-          fetch(`/api/tournaments/${tournamentId}/games`),
+          fetch(`/api/tournaments/${tournamentId}/players${catParam}`),
+          fetch(`/api/tournaments/${tournamentId}/games${catParam}`),
         ]);
 
         if (!tournamentRes.ok) {
@@ -169,7 +187,7 @@ export default function TournamentDetailPage() {
     if (tournamentId) {
       fetchTournamentData();
     }
-  }, [tournamentId]);
+  }, [tournamentId, selectedCategoryId]);
 
   const isOrganizer = user && tournament && user.id === tournament.organizer?.id;
   const isRegistered = user && players.some((p) => p.userId === user.id);
@@ -254,22 +272,34 @@ export default function TournamentDetailPage() {
                 >
                   {statusMap[tournament.status]}
                 </span>
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${formatColors[tournament.format]}`}
-                >
-                  {formatLabels[tournament.format] || tournament.format}
-                </span>
+                {tournament.format && (
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${formatColors[tournament.format]}`}
+                  >
+                    {formatLabels[tournament.format] || tournament.format}
+                  </span>
+                )}
               </div>
             </div>
-            {isOrganizer && (
+            <div className="flex items-center gap-2">
               <Link
-                href={`/tournaments/${tournament.id}/manage`}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+                href={`/e/${tournament.id}`}
+                target="_blank"
+                className="inline-flex items-center gap-2 bg-footvolley-primary hover:bg-footvolley-primary/90 text-white font-medium py-2 px-4 rounded-lg transition"
               >
-                <Edit size={20} />
-                Manage
+                <Trophy size={18} />
+                Live View
               </Link>
-            )}
+              {isOrganizer && (
+                <Link
+                  href={`/tournaments/${tournament.id}/manage`}
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+                >
+                  <Edit size={20} />
+                  Manage
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Info Cards */}
@@ -310,11 +340,74 @@ export default function TournamentDetailPage() {
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Players</p>
               <p className="text-sm font-medium text-gray-900">
-                {tournament.players?.length ?? 0}/{tournament.maxPlayers}
+                {tournament.players?.length ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''}
               </p>
             </div>
           </div>
         </div>
+
+        {/* Category Selector */}
+        {tournament.categories && tournament.categories.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-semibold text-gray-700">Categorias</span>
+              <span className="text-xs text-gray-400">({tournament.categories.length})</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategoryId(null)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
+                  selectedCategoryId === null
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Todas
+              </button>
+              {tournament.categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat.name}
+                  <span className="ml-1 text-xs opacity-70">
+                    ({cat._count?.players || 0})
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Category progress bars */}
+            {selectedCategoryId === null && (
+              <div className="mt-4 space-y-2">
+                {tournament.categories.map((cat) => {
+                  const progress = cat._count ? (cat._count.players / cat.maxTeams) * 100 : 0;
+                  return (
+                    <div key={cat.id} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500 w-32 truncate">{cat.name}</span>
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            progress >= 100 ? 'bg-red-500' : progress >= 75 ? 'bg-amber-500' : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min(progress, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-400 w-16 text-right">
+                        {cat._count?.players || 0}/{cat.maxTeams}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-md mb-8">
@@ -364,7 +457,7 @@ export default function TournamentDetailPage() {
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-600">Format</dt>
-                        <dd className="text-gray-900">{formatLabels[tournament.format] || tournament.format}</dd>
+                        <dd className="text-gray-900">{tournament.format ? (formatLabels[tournament.format] || tournament.format) : 'Multi-categoria'}</dd>
                       </div>
                     </dl>
                   </div>
@@ -374,7 +467,7 @@ export default function TournamentDetailPage() {
                     <dl className="space-y-3">
                       <div>
                         <dt className="text-sm font-medium text-gray-600">Points Per Set</dt>
-                        <dd className="text-gray-900">{tournament.pointsPerSet}</dd>
+                        <dd className="text-gray-900">{tournament.pointsPerSet ?? 'Per category'}</dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-600">Tournament Tier</dt>
@@ -472,7 +565,7 @@ export default function TournamentDetailPage() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900">
-                    Registered Players ({players.length}/{tournament.maxPlayers})
+                    Registered Players ({players.length}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''})
                   </h3>
                   {tournament.status === 'registration' && user && !isRegistered && (
                     <button
@@ -537,7 +630,14 @@ export default function TournamentDetailPage() {
 
             {/* Games Tab */}
             {activeTab === 'games' && (
-              <TournamentBracketView games={games} format={tournament.format} />
+              <TournamentBracketView
+                games={games}
+                format={
+                  selectedCategoryId
+                    ? (tournament.categories?.find((c) => c.id === selectedCategoryId)?.format || tournament.format || 'bracket')
+                    : (tournament.format || 'bracket')
+                }
+              />
             )}
 
             {/* Standings Tab */}
