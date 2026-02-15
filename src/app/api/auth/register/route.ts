@@ -1,71 +1,35 @@
-import { NextRequest, NextResponse } from "next/server"
-import { z } from "zod"
-import bcryptjs from "bcryptjs"
-import prisma from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server'
+import { AuthService } from '@/modules/auth/auth.service'
+import { registerSchema } from '@/modules/auth/auth.schemas'
+import { AppError } from '@/shared/api/errors'
+import { rateLimit } from '@/shared/middleware/rate-limit'
 
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-})
+const checkLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, keyPrefix: 'register' })
 
 export async function POST(req: NextRequest) {
+  const limited = checkLimit(req)
+  if (limited) return limited
+
   try {
     const body = await req.json()
 
-    // Validate input
     const result = registerSchema.safeParse(body)
     if (!result.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: result.error.flatten() },
+        { error: 'Validation failed', details: result.error.flatten() },
         { status: 400 }
       )
     }
 
     const { email, name, password } = result.data
+    const user = await AuthService.register(email, name, password)
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Email already registered" },
-        { status: 409 }
-      )
-    }
-
-    // Hash password
-    const hashedPassword = await bcryptjs.hash(password, 12)
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    })
-
-    return NextResponse.json(
-      {
-        message: "User registered successfully",
-        user,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({ message: 'User registered successfully', user }, { status: 201 })
   } catch (error) {
-    console.error("Registration error:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    if (error instanceof AppError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    console.error('Registration error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
