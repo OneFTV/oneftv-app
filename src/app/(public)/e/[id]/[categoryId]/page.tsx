@@ -5,7 +5,8 @@ import { prisma } from '@/shared/database/prisma';
 import { GameService } from '@/modules/game/game.service';
 import LiveRefresh from '@/components/public/LiveRefresh';
 import CategorySwitcher from '@/components/public/CategorySwitcher';
-import DarkTournamentView from '@/components/public/DarkTournamentView';
+import TournamentBracketView from '@/components/tournament/TournamentBracketView';
+import { darkTheme } from '@/components/tournament/theme';
 
 interface PageProps {
   params: { id: string; categoryId: string };
@@ -91,7 +92,7 @@ export default async function BracketPage({ params }: PageProps) {
 
       {/* Full-width bracket */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <DarkTournamentView
+        <TournamentBracketView
           games={games.map((g) => ({
             ...g,
             court: g.court ?? 1,
@@ -106,6 +107,7 @@ export default async function BracketPage({ params }: PageProps) {
             status: g.status as 'pending' | 'scheduled' | 'completed' | 'in_progress',
           }))}
           format={format}
+          theme={darkTheme}
         />
       </div>
     </>

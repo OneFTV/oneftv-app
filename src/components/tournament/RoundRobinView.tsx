@@ -1,9 +1,11 @@
 'use client';
 
 import { BracketGame } from '@/lib/bracketUtils';
+import { TournamentTheme, lightTheme } from './theme';
 
 interface RoundRobinViewProps {
   games: BracketGame[];
+  theme?: TournamentTheme;
 }
 
 interface MatchResult {
@@ -13,7 +15,7 @@ interface MatchResult {
   status: string;
 }
 
-export default function RoundRobinView({ games }: RoundRobinViewProps) {
+export default function RoundRobinView({ games, theme = lightTheme }: RoundRobinViewProps) {
   // Collect unique teams
   const teamSet = new Set<string>();
   for (const game of games) {
@@ -25,8 +27,8 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
   if (teams.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-300 text-5xl mb-3">&#127942;</div>
-        <p className="text-gray-400 font-medium">No games to display</p>
+        <div className={`${theme.emptyIcon} text-5xl mb-3`}>&#127942;</div>
+        <p className={`${theme.emptyText} font-medium`}>No games to display</p>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
     colTeam: string
   ): { display: string; className: string } => {
     if (rowTeam === colTeam) {
-      return { display: '', className: 'bg-gray-800' };
+      return { display: '', className: theme.diagonalCell };
     }
 
     const direct = matchLookup.get(`${rowTeam}|${colTeam}`);
@@ -62,9 +64,7 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
           direct.score1 > direct.score2);
       return {
         display: `${direct.score1 ?? 0}-${direct.score2 ?? 0}`,
-        className: won
-          ? 'bg-green-50 text-green-700 font-semibold'
-          : 'bg-red-50 text-red-600',
+        className: won ? theme.winCell : theme.lossCell,
       };
     }
 
@@ -77,17 +77,15 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
           reverse.score2 > reverse.score1);
       return {
         display: `${reverse.score2 ?? 0}-${reverse.score1 ?? 0}`,
-        className: won
-          ? 'bg-green-50 text-green-700 font-semibold'
-          : 'bg-red-50 text-red-600',
+        className: won ? theme.winCell : theme.lossCell,
       };
     }
 
     if (direct || reverse) {
-      return { display: '-', className: 'text-gray-300' };
+      return { display: '-', className: theme.pendingCell };
     }
 
-    return { display: '', className: 'text-gray-200' };
+    return { display: '', className: theme.emptyCell };
   };
 
   // Compute simple standings from games
@@ -117,9 +115,9 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
       <div>
         <div className="flex items-center gap-3 mb-5">
           <div className="h-6 w-1 bg-footvolley-accent rounded-full" />
-          <h4 className="text-lg font-bold text-gray-900">Results Matrix</h4>
+          <h4 className={`text-lg font-bold ${theme.sectionHeading}`}>Results Matrix</h4>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        <div className={`overflow-x-auto rounded-xl border ${theme.tableBorder}`}>
           <table className="min-w-full text-xs border-collapse">
             <thead>
               <tr>
@@ -139,8 +137,8 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
             </thead>
             <tbody>
               {teams.map((rowTeam, rowIdx) => (
-                <tr key={rowTeam} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                  <td className="sticky left-0 z-10 bg-inherit px-3 py-2 font-semibold text-gray-800 border-r border-gray-200 whitespace-nowrap text-xs">
+                <tr key={rowTeam} className={rowIdx % 2 === 0 ? theme.rowEven : theme.rowOdd}>
+                  <td className={`sticky left-0 z-10 bg-inherit px-3 py-2 font-semibold ${theme.rowLabel} border-r ${theme.cellBorder} whitespace-nowrap text-xs`}>
                     {rowTeam}
                   </td>
                   {teams.map((colTeam) => {
@@ -148,7 +146,7 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
                     return (
                       <td
                         key={colTeam}
-                        className={`px-2 py-2 text-center border border-gray-100 font-mono text-xs min-w-[52px] ${result.className}`}
+                        className={`px-2 py-2 text-center border ${theme.cellBorder} font-mono text-xs min-w-[52px] ${result.className}`}
                       >
                         {result.display}
                       </td>
@@ -165,12 +163,12 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
       <div>
         <div className="flex items-center gap-3 mb-5">
           <div className="h-6 w-1 bg-footvolley-primary rounded-full" />
-          <h4 className="text-lg font-bold text-gray-900">Standings</h4>
+          <h4 className={`text-lg font-bold ${theme.sectionHeading}`}>Standings</h4>
         </div>
-        <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className={`rounded-xl border ${theme.tableBorder} overflow-hidden`}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider">
+              <tr className={`${theme.tableHeaderBg} ${theme.tableHeaderText} text-xs uppercase tracking-wider`}>
                 <th className="text-left px-4 py-2 w-8">#</th>
                 <th className="text-left px-3 py-2">Team</th>
                 <th className="text-center px-2 py-2 w-10">W</th>
@@ -185,15 +183,15 @@ export default function RoundRobinView({ games }: RoundRobinViewProps) {
                 const s = standingsMap.get(team)!;
                 const diff = s.pf - s.pa;
                 return (
-                  <tr key={team} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-2.5 text-gray-400 font-medium">{idx + 1}</td>
-                    <td className="px-3 py-2.5 font-semibold text-gray-800">{team}</td>
-                    <td className="text-center px-2 py-2.5 text-green-600 font-medium">{s.wins}</td>
-                    <td className="text-center px-2 py-2.5 text-red-500 font-medium">{s.losses}</td>
-                    <td className="text-center px-2 py-2.5 text-gray-600">{s.pf}</td>
-                    <td className="text-center px-2 py-2.5 text-gray-600">{s.pa}</td>
+                  <tr key={team} className={`border-t ${theme.tableRowBorder} ${theme.tableRowHover} transition-colors ${theme.standingsRowBg}`}>
+                    <td className={`px-4 py-2.5 ${theme.rankText} font-medium`}>{idx + 1}</td>
+                    <td className={`px-3 py-2.5 font-semibold ${theme.teamNameText}`}>{team}</td>
+                    <td className={`text-center px-2 py-2.5 ${theme.winsText} font-medium`}>{s.wins}</td>
+                    <td className={`text-center px-2 py-2.5 ${theme.lossesText} font-medium`}>{s.losses}</td>
+                    <td className={`text-center px-2 py-2.5 ${theme.pointsText}`}>{s.pf}</td>
+                    <td className={`text-center px-2 py-2.5 ${theme.pointsText}`}>{s.pa}</td>
                     <td className={`text-center px-2 py-2.5 font-mono font-bold text-xs ${
-                      diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'
+                      diff > 0 ? theme.diffPositive : diff < 0 ? theme.diffNegative : theme.diffNeutral
                     }`}>
                       {diff > 0 ? `+${diff}` : diff}
                     </td>

@@ -3,9 +3,11 @@
 import { BracketGame, groupGamesByGroup } from '@/lib/bracketUtils';
 import MatchCard from './MatchCard';
 import BracketView from './BracketView';
+import { TournamentTheme, lightTheme } from './theme';
 
 interface GroupStageViewProps {
   games: BracketGame[];
+  theme?: TournamentTheme;
 }
 
 interface PlayerStanding {
@@ -60,13 +62,13 @@ function computeGroupStandings(games: BracketGame[]): PlayerStanding[] {
   );
 }
 
-function GroupCard({ groupName, games }: { groupName: string; games: BracketGame[] }) {
+function GroupCard({ groupName, games, theme }: { groupName: string; games: BracketGame[]; theme: TournamentTheme }) {
   const standings = computeGroupStandings(games);
 
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div className={`rounded-xl border ${theme.groupCardBorder} overflow-hidden shadow-sm`}>
       {/* Header */}
-      <div className="bg-footvolley-primary px-4 py-3">
+      <div className={`${theme.groupHeaderBg} px-4 py-3`}>
         <h4 className="text-white font-bold text-sm uppercase tracking-wider">
           {groupName}
         </h4>
@@ -76,7 +78,7 @@ function GroupCard({ groupName, games }: { groupName: string; games: BracketGame
       {standings.length > 0 && (
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wider">
+            <tr className={`${theme.tableHeaderBg} ${theme.tableHeaderText} text-xs uppercase tracking-wider`}>
               <th className="text-left px-4 py-2 w-8">#</th>
               <th className="text-left px-3 py-2">Team</th>
               <th className="text-center px-2 py-2 w-8">P</th>
@@ -92,22 +94,22 @@ function GroupCard({ groupName, games }: { groupName: string; games: BracketGame
               return (
                 <tr
                   key={s.name}
-                  className={`border-t border-gray-100 transition-colors hover:bg-gray-50 ${
+                  className={`border-t ${theme.tableRowBorder} transition-colors ${theme.tableRowHover} ${
                     qualifies ? 'border-l-[3px] border-l-green-500' : 'border-l-[3px] border-l-transparent'
                   }`}
                 >
-                  <td className="px-4 py-2 text-gray-400 font-medium text-xs">
+                  <td className={`px-4 py-2 ${theme.rankText} font-medium text-xs ${theme.tableCellBg}`}>
                     {idx + 1}
                   </td>
-                  <td className="px-3 py-2 font-semibold text-gray-800 truncate max-w-[200px]">
+                  <td className={`px-3 py-2 font-semibold ${theme.teamNameText} truncate max-w-[200px] ${theme.tableCellBg}`}>
                     {s.name}
                   </td>
-                  <td className="text-center px-2 py-2 text-gray-500">{s.played}</td>
-                  <td className="text-center px-2 py-2 text-green-600 font-medium">{s.wins}</td>
-                  <td className="text-center px-2 py-2 text-red-500 font-medium">{s.losses}</td>
+                  <td className={`text-center px-2 py-2 ${theme.pointsText || theme.rankText} ${theme.tableCellBg}`}>{s.played}</td>
+                  <td className={`text-center px-2 py-2 ${theme.winsText} font-medium ${theme.tableCellBg}`}>{s.wins}</td>
+                  <td className={`text-center px-2 py-2 ${theme.lossesText} font-medium ${theme.tableCellBg}`}>{s.losses}</td>
                   <td
-                    className={`text-center px-2 py-2 font-mono text-xs font-bold ${
-                      diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'
+                    className={`text-center px-2 py-2 font-mono text-xs font-bold ${theme.tableCellBg} ${
+                      diff > 0 ? theme.diffPositive : diff < 0 ? theme.diffNegative : theme.diffNeutral
                     }`}
                   >
                     {diff > 0 ? `+${diff}` : diff}
@@ -120,23 +122,23 @@ function GroupCard({ groupName, games }: { groupName: string; games: BracketGame
       )}
 
       {/* Qualification legend */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+      <div className={`px-4 py-2 ${theme.legendBg} border-t ${theme.tableRowBorder}`}>
+        <div className={`flex items-center gap-1.5 text-[10px] ${theme.legendText}`}>
           <span className="w-2.5 h-2.5 bg-green-500 rounded-sm" />
           <span>Advances to knockout</span>
         </div>
       </div>
 
       {/* Match results */}
-      <div className="border-t border-gray-200">
-        <div className="px-4 py-2 bg-gray-50">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+      <div className={`border-t ${theme.groupCardBorder}`}>
+        <div className={`px-4 py-2 ${theme.matchesSectionHeaderBg}`}>
+          <span className={`text-xs font-semibold ${theme.matchesSectionHeaderText} uppercase tracking-wider`}>
             Matches
           </span>
         </div>
-        <div className="p-3 space-y-2">
+        <div className={`p-3 space-y-2 ${theme.matchesSectionBg}`}>
           {games.map((game) => (
-            <MatchCard key={game.id} game={game} />
+            <MatchCard key={game.id} game={game} theme={theme} />
           ))}
         </div>
       </div>
@@ -144,7 +146,7 @@ function GroupCard({ groupName, games }: { groupName: string; games: BracketGame
   );
 }
 
-export default function GroupStageView({ games }: GroupStageViewProps) {
+export default function GroupStageView({ games, theme = lightTheme }: GroupStageViewProps) {
   const groupGames = games.filter(
     (g) => g.roundType === 'group' || g.groupName
   );
@@ -161,7 +163,7 @@ export default function GroupStageView({ games }: GroupStageViewProps) {
         <div>
           <div className="flex items-center gap-3 mb-5">
             <div className="h-6 w-1 bg-footvolley-accent rounded-full" />
-            <h4 className="text-lg font-bold text-gray-900">Group Stage</h4>
+            <h4 className={`text-lg font-bold ${theme.sectionHeading}`}>Group Stage</h4>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {groups.map((group) => (
@@ -169,6 +171,7 @@ export default function GroupStageView({ games }: GroupStageViewProps) {
                 key={group.groupName}
                 groupName={group.groupName}
                 games={group.games}
+                theme={theme}
               />
             ))}
           </div>
@@ -180,16 +183,16 @@ export default function GroupStageView({ games }: GroupStageViewProps) {
         <div>
           <div className="flex items-center gap-3 mb-5">
             <div className="h-6 w-1 bg-footvolley-secondary rounded-full" />
-            <h4 className="text-lg font-bold text-gray-900">Knockout Stage</h4>
+            <h4 className={`text-lg font-bold ${theme.sectionHeading}`}>Knockout Stage</h4>
           </div>
-          <BracketView games={knockoutGames} />
+          <BracketView games={knockoutGames} theme={theme} />
         </div>
       )}
 
       {groups.length === 0 && knockoutGames.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-300 text-5xl mb-3">&#127942;</div>
-          <p className="text-gray-400 font-medium">No games to display</p>
+          <div className={`${theme.emptyIcon} text-5xl mb-3`}>&#127942;</div>
+          <p className={`${theme.emptyText} font-medium`}>No games to display</p>
         </div>
       )}
     </div>

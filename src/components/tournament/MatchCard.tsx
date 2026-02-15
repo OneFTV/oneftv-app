@@ -1,13 +1,15 @@
 'use client';
 
 import { BracketGame } from '@/lib/bracketUtils';
+import { TournamentTheme, lightTheme } from './theme';
 
 interface MatchCardProps {
   game: BracketGame;
   compact?: boolean;
+  theme?: TournamentTheme;
 }
 
-export default function MatchCard({ game, compact = false }: MatchCardProps) {
+export default function MatchCard({ game, compact = false, theme = lightTheme }: MatchCardProps) {
   const isCompleted = game.status === 'completed';
   const isLive = game.status === 'in_progress';
 
@@ -33,16 +35,16 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
     <div
       className={`
         rounded-lg border overflow-hidden shadow-sm transition-shadow hover:shadow-md
-        ${isLive ? 'border-red-400 ring-2 ring-red-300/40' : 'border-gray-200'}
-        ${isTBD ? 'opacity-50' : ''}
+        ${isLive ? theme.cardLiveBorder : theme.cardBorder}
+        ${isTBD ? theme.cardTbdOpacity : ''}
         ${compact ? 'w-[220px]' : 'w-full'}
       `}
     >
       {/* Player 1 (Home) */}
       <div
         className={`
-          flex items-center justify-between px-3 py-2 text-sm border-b border-gray-100
-          ${p1Wins ? 'bg-footvolley-primary text-white' : 'bg-white text-gray-700'}
+          flex items-center justify-between px-3 py-2 text-sm border-b ${theme.cardDivider}
+          ${p1Wins ? theme.cardWinnerBg : theme.cardBg}
         `}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -64,7 +66,7 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
         <span
           className={`
             font-mono font-bold text-sm min-w-[28px] text-right
-            ${p1Wins ? 'text-footvolley-accent' : ''}
+            ${p1Wins ? 'text-footvolley-accent' : theme.cardScoreText}
           `}
         >
           {game.score1 ?? '-'}
@@ -75,7 +77,7 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
       <div
         className={`
           flex items-center justify-between px-3 py-2 text-sm
-          ${p2Wins ? 'bg-footvolley-primary text-white' : 'bg-white text-gray-700'}
+          ${p2Wins ? theme.cardWinnerBg : theme.cardBg}
         `}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -97,7 +99,7 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
         <span
           className={`
             font-mono font-bold text-sm min-w-[28px] text-right
-            ${p2Wins ? 'text-footvolley-accent' : ''}
+            ${p2Wins ? 'text-footvolley-accent' : theme.cardScoreText}
           `}
         >
           {game.score2 ?? '-'}
@@ -106,7 +108,7 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
 
       {/* Set scores for bestOf3 */}
       {game.bestOf3 && isCompleted && game.set2Home != null && (
-        <div className="flex items-center justify-center gap-2 px-3 py-1 bg-gray-50 border-t border-gray-100">
+        <div className={`flex items-center justify-center gap-2 px-3 py-1 ${theme.cardSetScoreBg} border-t ${theme.cardDivider}`}>
           <span className="text-[10px] font-medium text-gray-500">
             {game.score1}-{game.score2}
           </span>
@@ -114,7 +116,7 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
             {game.set2Home}-{game.set2Away}
           </span>
           {game.set3Home != null && (
-            <span className="text-[10px] font-medium text-amber-600">
+            <span className={`text-[10px] font-medium ${theme.cardSet3Text}`}>
               {game.set3Home}-{game.set3Away}
             </span>
           )}
@@ -122,16 +124,16 @@ export default function MatchCard({ game, compact = false }: MatchCardProps) {
       )}
 
       {/* Footer: court + time + live indicator */}
-      <div className="flex items-center justify-between px-3 py-1 bg-gray-50 text-[11px] text-gray-400 border-t border-gray-100">
+      <div className={`flex items-center justify-between px-3 py-1 ${theme.cardFooterBg} text-[11px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
         <span className="flex items-center gap-1">
           Court {game.court}
           {game.bestOf3 && (
-            <span className="px-1 py-px rounded text-[9px] font-bold bg-[#1a2744] text-[#c4a35a]">Bo3</span>
+            <span className={`px-1 py-px rounded text-[9px] font-bold ${theme.cardBo3Badge}`}>Bo3</span>
           )}
         </span>
         <div className="flex items-center gap-1.5">
           {isLive && (
-            <span className="flex h-1.5 w-1.5">
+            <span className="flex h-1.5 w-1.5 relative">
               <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
             </span>

@@ -6,14 +6,16 @@ import BracketView from './BracketView';
 import GroupStageView from './GroupStageView';
 import RoundRobinView from './RoundRobinView';
 import MatchCard from './MatchCard';
+import { TournamentTheme, lightTheme } from './theme';
 import { Trophy } from 'lucide-react';
 
 interface TournamentBracketViewProps {
   games: BracketGame[];
   format: string;
+  theme?: TournamentTheme;
 }
 
-function FlatGamesList({ games }: { games: BracketGame[] }) {
+function FlatGamesList({ games, theme }: { games: BracketGame[]; theme: TournamentTheme }) {
   // Group by round for nicer flat view
   const roundMap = new Map<string, BracketGame[]>();
   for (const game of games) {
@@ -27,14 +29,14 @@ function FlatGamesList({ games }: { games: BracketGame[] }) {
       {Array.from(roundMap.entries()).map(([roundLabel, roundGames]) => (
         <div key={roundLabel}>
           <div className="flex items-center gap-2 mb-3">
-            <div className="h-4 w-0.5 bg-gray-300 rounded-full" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className={`h-4 w-0.5 ${theme.flatRoundDivider} rounded-full`} />
+            <span className={`text-xs font-semibold ${theme.flatRoundLabel} uppercase tracking-wider`}>
               {roundLabel}
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {roundGames.map((game) => (
-              <MatchCard key={game.id} game={game} />
+              <MatchCard key={game.id} game={game} theme={theme} />
             ))}
           </div>
         </div>
@@ -46,15 +48,16 @@ function FlatGamesList({ games }: { games: BracketGame[] }) {
 export default function TournamentBracketView({
   games,
   format,
+  theme = lightTheme,
 }: TournamentBracketViewProps) {
   const [viewMode, setViewMode] = useState<'bracket' | 'list'>('bracket');
 
   if (games.length === 0) {
     return (
       <div className="text-center py-12">
-        <Trophy className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-        <p className="text-gray-400 font-medium">No games scheduled yet</p>
-        <p className="text-gray-300 text-sm mt-1">
+        <Trophy className={`mx-auto h-12 w-12 ${theme.emptyIcon} mb-3`} />
+        <p className={`${theme.emptyText} font-medium`}>No games scheduled yet</p>
+        <p className={`${theme.emptySubtext} text-sm mt-1`}>
           Games will appear here once the bracket is generated
         </p>
       </div>
@@ -65,19 +68,19 @@ export default function TournamentBracketView({
     const f = format.toLowerCase().replace(/[^a-z_]/g, '_');
     switch (f) {
       case 'bracket':
-        return <BracketView games={games} />;
+        return <BracketView games={games} theme={theme} />;
       case 'king_of_the_beach':
       case 'group_knockout':
       case 'group+knockout':
-        return <GroupStageView games={games} />;
+        return <GroupStageView games={games} theme={theme} />;
       case 'round_robin':
-        return <RoundRobinView games={games} />;
+        return <RoundRobinView games={games} theme={theme} />;
       default:
         // Try to auto-detect from game data
         if (games.some((g) => g.groupName)) {
-          return <GroupStageView games={games} />;
+          return <GroupStageView games={games} theme={theme} />;
         }
-        return <BracketView games={games} />;
+        return <BracketView games={games} theme={theme} />;
     }
   };
 
@@ -85,14 +88,12 @@ export default function TournamentBracketView({
     <div>
       {/* Header with view toggle */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-gray-900">Games</h3>
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
+        <h3 className={`text-lg font-bold ${theme.gamesHeading}`}>Games</h3>
+        <div className={`flex ${theme.toggleBg} rounded-lg p-0.5`}>
           <button
             onClick={() => setViewMode('bracket')}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-              viewMode === 'bracket'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+              viewMode === 'bracket' ? theme.toggleActive : theme.toggleInactive
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -105,9 +106,7 @@ export default function TournamentBracketView({
           <button
             onClick={() => setViewMode('list')}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-              viewMode === 'list'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+              viewMode === 'list' ? theme.toggleActive : theme.toggleInactive
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -121,7 +120,7 @@ export default function TournamentBracketView({
       </div>
 
       {/* Content */}
-      {viewMode === 'bracket' ? renderBracketView() : <FlatGamesList games={games} />}
+      {viewMode === 'bracket' ? renderBracketView() : <FlatGamesList games={games} theme={theme} />}
     </div>
   );
 }
