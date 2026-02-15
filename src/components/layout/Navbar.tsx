@@ -27,7 +27,7 @@ export default function Navbar() {
     { href: '/tournaments', label: 'Tournaments' },
     { href: '/rankings', label: 'Rankings' },
     { href: '/athletes', label: 'Athletes' },
-    { href: '/live-feed', label: 'Live Feed' },
+    { href: '/livefeed', label: 'Live Feed' },
   ];
 
   const handleSignOut = async () => {
