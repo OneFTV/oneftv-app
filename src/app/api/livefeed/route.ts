@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { withAuth } from '@/shared/middleware/with-auth';
+import { rateLimit } from '@/shared/middleware/rate-limit';
+
+const checkLimit = rateLimit({ windowMs: 60 * 1000, max: 10, keyPrefix: 'livefeed' });
 
 const FEED_PATH = path.join(process.cwd(), 'LIVEFEED.md');
 
@@ -40,7 +44,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request) => {
+  const limited = checkLimit(request);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const { agent, type, message, activeTask } = body;
@@ -113,4 +120,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
