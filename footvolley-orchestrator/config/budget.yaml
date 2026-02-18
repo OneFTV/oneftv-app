@@ -1,0 +1,23 @@
+# Budget tracking (simplified: track call durations, not dollars)
+# Claude Code CLI is free via Max 5x plan
+
+daily_limits:
+  max_calls_per_agent: 50        # max LLM calls per agent per day
+  max_total_calls: 200           # max total LLM calls per day
+  max_call_duration_s: 600       # max single call duration (10 min)
+  max_daily_duration_m: 480      # max total call duration per day (8 hours)
+
+alerts:
+  warn_at_percent: 80            # send warning at 80% of daily limit
+  block_at_percent: 100          # stop making calls at 100%
+
+# Agent-specific budgets (calls per day)
+agent_budgets:
+  scout: 10
+  planner: 30
+  agreement_analyst: 30
+  agreement_implementer: 30
+  builder_frontend: 20
+  builder_backend: 20
+  tester: 30
+  reviewer: 20

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.footvolley.orchestrator</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/python3</string>
+        <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/orchestrator.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/logs/orchestrator.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/logs/orchestrator.err.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/mac-mini/.npm/_npx/becf7b9e49303068/node_modules/.bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/mac-mini</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+</dict>
+</plist>
