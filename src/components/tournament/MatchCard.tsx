@@ -6,10 +6,12 @@ import { TournamentTheme, lightTheme } from './theme';
 interface MatchCardProps {
   game: BracketGame;
   compact?: boolean;
+  dense?: boolean;
   theme?: TournamentTheme;
+  showMatchNumber?: boolean;
 }
 
-export default function MatchCard({ game, compact = false, theme = lightTheme }: MatchCardProps) {
+export default function MatchCard({ game, compact = false, dense = false, theme = lightTheme, showMatchNumber = false }: MatchCardProps) {
   const isCompleted = game.status === 'completed';
   const isLive = game.status === 'in_progress';
 
@@ -31,26 +33,31 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
 
   const isTBD = game.player1 === 'TBD' && game.player2 === 'TBD';
 
+  const px = dense ? 'px-2 py-1' : 'px-3 py-2';
+  const textSize = dense ? 'text-xs' : 'text-sm';
+  const widthClass = dense ? 'w-[160px]' : compact ? 'w-[220px]' : 'w-full';
+  const indicatorSize = dense ? 'w-0.5 h-3' : 'w-1 h-4';
+
   return (
     <div
       className={`
         rounded-lg border overflow-hidden shadow-sm transition-shadow hover:shadow-md
         ${isLive ? theme.cardLiveBorder : theme.cardBorder}
         ${isTBD ? theme.cardTbdOpacity : ''}
-        ${compact ? 'w-[220px]' : 'w-full'}
+        ${widthClass}
       `}
     >
       {/* Player 1 (Home) */}
       <div
         className={`
-          flex items-center justify-between px-3 py-2 text-sm border-b ${theme.cardDivider}
+          flex items-center justify-between ${px} ${textSize} border-b ${theme.cardDivider}
           ${p1Wins ? theme.cardWinnerBg : theme.cardBg}
         `}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {isCompleted && (
             <span
-              className={`w-1 h-4 rounded-full flex-shrink-0 ${
+              className={`${indicatorSize} rounded-full flex-shrink-0 ${
                 p1Wins ? 'bg-footvolley-accent' : 'bg-transparent'
               }`}
             />
@@ -65,7 +72,7 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
         </div>
         <span
           className={`
-            font-mono font-bold text-sm min-w-[28px] text-right
+            font-mono font-bold ${textSize} min-w-[20px] text-right
             ${p1Wins ? 'text-footvolley-accent' : theme.cardScoreText}
           `}
         >
@@ -76,14 +83,14 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
       {/* Player 2 (Away) */}
       <div
         className={`
-          flex items-center justify-between px-3 py-2 text-sm
+          flex items-center justify-between ${px} ${textSize}
           ${p2Wins ? theme.cardWinnerBg : theme.cardBg}
         `}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {isCompleted && (
             <span
-              className={`w-1 h-4 rounded-full flex-shrink-0 ${
+              className={`${indicatorSize} rounded-full flex-shrink-0 ${
                 p2Wins ? 'bg-footvolley-accent' : 'bg-transparent'
               }`}
             />
@@ -98,7 +105,7 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
         </div>
         <span
           className={`
-            font-mono font-bold text-sm min-w-[28px] text-right
+            font-mono font-bold ${textSize} min-w-[20px] text-right
             ${p2Wins ? 'text-footvolley-accent' : theme.cardScoreText}
           `}
         >
@@ -106,8 +113,8 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
         </span>
       </div>
 
-      {/* Set scores for bestOf3 */}
-      {game.bestOf3 && isCompleted && game.set2Home != null && (
+      {/* Set scores for bestOf3 — hidden in dense mode */}
+      {!dense && game.bestOf3 && isCompleted && game.set2Home != null && (
         <div className={`flex items-center justify-center gap-2 px-3 py-1 ${theme.cardSetScoreBg} border-t ${theme.cardDivider}`}>
           <span className="text-[10px] font-medium text-gray-500">
             {game.score1}-{game.score2}
@@ -123,33 +130,38 @@ export default function MatchCard({ game, compact = false, theme = lightTheme }:
         </div>
       )}
 
-      {/* Footer: court + time + live indicator */}
-      <div className={`flex items-center justify-between px-3 py-1 ${theme.cardFooterBg} text-[11px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
-        <span className="flex items-center gap-1">
-          Court {game.court}
-          {game.bestOf3 && (
-            <span className={`px-1 py-px rounded text-[9px] font-bold ${theme.cardBo3Badge}`}>Bo3</span>
-          )}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {isLive && (
-            <span className="flex h-1.5 w-1.5 relative">
-              <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
-            </span>
-          )}
-          <span>
-            {isLive
-              ? 'LIVE'
-              : game.scheduledTime
-              ? new Date(game.scheduledTime).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : ''}
+      {/* Footer: court + time + live indicator — hidden in dense mode */}
+      {!dense && (
+        <div className={`flex items-center justify-between px-3 py-1 ${theme.cardFooterBg} text-[11px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
+          <span className="flex items-center gap-1">
+            {showMatchNumber && game.matchNumber != null && (
+              <span className={`px-1 py-px rounded text-[9px] font-bold ${theme.matchNumberBadge}`}>M{game.matchNumber}</span>
+            )}
+            Court {game.court}
+            {game.bestOf3 && (
+              <span className={`px-1 py-px rounded text-[9px] font-bold ${theme.cardBo3Badge}`}>Bo3</span>
+            )}
           </span>
+          <div className="flex items-center gap-1.5">
+            {isLive && (
+              <span className="flex h-1.5 w-1.5 relative">
+                <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+              </span>
+            )}
+            <span>
+              {isLive
+                ? 'LIVE'
+                : game.scheduledTime
+                ? new Date(game.scheduledTime).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : ''}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

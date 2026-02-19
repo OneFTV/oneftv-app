@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { BracketGame } from '@/lib/bracketUtils';
+import { BracketGame, isDoubleElimination } from '@/lib/bracketUtils';
 import BracketView from './BracketView';
+import DoubleEliminationBracketView from './DoubleEliminationBracketView';
 import GroupStageView from './GroupStageView';
 import RoundRobinView from './RoundRobinView';
 import MatchCard from './MatchCard';
@@ -12,6 +13,7 @@ import { Trophy } from 'lucide-react';
 interface TournamentBracketViewProps {
   games: BracketGame[];
   format: string;
+  dense?: boolean;
   theme?: TournamentTheme;
 }
 
@@ -48,6 +50,7 @@ function FlatGamesList({ games, theme }: { games: BracketGame[]; theme: Tourname
 export default function TournamentBracketView({
   games,
   format,
+  dense = false,
   theme = lightTheme,
 }: TournamentBracketViewProps) {
   const [viewMode, setViewMode] = useState<'bracket' | 'list'>('bracket');
@@ -67,8 +70,10 @@ export default function TournamentBracketView({
   const renderBracketView = () => {
     const f = format.toLowerCase().replace(/[^a-z_]/g, '_');
     switch (f) {
+      case 'double_elimination':
+        return <DoubleEliminationBracketView games={games} dense={dense} theme={theme} />;
       case 'bracket':
-        return <BracketView games={games} theme={theme} />;
+        return <BracketView games={games} dense={dense} theme={theme} />;
       case 'king_of_the_beach':
       case 'group_knockout':
       case 'group+knockout':
@@ -77,10 +82,13 @@ export default function TournamentBracketView({
         return <RoundRobinView games={games} theme={theme} />;
       default:
         // Try to auto-detect from game data
+        if (isDoubleElimination(games)) {
+          return <DoubleEliminationBracketView games={games} dense={dense} theme={theme} />;
+        }
         if (games.some((g) => g.groupName)) {
           return <GroupStageView games={games} theme={theme} />;
         }
-        return <BracketView games={games} theme={theme} />;
+        return <BracketView games={games} dense={dense} theme={theme} />;
     }
   };
 

@@ -42,6 +42,7 @@ const formatLabels: Record<string, string> = {
   bracket: 'Bracket',
   group_knockout: 'Group + Knockout',
   round_robin: 'Round Robin',
+  double_elimination: 'Double Elimination',
 };
 
 export default async function ScoreboardPage({ params }: PageProps) {
@@ -88,6 +89,27 @@ export default async function ScoreboardPage({ params }: PageProps) {
   const liveGames = tournament.games.filter((g) => g.status === 'in_progress');
   const recentGames = tournament.games.filter((g) => g.status === 'completed');
   const hasCategories = tournament.categories.length > 0;
+
+  // Group categories by division name (strip trailing number/letter)
+  const categoryGroups = new Map<string, typeof tournament.categories>();
+  for (const cat of tournament.categories) {
+    const baseName = cat.name
+      .replace(/\s*\d+$/, '')
+      .replace(/\s*[A-D]$/, '')
+      .trim();
+    if (!categoryGroups.has(baseName)) categoryGroups.set(baseName, []);
+    categoryGroups.get(baseName)!.push(cat);
+  }
+  // Only keep groups with 2+ members
+  const divisionGroups = Array.from(categoryGroups.entries()).filter(
+    ([, cats]) => cats.length >= 2
+  );
+  const groupedCategoryIds = new Set(
+    divisionGroups.flatMap(([, cats]) => cats.map((c) => c.id))
+  );
+  const ungroupedCategories = tournament.categories.filter(
+    (cat) => !groupedCategoryIds.has(cat.id)
+  );
 
   const formatPlayerNames = (g: { player1Home?: { name: string } | null; player2Home?: { name: string } | null; player1Away?: { name: string } | null; player2Away?: { name: string } | null }) => {
     const home = [g.player1Home?.name, g.player2Home?.name].filter(Boolean).join(' & ') || 'TBD';
@@ -136,6 +158,17 @@ export default async function ScoreboardPage({ params }: PageProps) {
                   </span>
                 )}
               </div>
+              {hasCategories && (
+                <Link
+                  href={`/e/${tournament.id}/full`}
+                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-footvolley-accent hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  View All Brackets
+                </Link>
+              )}
             </div>
             <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-dark-elevated border border-dark-border`}>
               <span className={`w-2 h-2 rounded-full ${statusDotColor[tournament.status] || 'bg-gray-500'} ${tournament.status === 'in_progress' ? 'animate-pulse' : ''}`} />
@@ -198,6 +231,45 @@ export default async function ScoreboardPage({ params }: PageProps) {
         {hasCategories ? (
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Categories</h2>
+
+            {/* Division group cards */}
+            {divisionGroups.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                {divisionGroups.map(([groupName, cats]) => {
+                  const totalTeams = cats.reduce((sum, c) => sum + c._count.players, 0);
+                  return (
+                    <Link
+                      key={groupName}
+                      href={`/e/${tournament.id}/full?group=${encodeURIComponent(groupName)}`}
+                      className="rounded-xl border border-footvolley-accent/30 bg-gradient-to-br from-dark-surface to-dark-elevated overflow-hidden hover:border-footvolley-accent/60 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <svg className="w-5 h-5 text-footvolley-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                          </svg>
+                          <h3 className="font-semibold text-gray-100 truncate">{groupName}</h3>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-dark-elevated text-gray-400">
+                            {cats.length} divisions
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          {totalTeams} teams
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-dark-elevated border-t border-dark-border text-sm font-medium text-footvolley-accent group-hover:text-white transition-colors">
+                        <span>View Brackets</span>
+                        <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Individual category cards (ungrouped + grouped shown individually) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {tournament.categories.map((cat) => {
                 const catGames = cat.games;

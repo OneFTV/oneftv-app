@@ -70,6 +70,13 @@ export interface TournamentTheme {
   gamesHeading: string;
   flatRoundDivider: string;
   flatRoundLabel: string;
+
+  // Double-elimination section headers
+  sectionHeaderWinners: string;
+  sectionHeaderLosers: string;
+  sectionHeaderFinals: string;
+  sectionDivider: string;
+  matchNumberBadge: string;
 }
 
 export const lightTheme: TournamentTheme = {
@@ -144,6 +151,13 @@ export const lightTheme: TournamentTheme = {
   gamesHeading: 'text-gray-900',
   flatRoundDivider: 'bg-gray-300',
   flatRoundLabel: 'text-gray-400',
+
+  // Double-elimination section headers
+  sectionHeaderWinners: 'bg-emerald-600 text-white',
+  sectionHeaderLosers: 'bg-orange-500 text-white',
+  sectionHeaderFinals: 'bg-amber-500 text-white',
+  sectionDivider: 'border-gray-200',
+  matchNumberBadge: 'bg-gray-100 text-gray-500',
 };
 
 export const darkTheme: TournamentTheme = {
@@ -218,4 +232,11 @@ export const darkTheme: TournamentTheme = {
   gamesHeading: 'text-gray-100',
   flatRoundDivider: 'bg-dark-divider',
   flatRoundLabel: 'text-gray-500',
+
+  // Double-elimination section headers
+  sectionHeaderWinners: 'bg-emerald-700 text-white',
+  sectionHeaderLosers: 'bg-orange-700 text-white',
+  sectionHeaderFinals: 'bg-amber-600 text-white',
+  sectionDivider: 'border-dark-border',
+  matchNumberBadge: 'bg-dark-elevated text-gray-500',
 };

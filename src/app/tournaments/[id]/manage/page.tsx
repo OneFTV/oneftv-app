@@ -5,6 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, X } from 'lucide-react';
 
+interface CategoryInfo {
+  id: string;
+  name: string;
+  format: string;
+  maxTeams: number;
+  status: string;
+  _count: { players: number; teamRegistrations: number };
+}
+
 interface Tournament {
   id: string;
   name: string;
@@ -12,8 +21,9 @@ interface Tournament {
   startDate: string;
   endDate: string;
   organizerId: string;
-  pointsPerSet: number;
+  pointsPerSet: number | null;
   proLeague: boolean;
+  categories?: CategoryInfo[];
 }
 
 interface Game {
@@ -31,6 +41,8 @@ interface Game {
   set3Away?: number;
   bestOf3: boolean;
   status: 'pending' | 'completed' | 'in_progress' | 'scheduled';
+  matchNumber?: number;
+  bracketSide?: string;
 }
 
 interface SetScores {
@@ -73,6 +85,8 @@ export default function ManageTournamentPage() {
   const [editingGameId, setEditingGameId] = useState<string | null>(null);
   const [gameScores, setGameScores] = useState<Record<string, SetScores>>({});
   const [scoreError, setScoreError] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [generatingCategoryId, setGeneratingCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -96,9 +110,10 @@ export default function ManageTournamentPage() {
         setLoading(true);
         setError(null);
 
+        const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
         const [tournamentRes, gamesRes] = await Promise.all([
           fetch(`/api/tournaments/${tournamentId}`),
-          fetch(`/api/tournaments/${tournamentId}/games`),
+          fetch(`/api/tournaments/${tournamentId}/games${catParam}`),
         ]);
 
         if (!tournamentRes.ok) {
@@ -145,7 +160,7 @@ export default function ManageTournamentPage() {
     if (tournamentId && user) {
       fetchTournamentData();
     }
-  }, [tournamentId, user]);
+  }, [tournamentId, user, selectedCategoryId]);
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -236,17 +251,26 @@ export default function ManageTournamentPage() {
     }
   };
 
-  const handleGenerateSchedule = async () => {
+  const handleGenerateSchedule = async (categoryId?: string) => {
     try {
-      setGenerating(true);
+      if (categoryId) {
+        setGeneratingCategoryId(categoryId);
+      } else {
+        setGenerating(true);
+      }
+
+      const body = categoryId ? JSON.stringify({ categoryId }) : undefined;
       const res = await fetch(`/api/tournaments/${tournamentId}/generate`, {
         method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body,
       });
 
       if (res.ok) {
-        setSuccess('Schedule generated successfully!');
+        setSuccess(categoryId ? 'Category schedule generated!' : 'Schedule generated successfully!');
         // Refresh games
-        const gamesRes = await fetch(`/api/tournaments/${tournamentId}/games`);
+        const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
+        const gamesRes = await fetch(`/api/tournaments/${tournamentId}/games${catParam}`);
         if (gamesRes.ok) {
           const gamesData = await gamesRes.json();
           setGames(gamesData);
@@ -256,10 +280,11 @@ export default function ManageTournamentPage() {
         const data = await res.json();
         setError(data.error || 'Failed to generate schedule');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to generate schedule');
     } finally {
       setGenerating(false);
+      setGeneratingCategoryId(null);
     }
   };
 
@@ -343,7 +368,7 @@ export default function ManageTournamentPage() {
               className="w-16 px-2 py-1 border rounded text-center"
             />
           </div>
-          <p className="text-xs text-gray-400">First to {tournament.pointsPerSet}, win by 2</p>
+          <p className="text-xs text-gray-400">First to {tournament.pointsPerSet || 18}, win by 2</p>
         </div>
       );
     }
@@ -417,7 +442,7 @@ export default function ManageTournamentPage() {
           </div>
         )}
         <p className="text-xs text-gray-400">
-          Sets 1-2 to {tournament.pointsPerSet}{setsTied ? `, Set 3 to 15` : ''} — win by 2
+          Sets 1-2 to {tournament.pointsPerSet || 18}{setsTied ? `, Set 3 to 15` : ''} — win by 2
         </p>
       </div>
     );
@@ -485,16 +510,70 @@ export default function ManageTournamentPage() {
           )}
         </div>
 
+        {/* Category Selector */}
+        {tournament.categories && tournament.categories.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Categorias</h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => setSelectedCategoryId(null)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
+                  selectedCategoryId === null
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Todas
+              </button>
+              {tournament.categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat.name}
+                  <span className="ml-1 text-xs opacity-70">
+                    ({cat._count?.players || 0}/{cat.maxTeams})
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Per-category generation */}
+            {(tournament.status === 'registration' || tournament.status === 'draft') && (
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Gerar Schedule por Categoria</h3>
+                <div className="flex flex-wrap gap-2">
+                  {tournament.categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleGenerateSchedule(cat.id)}
+                      disabled={generating || generatingCategoryId === cat.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition disabled:opacity-50"
+                    >
+                      {generatingCategoryId === cat.id ? 'Gerando...' : `Gerar ${cat.name}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Generate Schedule */}
         {(tournament.status === 'registration' || tournament.status === 'draft') && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Schedule</h2>
             <button
-              onClick={handleGenerateSchedule}
+              onClick={() => handleGenerateSchedule()}
               disabled={generating}
               className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
             >
-              {generating ? 'Generating...' : 'Generate Schedule'}
+              {generating ? 'Generating...' : 'Generate Schedule (All Categories)'}
             </button>
           </div>
         )}
@@ -510,6 +589,11 @@ export default function ManageTournamentPage() {
                 <div key={game.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
+                      {game.matchNumber != null && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500">
+                          M{game.matchNumber}
+                        </span>
+                      )}
                       <p className="text-sm font-medium text-gray-600">
                         {game.roundName} - Court {game.court}
                       </p>

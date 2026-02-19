@@ -22,6 +22,10 @@ model User {
   country       String?
   level         String?   @db.VarChar(20) // "Beginner", "Intermediate", "Advanced", "Pro"
   avatar        String?   @db.Text
+  cpf           String?   @db.VarChar(14)
+  documentType  String?   @db.VarChar(20) // "CPF", "RG", "Passport"
+  documentNumber String?  @db.VarChar(30)
+  dateOfBirth   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -32,6 +36,11 @@ model User {
   gamePlayer2Home      Game[]             @relation("Player2Home")
   gamePlayer1Away      Game[]             @relation("Player1Away")
   gamePlayer2Away      Game[]             @relation("Player2Away")
+  teamRegistrations1   TeamRegistration[] @relation("TeamPlayer1")
+  teamRegistrations2   TeamRegistration[] @relation("TeamPlayer2")
+  orders               Order[]
+  checkIns             CheckIn[]
+  auditLogs            AuditLog[]
 }
 
 model Tournament {
@@ -44,18 +53,24 @@ model Tournament {
   city            String?
   state           String?
   country         String?
-  format          String   @db.VarChar(30) // "king_of_the_beach", "bracket", "group_knockout", "round_robin"
+  format          String?  @db.VarChar(30) // nullable for multi-category (each category has its own format)
   status          String   @default("draft") @db.VarChar(20)
-  maxPlayers      Int      @default(16)
+  maxPlayers      Int?     @default(16) // nullable for multi-category
   numCourts       Int      @default(1)
   numDays         Int      @default(1)
   hoursPerDay     Float    @default(8)
   avgGameMinutes  Int      @default(20)
-  pointsPerSet    Int      @default(18)
+  pointsPerSet    Int?     @default(18) // nullable for multi-category
   numSets         Int      @default(1)
   groupSize       Int      @default(4)
   proLeague       Boolean  @default(false)
   organizerId     String
+  // Multi-category policy fields
+  allowMultiCategory Boolean @default(false)
+  refundPolicy       String? @db.Text
+  bannerUrl          String? @db.Text
+  contactEmail       String?
+  contactPhone       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -64,11 +79,60 @@ model Tournament {
   groups          Group[]
   games           Game[]
   rounds          Round[]
+  categories      Category[]
+  scheduleSlots   ScheduleSlot[]
+  orders          Order[]
+  auditLogs       AuditLog[]
 
   @@index([organizerId])
   @@index([status])
   @@index([format])
   @@index([date])
+}
+
+model Category {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  name            String   // "Pro Masculino", "Qualify", "Iniciante", etc.
+  format          String   @db.VarChar(30) // "king_of_the_beach", "bracket", "group_knockout", "round_robin", "double_elimination"
+  gender          String?  @db.VarChar(20) // "male", "female", "mixed"
+  skillLevel      String?  @db.VarChar(20) // "beginner", "intermediate", "advanced", "pro"
+  maxTeams        Int      @default(16)
+  pointsPerSet    Int      @default(18)
+  numSets         Int      @default(1)
+  groupSize       Int      @default(4)
+  proLeague       Boolean  @default(false)
+  sortOrder       Int      @default(0) // display order
+  status          String   @default("draft") @db.VarChar(20) // "draft", "registration", "in_progress", "completed"
+  // Qualify chain: if set, winners promote to this category
+  qualifyTargetId String?
+  // Technical review: if true, registrations need organizer approval
+  requiresReview  Boolean  @default(false)
+  // Double-elimination / NFA division fields
+  bracketType          String?  @db.VarChar(30) // "double_elimination", "single_elimination"
+  divisionLabel        String?  @db.VarChar(10) // "D1", "D2", "D3"
+  seedingSource        String?  @db.VarChar(30) // "main_entry", "D1_L1_L2", "D1_L3_L4"
+  seedingFromCategoryId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  qualifyTarget   Category?        @relation("QualifyChain", fields: [qualifyTargetId], references: [id])
+  qualifySource   Category[]       @relation("QualifyChain")
+  seedingFrom     Category?        @relation("DivisionSeeding", fields: [seedingFromCategoryId], references: [id])
+  seedingTo       Category[]       @relation("DivisionSeeding")
+  players         TournamentPlayer[]
+  groups          Group[]
+  games           Game[]
+  rounds          Round[]
+  teamRegistrations TeamRegistration[]
+  pricingLots     PricingLot[]
+  waitlistEntries WaitlistEntry[]
+  scheduleSlots   ScheduleSlot[]
+
+  @@index([tournamentId])
+  @@index([qualifyTargetId])
+  @@index([seedingFromCategoryId])
 }
 
 model TournamentPlayer {
@@ -82,26 +146,35 @@ model TournamentPlayer {
   losses       Int      @default(0)
   pointDiff    Int      @default(0)
   status       String   @default("registered") @db.VarChar(20)
+  categoryId   String?
+  teamRegistrationId String?
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id])
   group        Group?     @relation(fields: [groupId], references: [id])
+  category     Category?  @relation(fields: [categoryId], references: [id])
+  teamRegistration TeamRegistration? @relation(fields: [teamRegistrationId], references: [id])
 
-  @@unique([tournamentId, userId])
+  @@unique([tournamentId, userId, categoryId])
   @@index([userId])
   @@index([groupId])
+  @@index([categoryId])
+  @@index([teamRegistrationId])
 }
 
 model Group {
   id           String   @id @default(cuid())
   name         String
   tournamentId String
+  categoryId   String?
 
   tournament   Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     Category?        @relation(fields: [categoryId], references: [id])
   players      TournamentPlayer[]
   games        Game[]
 
   @@index([tournamentId])
+  @@index([categoryId])
 }
 
 model Round {
@@ -111,11 +184,15 @@ model Round {
   tournamentId String
   type         String   @db.VarChar(20) // "group", "knockout"
   bestOf3      Boolean  @default(false)
+  categoryId   String?
+  bracketSide  String?  @db.VarChar(20) // "winners", "losers", "finals"
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     Category?  @relation(fields: [categoryId], references: [id])
   games        Game[]
 
   @@index([tournamentId])
+  @@index([categoryId])
 }
 
 model Game {
@@ -125,6 +202,7 @@ model Game {
   roundId      String?
   courtNumber  Int      @default(1)
   scheduledTime DateTime?
+  categoryId   String?
 
   // For KotB: 2v2 with rotating partners
   player1HomeId String?
@@ -142,23 +220,188 @@ model Game {
   status       String   @default("scheduled") @db.VarChar(20)
   winningSide   String?  @db.VarChar(10) // "home" or "away"
 
+  // Double-elimination bracket routing fields
+  matchNumber      Int?                     // Global sequential ID (M1-M92)
+  bracketSide      String?  @db.VarChar(20) // "winners", "losers", "finals"
+  winnerNextGameId String?                  // Game the winner advances to
+  winnerSlot       String?  @db.VarChar(10) // "home" or "away" in next game
+  loserNextGameId  String?                  // Game the loser drops to
+  loserSlot        String?  @db.VarChar(10) // slot in losers destination
+  seedTarget       String?  @db.VarChar(10) // "D2" or "D3" for cross-division seeding
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   group        Group?     @relation(fields: [groupId], references: [id])
   round        Round?     @relation(fields: [roundId], references: [id])
+  category     Category?  @relation(fields: [categoryId], references: [id])
   player1Home  User?      @relation("Player1Home", fields: [player1HomeId], references: [id])
   player2Home  User?      @relation("Player2Home", fields: [player2HomeId], references: [id])
   player1Away  User?      @relation("Player1Away", fields: [player1AwayId], references: [id])
   player2Away  User?      @relation("Player2Away", fields: [player2AwayId], references: [id])
+  winnerNextGame Game?    @relation("WinnerAdvance", fields: [winnerNextGameId], references: [id])
+  winnerFrom     Game[]   @relation("WinnerAdvance")
+  loserNextGame  Game?    @relation("LoserDrop", fields: [loserNextGameId], references: [id])
+  loserFrom      Game[]   @relation("LoserDrop")
 
   @@index([tournamentId])
   @@index([groupId])
   @@index([roundId])
+  @@index([categoryId])
   @@index([player1HomeId])
   @@index([player2HomeId])
   @@index([player1AwayId])
   @@index([player2AwayId])
   @@index([status])
+  @@index([matchNumber])
+  @@index([winnerNextGameId])
+  @@index([loserNextGameId])
+}
+
+model TeamRegistration {
+  id           String   @id @default(cuid())
+  categoryId   String
+  player1Id    String
+  player2Id    String
+  teamName     String?
+  seed         Int?
+  status       String   @default("pending") @db.VarChar(20) // "pending", "confirmed", "rejected", "waitlisted"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  player1      User     @relation("TeamPlayer1", fields: [player1Id], references: [id])
+  player2      User     @relation("TeamPlayer2", fields: [player2Id], references: [id])
+  tournamentPlayers TournamentPlayer[]
+
+  @@unique([categoryId, player1Id, player2Id])
+  @@index([categoryId])
+  @@index([player1Id])
+  @@index([player2Id])
+}
+
+model PricingLot {
+  id           String   @id @default(cuid())
+  categoryId   String
+  name         String   // "1º Lote", "2º Lote", "3º Lote"
+  price        Float
+  currency     String   @default("BRL") @db.VarChar(3)
+  maxEntries   Int?     // null = unlimited
+  startDate    DateTime
+  endDate      DateTime
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
+
+model Order {
+  id               String   @id @default(cuid())
+  userId           String
+  tournamentId     String
+  totalAmount      Float
+  currency         String   @default("BRL") @db.VarChar(3)
+  status           String   @default("pending") @db.VarChar(20) // "pending", "paid", "cancelled", "refunded"
+  paymentMethod    String?  @db.VarChar(30) // "pix", "credit_card", "boleto"
+  metadata         String?  @db.Text // JSON string for extra data
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id])
+  tournament       Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  payments         PaymentTransaction[]
+
+  @@index([userId])
+  @@index([tournamentId])
+  @@index([status])
+}
+
+model PaymentTransaction {
+  id                String   @id @default(cuid())
+  orderId           String
+  externalId        String?  // gateway transaction ID
+  provider          String?  @db.VarChar(30) // "stripe", "mercadopago", "manual"
+  amount            Float
+  currency          String   @default("BRL") @db.VarChar(3)
+  status            String   @db.VarChar(20) // "pending", "success", "failed", "refunded"
+  gatewayResponse   String?  @db.Text // JSON string
+  createdAt         DateTime @default(now())
+
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([externalId])
+}
+
+model CheckIn {
+  id           String   @id @default(cuid())
+  userId       String
+  categoryId   String?
+  tournamentId String?
+  qrCode       String   @unique // UUID-based QR code
+  checkedInAt  DateTime?
+  status       String   @default("pending") @db.VarChar(20) // "pending", "checked_in"
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([qrCode])
+}
+
+model ScheduleSlot {
+  id           String   @id @default(cuid())
+  tournamentId String
+  categoryId   String?
+  courtNumber  Int
+  dayNumber    Int      @default(1)
+  startTime    DateTime
+  endTime      DateTime
+  label        String?  // "Semifinal Cat. Pro", etc.
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     Category?  @relation(fields: [categoryId], references: [id])
+
+  @@index([tournamentId])
+  @@index([categoryId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tournamentId String?
+  userId       String?
+  action       String   @db.VarChar(50) // "category.create", "registration.approve", etc.
+  entityType   String   @db.VarChar(30) // "category", "tournament", "game", etc.
+  entityId     String?
+  details      String?  @db.Text // JSON string
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User?       @relation(fields: [userId], references: [id])
+
+  @@index([tournamentId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model WaitlistEntry {
+  id           String   @id @default(cuid())
+  categoryId   String
+  userId       String
+  position     Int
+  status       String   @default("waiting") @db.VarChar(20) // "waiting", "promoted", "expired"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, userId])
+  @@index([categoryId])
 }

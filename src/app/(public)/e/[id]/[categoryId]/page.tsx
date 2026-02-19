@@ -105,6 +105,11 @@ export default async function BracketPage({ params }: PageProps) {
             set3Away: g.set3Away ?? undefined,
             bestOf3: g.bestOf3 ?? false,
             status: g.status as 'pending' | 'scheduled' | 'completed' | 'in_progress',
+            matchNumber: g.matchNumber ?? undefined,
+            bracketSide: g.bracketSide ?? undefined,
+            winnerNextGameId: g.winnerNextGameId ?? undefined,
+            loserNextGameId: g.loserNextGameId ?? undefined,
+            seedTarget: g.seedTarget ?? undefined,
           }))}
           format={format}
           theme={darkTheme}
