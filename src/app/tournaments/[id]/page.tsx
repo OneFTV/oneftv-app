@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft, ChevronDown, ChevronUp, Info } from 'lucide-react';
-import TournamentBracketView from '@/components/tournament/TournamentBracketView';
+import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft } from 'lucide-react';
 
 interface CategoryInfo {
   id: string;
@@ -124,11 +123,10 @@ export default function TournamentDetailPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'players' | 'games' | 'standings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'players' | 'standings'>('overview');
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [registering, setRegistering] = useState(false);
   const [registerMsg, setRegisterMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [rulesExpanded, setRulesExpanded] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -288,7 +286,7 @@ export default function TournamentDetailPage() {
                 className="inline-flex items-center gap-2 bg-footvolley-primary hover:bg-footvolley-primary/90 text-white font-medium py-2 px-4 rounded-lg transition"
               >
                 <Trophy size={18} />
-                Live View
+                View Brackets
               </Link>
               {isOrganizer && (
                 <Link
@@ -302,47 +300,33 @@ export default function TournamentDetailPage() {
             </div>
           </div>
 
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Date</p>
-              <p className="text-sm font-medium text-gray-900">
-                {new Date(tournament.date).toLocaleDateString('en-US', {
+          {/* Inline Meta Strip */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-4">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={14} />
+              {new Date(tournament.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+              {tournament.endDate && tournament.endDate !== tournament.date &&
+                ` – ${new Date(tournament.endDate).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
-                  year: 'numeric',
-                })}
-                {tournament.endDate && tournament.endDate !== tournament.date &&
-                  ` - ${new Date(tournament.endDate).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}`}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Location</p>
-              <p className="text-sm font-medium text-gray-900">
-                {tournament.city || 'TBD'}{tournament.state ? `, ${tournament.state}` : ''}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Courts</p>
-              <p className="text-sm font-medium text-gray-900">{tournament.numCourts || '-'}</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Duration</p>
-              <p className="text-sm font-medium text-gray-900">{tournament.avgGameMinutes} min</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Players</p>
-              <p className="text-sm font-medium text-gray-900">
-                {tournament.players?.length ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''}
-              </p>
-            </div>
+                })}`}
+            </span>
+            <span className="text-gray-300">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin size={14} />
+              {tournament.city || 'TBD'}{tournament.state ? `, ${tournament.state}` : ''}
+            </span>
+            <span className="text-gray-300">·</span>
+            <span>{tournament.numCourts || '-'} Courts</span>
+            <span className="text-gray-300">·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Users size={14} />
+              {tournament.players?.length ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''} Players
+            </span>
           </div>
         </div>
 
@@ -381,31 +365,6 @@ export default function TournamentDetailPage() {
                 </button>
               ))}
             </div>
-
-            {/* Category progress bars */}
-            {selectedCategoryId === null && (
-              <div className="mt-4 space-y-2">
-                {tournament.categories.map((cat) => {
-                  const progress = cat._count ? (cat._count.players / cat.maxTeams) * 100 : 0;
-                  return (
-                    <div key={cat.id} className="flex items-center gap-3">
-                      <span className="text-xs text-gray-500 w-32 truncate">{cat.name}</span>
-                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            progress >= 100 ? 'bg-red-500' : progress >= 75 ? 'bg-amber-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${Math.min(progress, 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-400 w-16 text-right">
-                        {cat._count?.players || 0}/{cat.maxTeams}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         )}
 
@@ -413,7 +372,7 @@ export default function TournamentDetailPage() {
         <div className="bg-white rounded-lg shadow-md mb-8">
           <div className="border-b border-gray-200">
             <div className="flex flex-wrap">
-              {(['overview', 'players', 'games', 'standings'] as const).map((tab) => (
+              {(['overview', 'players', 'standings'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -441,121 +400,48 @@ export default function TournamentDetailPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">Tournament Details</h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">Venue</dt>
-                        <dd className="text-gray-900">{tournament.location}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">City</dt>
-                        <dd className="text-gray-900">
-                          {[tournament.city, tournament.state, tournament.country].filter(Boolean).join(', ') || 'Not specified'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">Format</dt>
-                        <dd className="text-gray-900">{tournament.format ? (formatLabels[tournament.format] || tournament.format) : 'Multi-categoria'}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">Game Settings</h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">Points Per Set</dt>
-                        <dd className="text-gray-900">{tournament.pointsPerSet ?? 'Per category'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">Tournament Tier</dt>
-                        <dd className="text-gray-900">
-                          {tournament.proLeague ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
-                              Professional League
-                            </span>
-                          ) : 'Standard'}
-                        </dd>
-                      </div>
-                      {tournament.proLeague && (
-                        <div>
-                          <dt className="text-sm font-medium text-gray-600">Semis & Finals</dt>
-                          <dd className="text-gray-900">Best of 3 sets (3rd set to 15 pts)</dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="text-sm font-medium text-gray-600">Organizer</dt>
-                        <dd className="text-gray-900">{tournament.organizer?.name}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
-
-                {/* Footvolley Rules Card */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setRulesExpanded(!rulesExpanded)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition"
-                  >
-                    <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <Info size={16} className="text-[#1a2744]" />
-                      Footvolley Rules
-                    </span>
-                    {rulesExpanded ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                  </button>
-                  {rulesExpanded && (
-                    <div className="px-4 py-4 space-y-4 text-sm text-gray-700">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-2">Scoring</h4>
-                          <ul className="space-y-1.5 text-gray-600">
-                            <li>Sets played to <strong>{tournament.pointsPerSet} points</strong></li>
-                            <li>Winner must lead by <strong>2 points</strong> minimum</li>
-                            {tournament.proLeague && (
-                              <>
-                                <li>Semis & Finals: <strong>best of 3 sets</strong></li>
-                                <li>Deciding set (3rd): played to <strong>15 points</strong></li>
-                              </>
-                            )}
-                            <li>Rally scoring — point on every play</li>
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-2">Teams & Play</h4>
-                          <ul className="space-y-1.5 text-gray-600">
-                            <li><strong>2 players</strong> per team</li>
-                            <li>Max <strong>3 touches</strong> per side</li>
-                            <li>No hands or arms — feet, head, chest, knees only</li>
-                            <li>Serve must be <strong>kicked with the foot</strong></li>
-                          </ul>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-2">Court & Net</h4>
-                          <ul className="space-y-1.5 text-gray-600">
-                            <li>Court: <strong>16m x 8m</strong> (sand)</li>
-                            <li>Net height (men): <strong>2.20m</strong></li>
-                            <li>Net height (women): <strong>2.10m</strong></li>
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 mb-2">Faults</h4>
-                          <ul className="space-y-1.5 text-gray-600">
-                            <li>Touching the net during play</li>
-                            <li>4+ touches before returning the ball</li>
-                            <li>Same player touching ball twice in a row</li>
-                            <li>Ball landing outside court boundaries</li>
-                          </ul>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
-                        Based on European Footvolley League 2025 Official Rules
-                      </p>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">Tournament Details</h3>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">Venue</dt>
+                      <dd className="text-gray-900">{tournament.location}</dd>
                     </div>
-                  )}
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">City</dt>
+                      <dd className="text-gray-900">
+                        {[tournament.city, tournament.state, tournament.country].filter(Boolean).join(', ') || 'Not specified'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">Format</dt>
+                      <dd className="text-gray-900">{tournament.format ? (formatLabels[tournament.format] || tournament.format) : 'Multi-categoria'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">Points Per Set</dt>
+                      <dd className="text-gray-900">{tournament.pointsPerSet ?? 'Per category'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">Tournament Tier</dt>
+                      <dd className="text-gray-900">
+                        {tournament.proLeague ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
+                            Professional League
+                          </span>
+                        ) : 'Standard'}
+                      </dd>
+                    </div>
+                    {tournament.proLeague && (
+                      <div>
+                        <dt className="text-sm font-medium text-gray-600">Semis & Finals</dt>
+                        <dd className="text-gray-900">Best of 3 sets (3rd set to 15 pts)</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt className="text-sm font-medium text-gray-600">Organizer</dt>
+                      <dd className="text-gray-900">{tournament.organizer?.name}</dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
             )}
@@ -626,18 +512,6 @@ export default function TournamentDetailPage() {
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Games Tab */}
-            {activeTab === 'games' && (
-              <TournamentBracketView
-                games={games}
-                format={
-                  selectedCategoryId
-                    ? (tournament.categories?.find((c) => c.id === selectedCategoryId)?.format || tournament.format || 'bracket')
-                    : (tournament.format || 'bracket')
-                }
-              />
             )}
 
             {/* Standings Tab */}
