@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 import {
   LineChart,
   Line,
@@ -50,6 +51,7 @@ const LEVEL_COLORS = {
 };
 
 export default function AthleteProfilePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const athleteId = params.id as string;
@@ -114,7 +116,7 @@ export default function AthleteProfilePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading athlete profile...</p>
+          <p className="text-gray-600">{t('athletes.loading_profile')}</p>
         </div>
       </div>
     );
@@ -125,13 +127,13 @@ export default function AthleteProfilePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900 mb-2">
-            Athlete not found
+            {t('athletes.athlete_not_found')}
           </p>
           <button
             onClick={() => router.back()}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            Go back
+            {t('athletes.go_back')}
           </button>
         </div>
       </div>
@@ -148,7 +150,7 @@ export default function AthleteProfilePage() {
             className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Athletes
+            {t('athletes.back_to_athletes')}
           </button>
         </div>
       </div>
@@ -185,7 +187,7 @@ export default function AthleteProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Total Points
+              {t('athletes.total_points')}
             </p>
             <p className="text-3xl font-bold text-blue-600">
               {athlete.totalPoints}
@@ -194,7 +196,7 @@ export default function AthleteProfilePage() {
 
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Games Played
+              {t('athletes.games_played')}
             </p>
             <p className="text-3xl font-bold text-green-600">
               {athlete.gamesPlayed}
@@ -203,7 +205,7 @@ export default function AthleteProfilePage() {
 
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Games Won
+              {t('athletes.games_won')}
             </p>
             <p className="text-3xl font-bold text-purple-600">
               {athlete.gamesWon}
@@ -212,16 +214,16 @@ export default function AthleteProfilePage() {
 
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Win Rate
+              {t('athletes.win_rate')}
             </p>
             <p className="text-3xl font-bold text-yellow-600">
-              {(athlete.winRate * 100).toFixed(1)}%
+              {((athlete.winRate || 0) * 100).toFixed(1)}%
             </p>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Tournaments Played
+              {t('athletes.tournaments_played')}
             </p>
             <p className="text-3xl font-bold text-red-600">
               {athlete.tournamentsPlayed}
@@ -230,7 +232,7 @@ export default function AthleteProfilePage() {
 
           <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-500">
             <p className="text-gray-600 text-sm font-medium mb-2">
-              Best Finish
+              {t('athletes.best_finish')}
             </p>
             <p className="text-3xl font-bold text-indigo-600">
               #{athlete.bestFinish}
@@ -241,7 +243,7 @@ export default function AthleteProfilePage() {
         {/* Performance Chart */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Points Over Time
+            {t('athletes.points_over_time')}
           </h2>
           {athlete.pointsOverTime && athlete.pointsOverTime.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -276,7 +278,7 @@ export default function AthleteProfilePage() {
             </ResponsiveContainer>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No points history available yet
+              {t('athletes.no_points_history')}
             </div>
           )}
         </div>
@@ -285,7 +287,7 @@ export default function AthleteProfilePage() {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">
-              Tournament History
+              {t('athletes.tournament_history')}
             </h2>
           </div>
 
@@ -295,22 +297,22 @@ export default function AthleteProfilePage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Tournament
+                      {t('athletes.col_tournament')}
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Date
+                      {t('athletes.col_date')}
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Format
+                      {t('athletes.col_format')}
                     </th>
                     <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
-                      Placement
+                      {t('athletes.col_placement')}
                     </th>
                     <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
-                      W-L Record
+                      {t('athletes.col_record')}
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
-                      Points
+                      {t('athletes.col_points')}
                     </th>
                   </tr>
                 </thead>
@@ -326,7 +328,7 @@ export default function AthleteProfilePage() {
                         {tournament.name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(tournament.date).toLocaleDateString()}
+                        {tournament.date ? new Date(tournament.date).toLocaleDateString() : '—'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {tournament.format}
@@ -355,7 +357,7 @@ export default function AthleteProfilePage() {
             </div>
           ) : (
             <div className="p-6 text-center text-gray-500">
-              No tournament history available
+              {t('athletes.no_tournament_history')}
             </div>
           )}
         </div>

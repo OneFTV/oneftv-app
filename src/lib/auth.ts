@@ -43,6 +43,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          preferredLanguage: user.preferredLanguage ?? undefined,
         }
       },
     }),
@@ -58,6 +59,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.name = user.name
         token.email = user.email
+        token.preferredLanguage = user.preferredLanguage
       }
       return token
     },
@@ -67,6 +69,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
         session.user.name = token.name as string
         session.user.email = token.email as string
+        session.user.preferredLanguage = token.preferredLanguage as string | undefined
       }
       return session
     },

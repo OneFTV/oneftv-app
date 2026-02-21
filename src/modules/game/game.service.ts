@@ -1,8 +1,9 @@
 import { GameRepository } from './game.repository'
 import { validateGameScores } from './score.validator'
-import { NotFoundError, ForbiddenError } from '@/shared/api/errors'
+import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/api/errors'
 import { prisma } from '@/shared/database/prisma'
 import type { UpdateGameScoreInput, GameListItem } from './game.types'
+import type { BatchUpdateScoresData } from './game.schemas'
 
 export class GameService {
   static async getById(id: string) {
@@ -87,6 +88,54 @@ export class GameService {
     }
 
     return result
+  }
+
+  static async batchUpdateScores(input: BatchUpdateScoresData, userId: string) {
+    const results: Array<{ gameId: string; success: boolean; error?: string }> = []
+
+    for (const entry of input.scores) {
+      try {
+        const game = await GameRepository.findByIdForUpdate(entry.gameId)
+        if (!game) {
+          results.push({ gameId: entry.gameId, success: false, error: 'Game not found' })
+          continue
+        }
+
+        if (game.tournament.organizerId !== userId) {
+          results.push({ gameId: entry.gameId, success: false, error: 'Not authorized' })
+          continue
+        }
+
+        const isBestOf3 = game.round?.bestOf3 ?? false
+        const pointsPerSet = game.tournament.pointsPerSet || 18
+
+        const { winningSide } = validateGameScores(entry, isBestOf3, pointsPerSet)
+
+        await GameRepository.updateScore(entry.gameId, {
+          scoreHome: entry.scoreHome,
+          scoreAway: entry.scoreAway,
+          set2Home: isBestOf3 ? (entry.set2Home ?? null) : null,
+          set2Away: isBestOf3 ? (entry.set2Away ?? null) : null,
+          set3Home: isBestOf3 ? (entry.set3Home ?? null) : null,
+          set3Away: isBestOf3 ? (entry.set3Away ?? null) : null,
+          winningSide,
+          status: 'completed',
+        })
+
+        if (winningSide) {
+          this.advanceBracket(entry.gameId, winningSide).catch((err) => {
+            console.error(`[advanceBracket] Error routing game ${entry.gameId}:`, err)
+          })
+        }
+
+        results.push({ gameId: entry.gameId, success: true })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        results.push({ gameId: entry.gameId, success: false, error: message })
+      }
+    }
+
+    return results
   }
 
   /**

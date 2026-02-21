@@ -4,6 +4,7 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface FormData {
   name: string;
@@ -64,6 +65,7 @@ const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro'];
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -80,25 +82,25 @@ export default function RegisterPage() {
     const newErrors: Partial<FormData> & { submit?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('auth.name_required');
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = t('auth.name_min_2');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.email_required');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = t('auth.email_invalid_short');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.password_required');
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = t('auth.password_min_8');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.passwords_no_match');
     }
 
     setErrors(newErrors);
@@ -133,10 +135,10 @@ export default function RegisterPage() {
         });
       } else {
         const data = await res.json();
-        setErrors({ submit: data.error || 'Registration failed' });
+        setErrors({ submit: data.error || t('auth.registration_failed') });
       }
     } catch {
-      setErrors({ submit: 'An error occurred during registration' });
+      setErrors({ submit: t('auth.registration_error') });
     } finally {
       setLoading(false);
     }
@@ -157,7 +159,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white text-center mb-8">Create Account</h1>
+        <h1 className="text-3xl font-bold text-white text-center mb-8">{t('auth.register_title')}</h1>
         {errors.submit && (
           <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4 mb-6">
             <p className="text-red-300 text-sm">{errors.submit}</p>
@@ -165,32 +167,32 @@ export default function RegisterPage() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-slate-300 text-sm mb-1">Name</label>
+            <label className="block text-slate-300 text-sm mb-1">{t('auth.name_label')}</label>
             <input name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg" />
             {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
           </div>
           <div>
-            <label className="block text-slate-300 text-sm mb-1">Email</label>
+            <label className="block text-slate-300 text-sm mb-1">{t('auth.email_label')}</label>
             <input name="email" type="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg" />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
           </div>
           <div>
-            <label className="block text-slate-300 text-sm mb-1">Password</label>
+            <label className="block text-slate-300 text-sm mb-1">{t('auth.password_label')}</label>
             <input name="password" type="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg" />
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="block text-slate-300 text-sm mb-1">Confirm Password</label>
+            <label className="block text-slate-300 text-sm mb-1">{t('auth.confirm_password_label')}</label>
             <input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg" />
             {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
           <button type="submit" disabled={loading} className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50">
-            {loading ? 'Creating account...' : 'Register'}
+            {loading ? t('auth.creating_account') : t('auth.register_button')}
           </button>
         </form>
         <p className="text-slate-400 text-center mt-6">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300">Sign In</Link>
+          {t('auth.already_have_account')}{' '}
+          <Link href="/login" className="text-blue-400 hover:text-blue-300">{t('common.sign_in')}</Link>
         </p>
       </div>
     </div>

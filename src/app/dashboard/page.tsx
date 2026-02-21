@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface Tournament {
   id: string;
@@ -33,6 +34,7 @@ interface Stats {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -60,7 +62,8 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const tournamentsRes = await fetch('/api/tournaments?limit=5');
+      const userId = session?.user?.id;
+      const tournamentsRes = await fetch(`/api/tournaments?limit=5${userId ? `&organizerId=${userId}` : ''}`);
 
       if (tournamentsRes.ok) {
         const data = await tournamentsRes.json();
@@ -79,7 +82,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-cyan-300 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white font-semibold">Loading dashboard...</p>
+          <p className="text-white font-semibold">{t('dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -93,41 +96,15 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
-      {/* Header/Navigation */}
-      <header className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-blue-800/30">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-lg flex items-center justify-center">
-              <span className="text-slate-900 font-bold text-sm">1FTV</span>
-            </div>
-            <span className="text-white font-bold text-xl">OneFTV</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/profile"
-              className="text-slate-300 hover:text-white transition-colors font-medium"
-            >
-              Profile
-            </Link>
-            <a
-              href="/api/auth/signout"
-              className="text-slate-300 hover:text-white transition-colors font-medium"
-            >
-              Sign Out
-            </a>
-          </div>
-        </nav>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome back, {userName}! 👋
+            {t('dashboard.welcome_back', { name: userName })} 👋
           </h1>
           <p className="text-slate-400 text-lg">
-            Manage your tournaments and track your performance
+            {t('dashboard.manage_description')}
           </p>
         </div>
 
@@ -136,7 +113,7 @@ export default function DashboardPage() {
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-xl p-6">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-slate-400 text-sm font-medium">My Tournaments</p>
+                <p className="text-slate-400 text-sm font-medium">{t('dashboard.stat_my_tournaments')}</p>
                 <p className="text-4xl font-bold text-white mt-2">{stats.myTournaments}</p>
               </div>
               <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -145,13 +122,13 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-slate-400 text-xs">Active and past tournaments</p>
+            <p className="text-slate-400 text-xs">{t('dashboard.stat_my_tournaments_desc')}</p>
           </div>
 
           <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-400/30 rounded-xl p-6">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-slate-400 text-sm font-medium">Upcoming Games</p>
+                <p className="text-slate-400 text-sm font-medium">{t('dashboard.stat_upcoming_games')}</p>
                 <p className="text-4xl font-bold text-white mt-2">{stats.upcomingGames}</p>
               </div>
               <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center">
@@ -160,13 +137,13 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-slate-400 text-xs">This month</p>
+            <p className="text-slate-400 text-xs">{t('dashboard.stat_upcoming_games_desc')}</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-400/30 rounded-xl p-6">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-slate-400 text-sm font-medium">Win Rate</p>
+                <p className="text-slate-400 text-sm font-medium">{t('dashboard.stat_win_rate')}</p>
                 <p className="text-4xl font-bold text-white mt-2">{stats.winRate}%</p>
               </div>
               <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
@@ -175,13 +152,13 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-slate-400 text-xs">Overall performance</p>
+            <p className="text-slate-400 text-xs">{t('dashboard.stat_win_rate_desc')}</p>
           </div>
 
           <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-400/30 rounded-xl p-6">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-slate-400 text-sm font-medium">Total Points</p>
+                <p className="text-slate-400 text-sm font-medium">{t('dashboard.stat_total_points')}</p>
                 <p className="text-4xl font-bold text-white mt-2">{stats.totalPoints}</p>
               </div>
               <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -190,7 +167,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-slate-400 text-xs">Global ranking points</p>
+            <p className="text-slate-400 text-xs">{t('dashboard.stat_total_points_desc')}</p>
           </div>
         </div>
 
@@ -205,7 +182,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <p className="text-white font-semibold text-center">Create Tournament</p>
+            <p className="text-white font-semibold text-center">{t('dashboard.action_create_tournament')}</p>
           </Link>
 
           <Link
@@ -217,7 +194,7 @@ export default function DashboardPage() {
                 <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM13 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2h-2zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM13 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z" />
               </svg>
             </div>
-            <p className="text-white font-semibold text-center">Browse Tournaments</p>
+            <p className="text-white font-semibold text-center">{t('dashboard.action_browse_tournaments')}</p>
           </Link>
 
           <Link
@@ -229,7 +206,7 @@ export default function DashboardPage() {
                 <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h1a1 1 0 001-1v-6a1 1 0 00-1-1h-1z" />
               </svg>
             </div>
-            <p className="text-white font-semibold text-center">View Rankings</p>
+            <p className="text-white font-semibold text-center">{t('dashboard.action_view_rankings')}</p>
           </Link>
 
           <Link
@@ -241,19 +218,19 @@ export default function DashboardPage() {
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
             </div>
-            <p className="text-white font-semibold text-center">Edit Profile</p>
+            <p className="text-white font-semibold text-center">{t('dashboard.action_edit_profile')}</p>
           </Link>
         </div>
 
         {/* My Tournaments Section */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">My Tournaments</h2>
+            <h2 className="text-2xl font-bold text-white">{t('dashboard.section_my_tournaments')}</h2>
             <Link
               href="/tournaments"
               className="text-blue-400 hover:text-blue-300 font-semibold text-sm transition-colors"
             >
-              View All →
+              {t('common.view_all')} &rarr;
             </Link>
           </div>
 
@@ -295,7 +272,7 @@ export default function DashboardPage() {
                       <svg className="w-4 h-4 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                       </svg>
-                      {tournament.athletesCount} Athletes
+                      {t('dashboard.athletes_count', { count: String(tournament.athletesCount) })}
                     </div>
                   </div>
                 </Link>
@@ -316,13 +293,13 @@ export default function DashboardPage() {
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                 />
               </svg>
-              <h3 className="text-xl font-semibold text-white mb-2">No tournaments yet</h3>
-              <p className="text-slate-400 mb-6">Create or join a tournament to get started</p>
+              <h3 className="text-xl font-semibold text-white mb-2">{t('dashboard.no_tournaments_title')}</h3>
+              <p className="text-slate-400 mb-6">{t('dashboard.no_tournaments_desc')}</p>
               <Link
                 href="/tournaments/create"
                 className="inline-block px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all"
               >
-                Create Tournament
+                {t('dashboard.action_create_tournament')}
               </Link>
             </div>
           )}
@@ -331,12 +308,12 @@ export default function DashboardPage() {
         {/* Recent Activity Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Upcoming Games</h2>
+            <h2 className="text-2xl font-bold text-white">{t('dashboard.section_upcoming_games')}</h2>
             <Link
               href="/tournaments"
               className="text-blue-400 hover:text-blue-300 font-semibold text-sm transition-colors"
             >
-              View All →
+              {t('common.view_all')} &rarr;
             </Link>
           </div>
 
@@ -351,7 +328,7 @@ export default function DashboardPage() {
                     <div className="flex-1">
                       <p className="text-slate-400 text-sm mb-1">{game.tournament}</p>
                       <h3 className="text-lg font-bold text-white">
-                        vs <span className="text-cyan-300">{game.opponent}</span>
+                        {t('common.vs')} <span className="text-cyan-300">{game.opponent}</span>
                       </h3>
                     </div>
                     <div className="text-right">
@@ -379,8 +356,8 @@ export default function DashboardPage() {
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <h3 className="text-xl font-semibold text-white mb-2">No upcoming games</h3>
-              <p className="text-slate-400">Join a tournament to schedule games</p>
+              <h3 className="text-xl font-semibold text-white mb-2">{t('dashboard.no_games_title')}</h3>
+              <p className="text-slate-400">{t('dashboard.no_games_desc')}</p>
             </div>
           )}
         </div>

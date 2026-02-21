@@ -1,0 +1,19 @@
+{
+  "title": "King of the Beach - Ranking de Futevolei",
+  "subtitle": "Acompanhe os melhores atletas no futevolei competitivo",
+  "overall_rankings": "Rankings Gerais",
+  "refresh": "Atualizar Ranking",
+  "refreshing": "Atualizando...",
+  "no_rankings": "Nenhum ranking disponivel",
+  "no_rankings_desc": "Rankings serao atualizados conforme torneios forem concluidos",
+  "no_chart_data": "Nenhum dado disponivel para o grafico",
+  "col_rank": "Pos",
+  "col_player": "Jogador",
+  "col_wins": "V",
+  "col_losses": "D",
+  "col_win_pct": "% Vit",
+  "col_tournaments": "Torneios",
+  "col_points": "Pontos",
+  "chart_title": "Top 10 Jogadores por Pontos Totais",
+  "tournaments_won": "{count} vencido(s)"
+}

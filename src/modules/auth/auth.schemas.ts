@@ -18,6 +18,7 @@ export const updateProfileSchema = z.object({
   state: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
   level: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Pro']).nullable().optional(),
+  preferredLanguage: z.string().max(10).nullable().optional(),
 })
 
 export type UpdateProfileData = z.infer<typeof updateProfileSchema>

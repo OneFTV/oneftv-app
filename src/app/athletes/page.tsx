@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface Athlete {
   id: string;
@@ -27,6 +28,7 @@ const LEVEL_COLORS = {
 const ITEMS_PER_PAGE = 12;
 
 export default function AthletesPage() {
+  const { t } = useTranslation();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [filteredAthletes, setFilteredAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,21 +118,21 @@ export default function AthletesPage() {
 
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm">Total Points</span>
+            <span className="text-gray-600 text-sm">{t('athletes.total_points')}</span>
             <span className="font-bold text-lg text-blue-600">
               {athlete.totalPoints}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm">Games Won</span>
+            <span className="text-gray-600 text-sm">{t('athletes.games_won')}</span>
             <span className="font-bold text-lg text-green-600">
               {athlete.gamesWon}/{athlete.gamesPlayed}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 text-sm">Win Rate</span>
+            <span className="text-gray-600 text-sm">{t('athletes.win_rate')}</span>
             <span className="font-bold text-lg text-purple-600">
-              {(athlete.winRate * 100).toFixed(1)}%
+              {((athlete.winRate || 0) * 100).toFixed(1)}%
             </span>
           </div>
         </div>
@@ -160,7 +162,7 @@ export default function AthletesPage() {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Athletes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('athletes.title')}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
@@ -176,12 +178,12 @@ export default function AthletesPage() {
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Athletes</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('athletes.title')}</h1>
           <Link
             href="/athletes/create"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            Register Athlete
+            {t('athletes.register_athlete')}
           </Link>
         </div>
 
@@ -192,7 +194,7 @@ export default function AthletesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search athletes..."
+                placeholder={t('athletes.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -203,18 +205,18 @@ export default function AthletesPage() {
               onChange={(e) => setSelectedLevel(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="All">All Levels</option>
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Pro">Pro</option>
+              <option value="All">{t('athletes.all_levels')}</option>
+              <option value="Beginner">{t('athletes.level_beginner')}</option>
+              <option value="Intermediate">{t('athletes.level_intermediate')}</option>
+              <option value="Advanced">{t('athletes.level_advanced')}</option>
+              <option value="Pro">{t('athletes.level_pro')}</option>
             </select>
             <select
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="All">All Countries</option>
+              <option value="All">{t('athletes.all_countries')}</option>
               {countries.map((country) => (
                 <option key={country} value={country}>
                   {country}
@@ -227,7 +229,7 @@ export default function AthletesPage() {
         {/* Results */}
         {paginatedAthletes.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">No athletes found.</p>
+            <p className="text-gray-500 text-lg">{t('athletes.no_athletes')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

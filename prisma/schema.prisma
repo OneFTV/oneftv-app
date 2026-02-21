@@ -26,6 +26,7 @@ model User {
   documentType  String?   @db.VarChar(20) // "CPF", "RG", "Passport"
   documentNumber String?  @db.VarChar(30)
   dateOfBirth   DateTime?
+  preferredLanguage String? @db.VarChar(10)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -404,4 +405,16 @@ model WaitlistEntry {
 
   @@unique([categoryId, userId])
   @@index([categoryId])
+}
+
+model LanguageDemand {
+  id             String   @id @default(cuid())
+  browserLocale  String   @db.VarChar(20)
+  normalizedLang String   @db.VarChar(10)
+  pageUrl        String?  @db.VarChar(500)
+  userAgent      String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([normalizedLang])
+  @@index([createdAt])
 }

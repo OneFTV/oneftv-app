@@ -16,6 +16,7 @@ fi
 
 PENDING_REQUESTS="$(tail -n +"$LAST_CODEX_DONE_LINE" "$FEED_FILE" | grep -E '\[CLAUDE CODE\] \[REQUEST\].*(Codex|CODEX|codex)' || true)"
 NEW_CLAUDE_DONE="$(tail -n +"$LAST_CODEX_DONE_LINE" "$FEED_FILE" | grep -E '\[CLAUDE CODE\] \[DONE\]' || true)"
+ACTIONABLE_STATUS="$(tail -n +"$LAST_CODEX_DONE_LINE" "$FEED_FILE" | grep -E '\[CLAUDE CODE\] \[STATUS\].*(ready for testing|ready to test|complete|completed|fixed|done)' || true)"
 
 echo "Live feed preflight"
 echo "Feed file: $FEED_FILE"
@@ -38,8 +39,15 @@ if [[ -n "$NEW_CLAUDE_DONE" ]]; then
   echo
 fi
 
+if [[ -n "$ACTIONABLE_STATUS" ]]; then
+  ACTION_NEEDED=1
+  echo "Actionable Claude Code STATUS updates detected:"
+  echo "$ACTIONABLE_STATUS"
+  echo
+fi
+
 if [[ "$ACTION_NEEDED" -eq 0 ]]; then
-  echo "No new Claude requests/completions found since last Codex [DONE]."
+  echo "No actionable Claude updates found since last Codex [DONE]."
   echo "Proceed with normal testing tasks."
   exit 0
 fi

@@ -35,7 +35,7 @@ export default function MatchCard({ game, compact = false, dense = false, theme 
 
   const px = dense ? 'px-2 py-1' : 'px-3 py-2';
   const textSize = dense ? 'text-xs' : 'text-sm';
-  const widthClass = dense ? 'w-[160px]' : compact ? 'w-[220px]' : 'w-full';
+  const widthClass = dense ? 'min-w-[160px]' : compact ? 'min-w-[200px]' : 'w-full';
   const indicatorSize = dense ? 'w-0.5 h-3' : 'w-1 h-4';
 
   return (
@@ -63,7 +63,7 @@ export default function MatchCard({ game, compact = false, dense = false, theme 
             />
           )}
           <span
-            className={`truncate ${
+            className={`whitespace-nowrap ${
               p1Wins ? 'font-semibold' : 'font-medium'
             }`}
           >
@@ -96,7 +96,7 @@ export default function MatchCard({ game, compact = false, dense = false, theme 
             />
           )}
           <span
-            className={`truncate ${
+            className={`whitespace-nowrap ${
               p2Wins ? 'font-semibold' : 'font-medium'
             }`}
           >
@@ -130,8 +130,23 @@ export default function MatchCard({ game, compact = false, dense = false, theme 
         </div>
       )}
 
-      {/* Footer: court + time + live indicator — hidden in dense mode */}
-      {!dense && (
+      {/* Footer: court + time + live indicator */}
+      {dense ? (
+        <div className={`flex items-center justify-between px-2 py-0.5 ${theme.cardFooterBg} text-[9px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
+          <span className="flex items-center gap-1">
+            {showMatchNumber && game.matchNumber != null && (
+              <span className={`px-0.5 py-px rounded font-bold ${theme.matchNumberBadge}`}>M{game.matchNumber}</span>
+            )}
+            <span>Ct {game.court}</span>
+          </span>
+          {isLive && (
+            <span className="flex items-center gap-0.5">
+              <span className="inline-flex h-1 w-1 rounded-full bg-red-500" />
+              <span className="font-bold text-red-500">LIVE</span>
+            </span>
+          )}
+        </div>
+      ) : (
         <div className={`flex items-center justify-between px-3 py-1 ${theme.cardFooterBg} text-[11px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
           <span className="flex items-center gap-1">
             {showMatchNumber && game.matchNumber != null && (

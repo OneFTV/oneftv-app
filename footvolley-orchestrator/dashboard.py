@@ -65,6 +65,24 @@ def render(db):
         lines.append(f"  {'─' * 22}")
         lines.append(f"  {'Total':15s} {total:3d}  {_bar(done, total)}")
 
+    # Individual task list
+    lines.append(f"\n{BOLD}Task List{RESET}")
+    lines.append(f"  {'ID':>4s}  {'P':>1s}  {'Status':12s}  {'Category':10s}  {'Title'}")
+    lines.append(f"  {'─' * 70}")
+    all_tasks = db.fetchall(
+        """SELECT id, title, status, category, priority, risk_tier, branch_name
+           FROM tasks ORDER BY
+             FIELD(status, 'IN_PROGRESS','TESTING','REVIEW','READY','SPECCED','DISCOVERED','BLOCKED','FAILED','DONE'),
+             priority ASC, id ASC"""
+    )
+    for t in all_tasks:
+        color = STATUS_COLORS.get(t['status'], '')
+        title = t['title'][:42]
+        branch = f" -> {t['branch_name']}" if t.get('branch_name') else ''
+        lines.append(f"  {t['id']:4d}  {t['priority']:1d}  "
+                     f"{color}{t['status']:12s}{RESET}  {t['category']:10s}  "
+                     f"{title}{branch}")
+
     # Active leases
     lines.append(f"\n{BOLD}Active Leases{RESET}")
     leases = db.fetchall(

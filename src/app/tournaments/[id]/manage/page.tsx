@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, X } from 'lucide-react';
+import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface CategoryInfo {
   id: string;
@@ -54,6 +55,14 @@ interface SetScores {
   set3Away: number;
 }
 
+interface RoundGroup {
+  roundName: string;
+  bracketSide: string | null;
+  games: Game[];
+  completedCount: number;
+  totalCount: number;
+}
+
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['registration', 'in_progress'],
   registration: ['in_progress', 'completed'],
@@ -68,9 +77,22 @@ const statusLabels: Record<string, string> = {
   completed: 'Completed',
 };
 
+const bracketSideLabels: Record<string, string> = {
+  winners: 'Winners',
+  losers: 'Losers',
+  finals: 'Finals',
+};
+
+const bracketSideColors: Record<string, string> = {
+  winners: 'bg-blue-100 text-blue-700',
+  losers: 'bg-orange-100 text-orange-700',
+  finals: 'bg-purple-100 text-purple-700',
+};
+
 export default function ManageTournamentPage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const tournamentId = params.id as string;
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -82,11 +104,60 @@ export default function ManageTournamentPage() {
   const [authorized, setAuthorized] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingGameId, setEditingGameId] = useState<string | null>(null);
   const [gameScores, setGameScores] = useState<Record<string, SetScores>>({});
-  const [scoreError, setScoreError] = useState<string | null>(null);
+  const [dirtyGames, setDirtyGames] = useState<Set<string>>(new Set());
+  const [batchSaving, setBatchSaving] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [generatingCategoryId, setGeneratingCategoryId] = useState<string | null>(null);
+  const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
+
+  const originalScores = useRef<Record<string, SetScores>>({});
+
+  // Group games by round
+  const roundGroups = useMemo((): RoundGroup[] => {
+    const groups: Record<string, RoundGroup> = {};
+    for (const game of games) {
+      const key = `${game.bracketSide || 'main'}::${game.roundName}`;
+      if (!groups[key]) {
+        groups[key] = {
+          roundName: game.roundName,
+          bracketSide: game.bracketSide || null,
+          games: [],
+          completedCount: 0,
+          totalCount: 0,
+        };
+      }
+      groups[key].games.push(game);
+      groups[key].totalCount++;
+      if (game.status === 'completed') groups[key].completedCount++;
+    }
+    return Object.values(groups);
+  }, [games]);
+
+  // Auto-collapse fully completed rounds on first load
+  const hasInitializedCollapse = useRef(false);
+  useEffect(() => {
+    if (roundGroups.length > 0 && !hasInitializedCollapse.current) {
+      hasInitializedCollapse.current = true;
+      const collapsed = new Set<string>();
+      for (const rg of roundGroups) {
+        const key = `${rg.bracketSide || 'main'}::${rg.roundName}`;
+        if (rg.completedCount === rg.totalCount && rg.totalCount > 0) {
+          collapsed.add(key);
+        }
+      }
+      setCollapsedRounds(collapsed);
+    }
+  }, [roundGroups]);
+
+  const toggleRound = useCallback((key: string) => {
+    setCollapsedRounds(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -100,9 +171,31 @@ export default function ManageTournamentPage() {
         console.error('Failed to fetch user:', err);
       }
     };
-
     checkUser();
   }, []);
+
+  const fetchGames = useCallback(async () => {
+    const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
+    const gamesRes = await fetch(`/api/tournaments/${tournamentId}/games${catParam}`);
+    if (gamesRes.ok) {
+      const gamesData = await gamesRes.json();
+      setGames(gamesData);
+      const initial: Record<string, SetScores> = {};
+      gamesData.forEach((game: Game) => {
+        initial[game.id] = {
+          set1Home: game.score1 || 0,
+          set1Away: game.score2 || 0,
+          set2Home: game.set2Home || 0,
+          set2Away: game.set2Away || 0,
+          set3Home: game.set3Home || 0,
+          set3Away: game.set3Away || 0,
+        };
+      });
+      setGameScores(initial);
+      originalScores.current = JSON.parse(JSON.stringify(initial));
+      setDirtyGames(new Set());
+    }
+  }, [tournamentId, selectedCategoryId]);
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -110,44 +203,22 @@ export default function ManageTournamentPage() {
         setLoading(true);
         setError(null);
 
-        const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
-        const [tournamentRes, gamesRes] = await Promise.all([
+        const [tournamentRes] = await Promise.all([
           fetch(`/api/tournaments/${tournamentId}`),
-          fetch(`/api/tournaments/${tournamentId}/games${catParam}`),
+          fetchGames(),
         ]);
 
-        if (!tournamentRes.ok) {
-          throw new Error('Failed to fetch tournament');
-        }
+        if (!tournamentRes.ok) throw new Error('Failed to fetch tournament');
 
         const tournamentJson = await tournamentRes.json();
         const tournamentData = tournamentJson.data || tournamentJson;
         setTournament(tournamentData);
 
-        // Check authorization
         if (user && user.id === tournamentData.organizerId) {
           setAuthorized(true);
         } else if (user) {
-          setError('You are not authorized to manage this tournament');
+          setError(t('tournaments.manage_unauthorized'));
           setAuthorized(false);
-        }
-
-        if (gamesRes.ok) {
-          const gamesData = await gamesRes.json();
-          setGames(gamesData);
-          // Initialize game scores
-          const initialScores: Record<string, SetScores> = {};
-          gamesData.forEach((game: Game) => {
-            initialScores[game.id] = {
-              set1Home: game.score1 || 0,
-              set1Away: game.score2 || 0,
-              set2Home: game.set2Home || 0,
-              set2Away: game.set2Away || 0,
-              set3Home: game.set3Home || 0,
-              set3Away: game.set3Away || 0,
-            };
-          });
-          setGameScores(initialScores);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -157,10 +228,8 @@ export default function ManageTournamentPage() {
       }
     };
 
-    if (tournamentId && user) {
-      fetchTournamentData();
-    }
-  }, [tournamentId, user, selectedCategoryId]);
+    if (tournamentId && user) fetchTournamentData();
+  }, [tournamentId, user, selectedCategoryId, fetchGames]);
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -170,94 +239,102 @@ export default function ManageTournamentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-
       if (res.ok) {
-        setTournament((prev) => prev ? { ...prev, status: newStatus as Tournament['status'] } : prev);
-        setSuccess(`Status updated to ${statusLabels[newStatus]}`);
+        setTournament(prev => prev ? { ...prev, status: newStatus as Tournament['status'] } : prev);
+        setSuccess(t('tournaments.manage_status_updated', { status: statusLabels[newStatus] }));
         setTimeout(() => setSuccess(''), 3000);
       } else {
         const data = await res.json();
         setError(data.error || 'Failed to update status');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to update status');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleScoreUpdate = async (gameId: string, isBestOf3: boolean) => {
-    const scores = gameScores[gameId];
-    if (!scores) return;
+  const updateSetScore = useCallback((gameId: string, field: keyof SetScores, value: number) => {
+    setGameScores(prev => {
+      const updated = { ...prev, [gameId]: { ...prev[gameId], [field]: value } };
+      const orig = originalScores.current[gameId];
+      const cur = updated[gameId];
+      const isDirty = orig && (
+        cur.set1Home !== orig.set1Home || cur.set1Away !== orig.set1Away ||
+        cur.set2Home !== orig.set2Home || cur.set2Away !== orig.set2Away ||
+        cur.set3Home !== orig.set3Home || cur.set3Away !== orig.set3Away
+      );
+      setDirtyGames(prev => {
+        const next = new Set(prev);
+        if (isDirty) next.add(gameId);
+        else next.delete(gameId);
+        return next;
+      });
+      return updated;
+    });
+  }, []);
 
-    setScoreError(null);
+  const handleBatchSave = async () => {
+    if (dirtyGames.size === 0) return;
 
-    const payload: Record<string, number> = {
-      scoreHome: scores.set1Home,
-      scoreAway: scores.set1Away,
-    };
+    setBatchSaving(true);
+    setError(null);
 
-    if (isBestOf3) {
-      payload.set2Home = scores.set2Home;
-      payload.set2Away = scores.set2Away;
-
-      // Check if set 3 is needed (sets tied 1-1)
-      const homeWonSet1 = scores.set1Home > scores.set1Away;
-      const homeWonSet2 = scores.set2Home > scores.set2Away;
-      const setsTied = (homeWonSet1 && !homeWonSet2) || (!homeWonSet1 && homeWonSet2);
-
-      if (setsTied && (scores.set3Home > 0 || scores.set3Away > 0)) {
-        payload.set3Home = scores.set3Home;
-        payload.set3Away = scores.set3Away;
+    const scores = Array.from(dirtyGames).map(gameId => {
+      const s = gameScores[gameId];
+      const game = games.find(g => g.id === gameId);
+      const entry: Record<string, unknown> = {
+        gameId,
+        scoreHome: s.set1Home,
+        scoreAway: s.set1Away,
+      };
+      if (game?.bestOf3) {
+        entry.set2Home = s.set2Home;
+        entry.set2Away = s.set2Away;
+        if (s.set3Home > 0 || s.set3Away > 0) {
+          entry.set3Home = s.set3Home;
+          entry.set3Away = s.set3Away;
+        }
       }
-    }
+      return entry;
+    });
 
     try {
-      setSaving(true);
-      const res = await fetch(`/api/games/${gameId}`, {
-        method: 'PUT',
+      const res = await fetch('/api/games/batch', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ scores }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        setGames((prev) =>
-          prev.map((g) =>
-            g.id === gameId
-              ? {
-                  ...g,
-                  score1: scores.set1Home,
-                  score2: scores.set1Away,
-                  set2Home: isBestOf3 ? scores.set2Home : undefined,
-                  set2Away: isBestOf3 ? scores.set2Away : undefined,
-                  set3Home: isBestOf3 ? scores.set3Home : undefined,
-                  set3Away: isBestOf3 ? scores.set3Away : undefined,
-                  status: 'completed' as const,
-                }
-              : g
-          )
-        );
-        setEditingGameId(null);
-        setSuccess('Score updated!');
-        setTimeout(() => setSuccess(''), 3000);
+        const failedResults = (data.results as Array<{ gameId: string; success: boolean; error?: string }>)
+          .filter(r => !r.success);
+
+        if (failedResults.length > 0) {
+          setError(`${failedResults.length} game(s) failed: ${failedResults.map(r => r.error).join(', ')}`);
+        }
+
+        setSuccess(data.message);
+        setTimeout(() => setSuccess(''), 4000);
+
+        // Re-fetch all games to reflect bracket advancement (players moved to next games)
+        await fetchGames();
       } else {
-        const data = await res.json();
-        setScoreError(data.error || 'Failed to update score');
+        setError(data.error || 'Failed to save scores');
       }
-    } catch (err) {
-      setScoreError('Failed to update score');
+    } catch {
+      setError('Failed to save scores');
     } finally {
-      setSaving(false);
+      setBatchSaving(false);
     }
   };
 
   const handleGenerateSchedule = async (categoryId?: string) => {
     try {
-      if (categoryId) {
-        setGeneratingCategoryId(categoryId);
-      } else {
-        setGenerating(true);
-      }
+      if (categoryId) setGeneratingCategoryId(categoryId);
+      else setGenerating(true);
 
       const body = categoryId ? JSON.stringify({ categoryId }) : undefined;
       const res = await fetch(`/api/tournaments/${tournamentId}/generate`, {
@@ -267,14 +344,8 @@ export default function ManageTournamentPage() {
       });
 
       if (res.ok) {
-        setSuccess(categoryId ? 'Category schedule generated!' : 'Schedule generated successfully!');
-        // Refresh games
-        const catParam = selectedCategoryId ? `?categoryId=${selectedCategoryId}` : '';
-        const gamesRes = await fetch(`/api/tournaments/${tournamentId}/games${catParam}`);
-        if (gamesRes.ok) {
-          const gamesData = await gamesRes.json();
-          setGames(gamesData);
-        }
+        setSuccess(categoryId ? t('tournaments.manage_category_generated') : t('tournaments.manage_schedule_generated'));
+        await fetchGames();
         setTimeout(() => setSuccess(''), 3000);
       } else {
         const data = await res.json();
@@ -288,36 +359,12 @@ export default function ManageTournamentPage() {
     }
   };
 
-  const getSetsSummary = (game: Game): string => {
-    if (!game.bestOf3 || game.score1 == null) return '';
-    let homeSets = 0;
-    let awaySets = 0;
-    if (game.score1 > (game.score2 || 0)) homeSets++;
-    else awaySets++;
-    if (game.set2Home != null && game.set2Away != null) {
-      if (game.set2Home > game.set2Away) homeSets++;
-      else awaySets++;
-    }
-    if (game.set3Home != null && game.set3Away != null) {
-      if (game.set3Home > game.set3Away) homeSets++;
-      else awaySets++;
-    }
-    return `(${homeSets}-${awaySets})`;
-  };
-
-  const updateSetScore = (gameId: string, field: keyof SetScores, value: number) => {
-    setGameScores((prev) => ({
-      ...prev,
-      [gameId]: { ...prev[gameId], [field]: value },
-    }));
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-gray-600">Loading tournament...</p>
+          <p className="text-gray-600">{t('tournaments.manage_loading')}</p>
         </div>
       </div>
     );
@@ -328,7 +375,7 @@ export default function ManageTournamentPage() {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-3xl mx-auto px-4">
           <Link href="/tournaments" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6">
-            <ArrowLeft size={20} /> Back to Tournaments
+            <ArrowLeft size={20} /> {t('tournaments.back_to_tournaments')}
           </Link>
           <div className="p-6 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-800">
             <AlertCircle size={20} />
@@ -343,121 +390,144 @@ export default function ManageTournamentPage() {
 
   const availableTransitions = STATUS_TRANSITIONS[tournament.status] || [];
 
-  const renderScoreEditor = (game: Game) => {
-    const scores = gameScores[game.id];
-    if (!scores) return null;
+  const renderScoreMatrix = (roundGames: Game[]) => (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b-2 border-gray-200 text-left">
+          <th className="py-2 px-2 font-semibold text-gray-600 w-14">#</th>
+          <th className="py-2 px-2 font-semibold text-gray-600">Home Team</th>
+          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 1</th>
+          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 2</th>
+          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 3</th>
+          <th className="py-2 px-2 font-semibold text-gray-600">Away Team</th>
+          <th className="py-2 px-2 font-semibold text-gray-600 text-center w-20">Status</th>
+        </tr>
+        <tr className="border-b border-gray-100 text-[10px] text-gray-400">
+          <th />
+          <th />
+          <th className="px-2 text-center">H</th>
+          <th className="px-2 text-center">A</th>
+          <th className="px-2 text-center">H</th>
+          <th className="px-2 text-center">A</th>
+          <th className="px-2 text-center">H</th>
+          <th className="px-2 text-center">A</th>
+          <th />
+          <th />
+        </tr>
+      </thead>
+      <tbody>
+        {roundGames.map(game => {
+          const scores = gameScores[game.id];
+          if (!scores) return null;
+          const isDirty = dirtyGames.has(game.id);
+          const isBo3 = game.bestOf3;
+          const isCompleted = game.status === 'completed';
 
-    if (!game.bestOf3) {
-      // Single set: simple 2-input
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              value={scores.set1Home}
-              onChange={(e) => updateSetScore(game.id, 'set1Home', parseInt(e.target.value) || 0)}
-              className="w-16 px-2 py-1 border rounded text-center"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="number"
-              min={0}
-              value={scores.set1Away}
-              onChange={(e) => updateSetScore(game.id, 'set1Away', parseInt(e.target.value) || 0)}
-              className="w-16 px-2 py-1 border rounded text-center"
-            />
-          </div>
-          <p className="text-xs text-gray-400">First to {tournament.pointsPerSet || 18}, win by 2</p>
-        </div>
-      );
-    }
+          const homeWonSet1 = scores.set1Home > scores.set1Away;
+          const homeWonSet2 = scores.set2Home > scores.set2Away;
+          const set1Played = scores.set1Home > 0 || scores.set1Away > 0;
+          const set2Played = scores.set2Home > 0 || scores.set2Away > 0;
+          const setsTied = set1Played && set2Played &&
+            ((homeWonSet1 && !homeWonSet2) || (!homeWonSet1 && homeWonSet2));
 
-    // Best of 3: set-by-set entry
-    const homeWonSet1 = scores.set1Home > scores.set1Away;
-    const homeWonSet2 = scores.set2Home > scores.set2Away;
-    const setsTied = (scores.set1Home > 0 || scores.set1Away > 0) &&
-                     (scores.set2Home > 0 || scores.set2Away > 0) &&
-                     ((homeWonSet1 && !homeWonSet2) || (!homeWonSet1 && homeWonSet2));
+          const inputClass = (dirty: boolean) =>
+            `w-12 px-1 py-1 border rounded text-center text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 ${
+              dirty ? 'border-amber-400 bg-amber-50' : 'border-gray-200'
+            }`;
 
-    return (
-      <div className="space-y-2">
-        {/* Set 1 */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 w-10">Set 1</span>
-          <input
-            type="number"
-            min={0}
-            value={scores.set1Home}
-            onChange={(e) => updateSetScore(game.id, 'set1Home', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 border rounded text-center text-sm"
-          />
-          <span className="text-gray-400">-</span>
-          <input
-            type="number"
-            min={0}
-            value={scores.set1Away}
-            onChange={(e) => updateSetScore(game.id, 'set1Away', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 border rounded text-center text-sm"
-          />
-        </div>
-        {/* Set 2 */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 w-10">Set 2</span>
-          <input
-            type="number"
-            min={0}
-            value={scores.set2Home}
-            onChange={(e) => updateSetScore(game.id, 'set2Home', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 border rounded text-center text-sm"
-          />
-          <span className="text-gray-400">-</span>
-          <input
-            type="number"
-            min={0}
-            value={scores.set2Away}
-            onChange={(e) => updateSetScore(game.id, 'set2Away', parseInt(e.target.value) || 0)}
-            className="w-14 px-2 py-1 border rounded text-center text-sm"
-          />
-        </div>
-        {/* Set 3 (only if needed) */}
-        {setsTied && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-amber-600 w-10">Set 3</span>
-            <input
-              type="number"
-              min={0}
-              value={scores.set3Home}
-              onChange={(e) => updateSetScore(game.id, 'set3Home', parseInt(e.target.value) || 0)}
-              className="w-14 px-2 py-1 border border-amber-300 rounded text-center text-sm bg-amber-50"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="number"
-              min={0}
-              value={scores.set3Away}
-              onChange={(e) => updateSetScore(game.id, 'set3Away', parseInt(e.target.value) || 0)}
-              className="w-14 px-2 py-1 border border-amber-300 rounded text-center text-sm bg-amber-50"
-            />
-          </div>
-        )}
-        <p className="text-xs text-gray-400">
-          Sets 1-2 to {tournament.pointsPerSet || 18}{setsTied ? `, Set 3 to 15` : ''} — win by 2
-        </p>
-      </div>
-    );
-  };
+          return (
+            <tr key={game.id}
+              className={`border-b border-gray-100 transition-colors ${
+                isDirty ? 'bg-amber-50' : isCompleted && !isDirty ? 'bg-green-50/30' : 'hover:bg-gray-50'
+              }`}>
+              <td className="py-2 px-2">
+                {game.matchNumber != null ? (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500">
+                    M{game.matchNumber}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 text-xs">-</span>
+                )}
+              </td>
+
+              <td className="py-2 px-2 font-medium text-gray-900 text-xs max-w-[180px] truncate">
+                {game.player1 || <span className="text-gray-400 italic">TBD</span>}
+              </td>
+
+              {/* Set 1 */}
+              <td className="py-2 px-1 text-center">
+                <input type="number" min={0} value={scores.set1Home}
+                  onChange={e => updateSetScore(game.id, 'set1Home', parseInt(e.target.value) || 0)}
+                  className={inputClass(isDirty)} />
+              </td>
+              <td className="py-2 px-1 text-center">
+                <input type="number" min={0} value={scores.set1Away}
+                  onChange={e => updateSetScore(game.id, 'set1Away', parseInt(e.target.value) || 0)}
+                  className={inputClass(isDirty)} />
+              </td>
+
+              {/* Set 2 */}
+              <td className="py-2 px-1 text-center">
+                {isBo3 ? (
+                  <input type="number" min={0} value={scores.set2Home}
+                    onChange={e => updateSetScore(game.id, 'set2Home', parseInt(e.target.value) || 0)}
+                    className={inputClass(isDirty)} />
+                ) : <span className="text-gray-300">-</span>}
+              </td>
+              <td className="py-2 px-1 text-center">
+                {isBo3 ? (
+                  <input type="number" min={0} value={scores.set2Away}
+                    onChange={e => updateSetScore(game.id, 'set2Away', parseInt(e.target.value) || 0)}
+                    className={inputClass(isDirty)} />
+                ) : <span className="text-gray-300">-</span>}
+              </td>
+
+              {/* Set 3 */}
+              <td className="py-2 px-1 text-center">
+                {isBo3 && setsTied ? (
+                  <input type="number" min={0} value={scores.set3Home}
+                    onChange={e => updateSetScore(game.id, 'set3Home', parseInt(e.target.value) || 0)}
+                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-50/50' : ''}`} />
+                ) : <span className="text-gray-300">-</span>}
+              </td>
+              <td className="py-2 px-1 text-center">
+                {isBo3 && setsTied ? (
+                  <input type="number" min={0} value={scores.set3Away}
+                    onChange={e => updateSetScore(game.id, 'set3Away', parseInt(e.target.value) || 0)}
+                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-50/50' : ''}`} />
+                ) : <span className="text-gray-300">-</span>}
+              </td>
+
+              <td className="py-2 px-2 font-medium text-gray-900 text-xs max-w-[180px] truncate">
+                {game.player2 || <span className="text-gray-400 italic">TBD</span>}
+              </td>
+
+              <td className="py-2 px-2 text-center">
+                {isDirty ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">changed</span>
+                ) : (
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                    isCompleted ? 'bg-green-100 text-green-800'
+                    : game.status === 'in_progress' ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {game.status === 'scheduled' ? 'pending' : game.status}
+                  </span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <Link
-          href={`/tournaments/${tournamentId}`}
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6"
-        >
-          <ArrowLeft size={20} />
-          Back to Tournament
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back */}
+        <Link href={`/tournaments/${tournamentId}`} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6">
+          <ArrowLeft size={20} /> Back to Tournament
         </Link>
 
         {/* Header */}
@@ -475,32 +545,26 @@ export default function ManageTournamentPage() {
           </div>
         </div>
 
-        {/* Success/Error Messages */}
+        {/* Messages */}
         {success && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-800">
-            <CheckCircle size={20} />
-            {success}
+            <CheckCircle size={20} /> {success}
           </div>
         )}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-800">
-            <AlertCircle size={20} />
-            {error}
+            <AlertCircle size={20} /> {error}
           </div>
         )}
 
-        {/* Status Management */}
+        {/* Status */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Tournament Status</h2>
           {availableTransitions.length > 0 ? (
             <div className="flex gap-3">
-              {availableTransitions.map((nextStatus) => (
-                <button
-                  key={nextStatus}
-                  onClick={() => handleStatusChange(nextStatus)}
-                  disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                >
+              {availableTransitions.map(nextStatus => (
+                <button key={nextStatus} onClick={() => handleStatusChange(nextStatus)} disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50">
                   {saving ? 'Updating...' : `Move to ${statusLabels[nextStatus]}`}
                 </button>
               ))}
@@ -515,46 +579,30 @@ export default function ManageTournamentPage() {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Categorias</h2>
             <div className="flex flex-wrap gap-2 mb-4">
-              <button
-                onClick={() => setSelectedCategoryId(null)}
+              <button onClick={() => setSelectedCategoryId(null)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
-                  selectedCategoryId === null
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
+                  selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}>
                 Todas
               </button>
-              {tournament.categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategoryId(cat.id)}
+              {tournament.categories.map(cat => (
+                <button key={cat.id} onClick={() => setSelectedCategoryId(cat.id)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
-                    selectedCategoryId === cat.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
+                    selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}>
                   {cat.name}
-                  <span className="ml-1 text-xs opacity-70">
-                    ({cat._count?.players || 0}/{cat.maxTeams})
-                  </span>
+                  <span className="ml-1 text-xs opacity-70">({cat._count?.players || 0}/{cat.maxTeams})</span>
                 </button>
               ))}
             </div>
-
-            {/* Per-category generation */}
             {(tournament.status === 'registration' || tournament.status === 'draft') && (
               <div className="border-t border-gray-100 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Gerar Schedule por Categoria</h3>
                 <div className="flex flex-wrap gap-2">
-                  {tournament.categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => handleGenerateSchedule(cat.id)}
+                  {tournament.categories.map(cat => (
+                    <button key={cat.id} onClick={() => handleGenerateSchedule(cat.id)}
                       disabled={generating || generatingCategoryId === cat.id}
-                      className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition disabled:opacity-50"
-                    >
+                      className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition disabled:opacity-50">
                       {generatingCategoryId === cat.id ? 'Gerando...' : `Gerar ${cat.name}`}
                     </button>
                   ))}
@@ -568,115 +616,102 @@ export default function ManageTournamentPage() {
         {(tournament.status === 'registration' || tournament.status === 'draft') && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Schedule</h2>
-            <button
-              onClick={() => handleGenerateSchedule()}
-              disabled={generating}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
-            >
+            <button onClick={() => handleGenerateSchedule()} disabled={generating}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50">
               {generating ? 'Generating...' : 'Generate Schedule (All Categories)'}
             </button>
           </div>
         )}
 
-        {/* Games Management */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Games ({games.length})</h2>
+        {/* Score Matrix — Grouped by Round */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Score Matrix ({games.length} games)</h2>
+            <div className="flex items-center gap-3">
+              <button onClick={() => fetchGames()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                <RefreshCw size={14} /> Refresh
+              </button>
+              {dirtyGames.size > 0 && (
+                <button onClick={handleBatchSave} disabled={batchSaving}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+                  <Save size={16} />
+                  {batchSaving ? 'Saving...' : `Update All (${dirtyGames.size})`}
+                </button>
+              )}
+            </div>
+          </div>
+
           {games.length === 0 ? (
-            <p className="text-gray-600">No games scheduled yet. Generate a schedule first.</p>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <p className="text-gray-600">No games scheduled yet. Generate a schedule first.</p>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {games.map((game) => (
-                <div key={game.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {game.matchNumber != null && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500">
-                          M{game.matchNumber}
+            roundGroups.map(rg => {
+              const key = `${rg.bracketSide || 'main'}::${rg.roundName}`;
+              const isCollapsed = collapsedRounds.has(key);
+              const allDone = rg.completedCount === rg.totalCount;
+              const dirtyInRound = rg.games.filter(g => dirtyGames.has(g.id)).length;
+
+              return (
+                <div key={key} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  {/* Round header — click to expand/collapse */}
+                  <button
+                    onClick={() => toggleRound(key)}
+                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isCollapsed
+                        ? <ChevronRight size={18} className="text-gray-400" />
+                        : <ChevronDown size={18} className="text-gray-400" />
+                      }
+                      <span className="font-semibold text-gray-900">{rg.roundName}</span>
+                      {rg.bracketSide && (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${bracketSideColors[rg.bracketSide] || 'bg-gray-100 text-gray-600'}`}>
+                          {bracketSideLabels[rg.bracketSide] || rg.bracketSide}
                         </span>
                       )}
-                      <p className="text-sm font-medium text-gray-600">
-                        {game.roundName} - Court {game.court}
-                      </p>
-                      {game.bestOf3 && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#1a2744] text-[#c4a35a]">
-                          Bo3
-                        </span>
+                      {rg.games[0]?.bestOf3 && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#1a2744] text-[#c4a35a]">Bo3</span>
                       )}
                     </div>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        game.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : game.status === 'in_progress'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {game.status}
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="font-medium text-gray-900 flex-1 text-sm">{game.player1}</span>
-
-                    {editingGameId === game.id ? (
-                      <div className="flex flex-col items-center gap-2">
-                        {renderScoreEditor(game)}
-
-                        {scoreError && (
-                          <p className="text-xs text-red-600 max-w-xs text-center">{scoreError}</p>
-                        )}
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleScoreUpdate(game.id, game.bestOf3)}
-                            disabled={saving}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
-                          >
-                            <Save size={14} /> Save
-                          </button>
-                          <button
-                            onClick={() => { setEditingGameId(null); setScoreError(null); }}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 flex items-center gap-1"
-                          >
-                            <X size={14} /> Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-xl font-bold text-gray-900">
-                          {game.score1 ?? '-'} - {game.score2 ?? '-'}
+                    <div className="flex items-center gap-3">
+                      {dirtyInRound > 0 && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+                          {dirtyInRound} changed
                         </span>
-                        {game.bestOf3 && game.score1 != null && (
-                          <div className="text-xs text-gray-500 space-y-0.5 text-center">
-                            <span className="font-medium">{getSetsSummary(game)}</span>
-                            {game.set2Home != null && (
-                              <span className="block">
-                                {game.score1}-{game.score2}, {game.set2Home}-{game.set2Away}
-                                {game.set3Home != null && `, ${game.set3Home}-${game.set3Away}`}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {game.status !== 'completed' && (
-                          <button
-                            onClick={() => { setEditingGameId(game.id); setScoreError(null); }}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium mt-1"
-                          >
-                            Edit Score
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      )}
+                      <span className={`text-xs font-medium ${allDone ? 'text-green-600' : 'text-gray-500'}`}>
+                        {rg.completedCount}/{rg.totalCount} done
+                      </span>
+                    </div>
+                  </button>
 
-                    <span className="font-medium text-gray-900 flex-1 text-sm text-right">{game.player2}</span>
-                  </div>
+                  {/* Round games */}
+                  {!isCollapsed && (
+                    <div className="px-3 pb-3 overflow-x-auto">
+                      {renderScoreMatrix(rg.games)}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
         </div>
+
+        {/* Sticky bottom save bar */}
+        {dirtyGames.size > 0 && (
+          <div className="sticky bottom-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between shadow-lg">
+            <p className="text-amber-800 text-sm font-medium">
+              {dirtyGames.size} game{dirtyGames.size !== 1 ? 's' : ''} modified
+            </p>
+            <button onClick={handleBatchSave} disabled={batchSaving}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+              <Save size={16} />
+              {batchSaving ? 'Saving...' : 'Update All'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

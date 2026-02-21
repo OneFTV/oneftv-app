@@ -13,11 +13,28 @@ from db.queries.logs import log_agent
 logger = logging.getLogger(__name__)
 
 RESEARCH_TOPICS = [
-    "NFA tournament rule updates and format changes",
-    "Competitor footvolley apps and scoring systems",
-    "Best practices for double elimination bracket UX",
-    "Pool play scheduling optimization algorithms",
-    "Real-time scoring and live feed patterns",
+    # NFA-specific
+    "NFA official tournament rules: set formats, point caps, tiebreakers, timeout rules per division",
+    "NFA ranking methodology: how points are awarded per division placement, decay rules, head-to-head tiebreakers",
+    "NFA tournament formats by division: Open D1 (32-team double elim), D2 (8-team), D3 (16-team), Women's, Masters, Beginners",
+    "NFA losers bracket seeding rules: how teams drop from winners to losers bracket, reseeding after each round",
+    "NFA grand finals reset rules: when does the team from losers bracket get a reset match",
+
+    # TAFC-specific
+    "TAFC category structure: 10 categories (Pro M/F, A/B/C/D M/F), point systems (18/15/12), qualification chains",
+    "TAFC best-of-3 set rules: which rounds use best-of-3 vs single set, point caps per round",
+    "TAFC professional league features: pro league flag, multi-day scheduling, court rotation",
+
+    # Operations & UX
+    "Tournament director workflows: check-in, bracket adjustments mid-tournament, score disputes, walkovers",
+    "Payment integration for footvolley tournaments: registration fees, pricing lots (1st/2nd/3rd tier), refund policies",
+    "Real-time scoring UX: mobile-first score entry, live bracket updates, spectator view patterns",
+    "Multi-division tournament creation: how organizers set up 6+ divisions with different formats in one event",
+
+    # Competitive analysis
+    "Competitor footvolley/beach volleyball apps: Scoreholio, Challonge, BracketHQ features and gaps",
+    "Player profile and stats features in sports tournament apps: head-to-head records, win streaks, form charts",
+    "Tournament scheduling algorithms: court assignments with rest periods, parallel matches, time slot optimization",
 ]
 
 

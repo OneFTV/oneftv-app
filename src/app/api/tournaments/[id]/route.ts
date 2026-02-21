@@ -1,99 +1,23 @@
-import { NextRequest, NextResponse } from "next/server"
-import { z } from "zod"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import prisma from "@/lib/db"
-
-const updateTournamentSchema = z.object({
-  name: z.string().min(3).max(100).optional(),
-  description: z.string().max(500).optional(),
-  maxPlayers: z.number().int().min(4).optional(),
-  date: z.string().datetime().optional(),
-  location: z.string().max(200).optional(),
-  status: z.enum(["draft", "registration", "in_progress", "completed"]).optional(),
-})
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { TournamentService } from '@/modules/tournament/tournament.service'
+import { updateTournamentSchema } from '@/modules/tournament/tournament.schemas'
+import { AppError } from '@/shared/api/errors'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: params.id },
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        players: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-        groups: {
-          include: {
-            players: true,
-          },
-        },
-        games: {
-          include: {
-            player1Home: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            player2Home: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            player1Away: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            player2Away: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        rounds: {
-          include: {
-            games: true,
-          },
-        },
-      },
-    })
-
-    if (!tournament) {
-      return NextResponse.json(
-        { error: "Tournament not found" },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({ data: tournament }, { status: 200 })
+    const tournament = await TournamentService.getById(params.id)
+    return NextResponse.json({ data: tournament })
   } catch (error) {
-    console.error("Get tournament error:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch tournament" },
-      { status: 500 }
-    )
+    if (error instanceof AppError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    console.error('Get tournament error:', error)
+    return NextResponse.json({ error: 'Failed to fetch tournament' }, { status: 500 })
   }
 }
 
@@ -103,86 +27,27 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-
     if (!session || !session.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: params.id },
-      select: { organizerId: true },
-    })
-
-    if (!tournament) {
-      return NextResponse.json(
-        { error: "Tournament not found" },
-        { status: 404 }
-      )
-    }
-
-    if (tournament.organizerId !== session.user.id) {
-      return NextResponse.json(
-        { error: "Forbidden: Only organizer can update tournament" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await req.json()
     const result = updateTournamentSchema.safeParse(body)
-
     if (!result.success) {
       return NextResponse.json(
-        { error: "Validation failed", details: result.error.flatten() },
+        { error: 'Validation failed', details: result.error.flatten() },
         { status: 400 }
       )
     }
 
-    const updateData: Record<string, unknown> = { ...result.data }
-    if (updateData.date && typeof updateData.date === 'string') {
-      updateData.date = new Date(updateData.date)
-    }
-
-    const updatedTournament = await prisma.tournament.update({
-      where: { id: params.id },
-      data: updateData,
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        players: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    return NextResponse.json(
-      {
-        message: "Tournament updated successfully",
-        data: updatedTournament,
-      },
-      { status: 200 }
-    )
+    const tournament = await TournamentService.update(params.id, result.data, session.user.id)
+    return NextResponse.json({ message: 'Tournament updated successfully', data: tournament })
   } catch (error) {
-    console.error("Update tournament error:", error)
-    return NextResponse.json(
-      { error: "Failed to update tournament" },
-      { status: 500 }
-    )
+    if (error instanceof AppError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    console.error('Update tournament error:', error)
+    return NextResponse.json({ error: 'Failed to update tournament' }, { status: 500 })
   }
 }
 
@@ -192,46 +57,17 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-
     if (!session || !session.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: params.id },
-      select: { organizerId: true },
-    })
-
-    if (!tournament) {
-      return NextResponse.json(
-        { error: "Tournament not found" },
-        { status: 404 }
-      )
-    }
-
-    if (tournament.organizerId !== session.user.id) {
-      return NextResponse.json(
-        { error: "Forbidden: Only organizer can delete tournament" },
-        { status: 403 }
-      )
-    }
-
-    await prisma.tournament.delete({
-      where: { id: params.id },
-    })
-
-    return NextResponse.json(
-      { message: "Tournament deleted successfully" },
-      { status: 200 }
-    )
+    await TournamentService.delete(params.id, session.user.id)
+    return NextResponse.json({ message: 'Tournament deleted successfully' })
   } catch (error) {
-    console.error("Delete tournament error:", error)
-    return NextResponse.json(
-      { error: "Failed to delete tournament" },
-      { status: 500 }
-    )
+    if (error instanceof AppError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    console.error('Delete tournament error:', error)
+    return NextResponse.json({ error: 'Failed to delete tournament' }, { status: 500 })
   }
 }

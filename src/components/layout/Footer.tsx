@@ -2,25 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Footer() {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+  const { t } = useTranslation();
 
   if (pathname?.startsWith('/e/')) return null;
 
   const footerLinks = {
     product: [
-      { label: 'Tournaments', href: '/tournaments' },
-      { label: 'Rankings', href: '/rankings' },
-      { label: 'Athletes', href: '/athletes' },
-      { label: 'Dashboard', href: '/dashboard' },
+      { label: t('common.tournaments'), href: '/tournaments' },
+      { label: t('common.rankings'), href: '/rankings' },
+      { label: t('common.athletes'), href: '/athletes' },
+      { label: t('common.dashboard'), href: '/dashboard' },
     ],
     company: [
-      { label: 'About', href: '#' },
-      { label: 'Contact', href: '#' },
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Terms of Service', href: '#' },
+      { label: t('common.footer_about'), href: '#' },
+      { label: t('common.footer_contact'), href: '#' },
+      { label: t('common.footer_privacy_policy'), href: '#' },
+      { label: t('common.footer_terms_of_service'), href: '#' },
     ],
     social: [
       {
@@ -122,10 +124,10 @@ export default function Footer() {
                 </span>
               </div>
               <p className="text-sm text-gray-400 mb-4">
-                Professional tournament management platform for footvolley athletes and organizers worldwide.
+                {t('common.footer_brand_description')}
               </p>
               <p className="text-xs text-gray-500 mb-6">
-                Inspired by NFA - National Footvolley Association
+                {t('common.footer_nfa_credit')}
               </p>
               {/* Social Links */}
               <div className="flex items-center space-x-4">
@@ -146,7 +148,7 @@ export default function Footer() {
 
             {/* Product Links */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Product</h3>
+              <h3 className="text-white font-semibold mb-4">{t('common.footer_product')}</h3>
               <ul className="space-y-2">
                 {footerLinks.product.map((link) => (
                   <li key={link.href}>
@@ -163,7 +165,7 @@ export default function Footer() {
 
             {/* Company Links */}
             <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
+              <h3 className="text-white font-semibold mb-4">{t('common.footer_company')}</h3>
               <ul className="space-y-2">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
@@ -185,17 +187,17 @@ export default function Footer() {
           {/* Bottom Section */}
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <p className="text-sm text-gray-400 text-center sm:text-left">
-              &copy; {currentYear} OneFTV. All rights reserved.
+              {t('common.footer_copyright', { year: String(currentYear) })}
             </p>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors duration-200">
-                Privacy
+                {t('common.footer_privacy')}
               </a>
               <a href="#" className="hover:text-white transition-colors duration-200">
-                Terms
+                {t('common.footer_terms')}
               </a>
               <a href="#" className="hover:text-white transition-colors duration-200">
-                Contact
+                {t('common.footer_contact')}
               </a>
             </div>
           </div>
@@ -204,14 +206,14 @@ export default function Footer() {
         {/* Extra Info Bar */}
         <div className="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
           <p>
-            Made with passion for footvolley enthusiasts. Inspired by the{' '}
+            {t('common.footer_made_with')}{' '}
             <a
               href="https://nfa.com.br"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
             >
-              National Footvolley Association (NFA)
+              {t('common.footer_nfa_link')}
             </a>
           </p>
         </div>

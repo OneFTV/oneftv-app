@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, Calendar, MapPin, Users } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface Tournament {
   id: string;
@@ -15,13 +16,14 @@ interface Tournament {
   country: string | null;
   startDate: string;
   endDate: string | null;
-  format: string;
+  format: string | null;
   status: string;
-  maxPlayers: number;
+  maxPlayers: number | null;
   registeredPlayers: number;
   organizerId: string;
   organizerName: string;
   courts: number;
+  categoryCount?: number;
 }
 
 const FORMATS = ['All', 'King of the Beach', 'Bracket', 'Group+Knockout', 'Round Robin'] as const;
@@ -61,6 +63,7 @@ const formatLabels: Record<string, string> = {
 
 export default function TournamentsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,8 +126,10 @@ export default function TournamentsPage() {
         statusMap[tournament.status] === selectedStatus;
 
       const matchesFormat = selectedFormat === 'All' ||
-        tournament.format === selectedFormat ||
-        (formatLabels[tournament.format] || tournament.format) === selectedFormat;
+        (tournament.format && (
+          tournament.format === selectedFormat ||
+          (formatLabels[tournament.format] || tournament.format) === selectedFormat
+        ));
 
       return matchesSearch && matchesStatus && matchesFormat;
     });
@@ -169,12 +174,12 @@ export default function TournamentsPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-white">Tournaments</h1>
+          <h1 className="text-3xl font-bold text-white">{t('tournaments.title')}</h1>
           <Link
             href="/tournaments/create"
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-semibold hover:shadow-lg transition-all"
           >
-            <Plus size={20} /> Create Tournament
+            <Plus size={20} /> {t('tournaments.create_tournament')}
           </Link>
         </div>
 
@@ -184,7 +189,7 @@ export default function TournamentsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
               type="text"
-              placeholder="Search tournaments..."
+              placeholder={t('tournaments.search_placeholder')}
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 text-white rounded-lg placeholder-slate-500 focus:outline-none focus:border-blue-400"
@@ -214,7 +219,7 @@ export default function TournamentsPage() {
 
         {paginatedTournaments.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-400 text-lg">No tournaments found.</p>
+            <p className="text-slate-400 text-lg">{t('tournaments.no_tournaments')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -232,15 +237,15 @@ export default function TournamentsPage() {
                   <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString()}
                 </div>
                 <div className="flex gap-2 mb-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${formatColors[tournament.format] || 'bg-gray-100 text-gray-800'}`}>
-                    {formatLabels[tournament.format] || tournament.format}
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tournament.format ? (formatColors[tournament.format] || 'bg-gray-100 text-gray-800') : 'bg-gray-100 text-gray-800'}`}>
+                    {tournament.format ? (formatLabels[tournament.format] || tournament.format) : (tournament.categoryCount ? `${tournament.categoryCount} categorias` : 'Multi-cat')}
                   </span>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[tournament.status] || 'bg-gray-100 text-gray-800'}`}>
                     {statusMap[tournament.status] || tournament.status}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-slate-400 text-sm">
-                  <Users size={14} /> {tournament.registeredPlayers}/{tournament.maxPlayers} players
+                  <Users size={14} /> {tournament.registeredPlayers}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''} players
                 </div>
               </Link>
             ))}

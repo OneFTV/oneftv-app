@@ -18,7 +18,7 @@
     <key>StandardOutPath</key>
     <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/logs/orchestrator.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/logs/orchestrator.err.log</string>
+    <string>/Users/mac-mini/oneftv-app/footvolley-orchestrator/logs/orchestrator.log</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>

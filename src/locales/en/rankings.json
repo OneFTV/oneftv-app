@@ -1,0 +1,19 @@
+{
+  "title": "King of the Beach - Footvolley Ranking",
+  "subtitle": "Track the top athletes in competitive footvolley",
+  "overall_rankings": "Overall Rankings",
+  "refresh": "Refresh Ranking",
+  "refreshing": "Refreshing...",
+  "no_rankings": "No rankings available",
+  "no_rankings_desc": "Rankings will be updated as tournaments are completed",
+  "no_chart_data": "No data available for chart",
+  "col_rank": "Rank",
+  "col_player": "Player",
+  "col_wins": "W",
+  "col_losses": "L",
+  "col_win_pct": "Win %",
+  "col_tournaments": "Tournaments",
+  "col_points": "Points",
+  "chart_title": "Top 10 Players by Total Points",
+  "tournaments_won": "{count} won"
+}

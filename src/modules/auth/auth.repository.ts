@@ -13,6 +13,7 @@ const profileSelect = {
   country: true,
   level: true,
   avatar: true,
+  preferredLanguage: true,
 } as const
 
 export class AuthRepository {
@@ -50,6 +51,7 @@ export class AuthRepository {
         state: true,
         country: true,
         level: true,
+        preferredLanguage: true,
       },
     })
   }
@@ -60,6 +62,20 @@ export class AuthRepository {
       include: {
         tournament: { select: { name: true, status: true } },
       },
+    })
+  }
+
+  static async getOrganizerTournaments(userId: string) {
+    return prisma.tournament.findMany({
+      where: { organizerId: userId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        date: true,
+        _count: { select: { players: true } },
+      },
+      orderBy: { date: 'desc' },
     })
   }
 }

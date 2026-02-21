@@ -7,6 +7,7 @@ import { TournamentTheme, lightTheme } from './theme';
 
 interface BracketViewProps {
   games: BracketGame[];
+  dense?: boolean;
   theme?: TournamentTheme;
 }
 
@@ -14,12 +15,17 @@ interface BracketViewProps {
 function DesktopBracket({
   rounds,
   totalRoundNum,
+  dense,
   theme,
 }: {
   rounds: ReturnType<typeof groupGamesByRound>;
   totalRoundNum: number;
+  dense?: boolean;
   theme: TournamentTheme;
 }) {
+  const colMinWidth = theme.bracketColumnMinWidth;
+  const connectorWidth = 'w-[32px] min-w-[32px]';
+
   return (
     <div className="overflow-x-auto pb-4">
       <div className="flex items-stretch min-w-max">
@@ -30,7 +36,7 @@ function DesktopBracket({
           return (
             <div key={round.roundNumber} className="flex">
               {/* Round column */}
-              <div className={`flex flex-col ${theme.bracketColumnMinWidth}`}>
+              <div className={`flex flex-col ${colMinWidth}`}>
                 {/* Header */}
                 <div className="text-center mb-4 px-2">
                   <span className={`text-xs font-bold ${theme.roundLabel} uppercase tracking-wider`}>
@@ -56,7 +62,7 @@ function DesktopBracket({
 
               {/* Connector column (between this round and next) */}
               {!isLast && (
-                <div className="flex flex-col justify-around flex-1 w-[32px] min-w-[32px]">
+                <div className={`flex flex-col justify-around flex-1 ${connectorWidth}`}>
                   <div style={{ flexGrow: 0.5 }} />
                   {round.games.map((game, gi) => {
                     // For pairs: top game gets bottom+right border, bottom game gets top+right border
@@ -145,7 +151,7 @@ function MobileBracket({
   );
 }
 
-export default function BracketView({ games, theme = lightTheme }: BracketViewProps) {
+export default function BracketView({ games, dense = false, theme = lightTheme }: BracketViewProps) {
   // Prefer knockout games; fall back to all games for pure bracket formats
   const knockoutOnly = games.filter((g) => g.roundType === 'knockout');
   const gamesToShow = knockoutOnly.length > 0 ? knockoutOnly : games;
@@ -161,6 +167,11 @@ export default function BracketView({ games, theme = lightTheme }: BracketViewPr
   }
 
   const totalRoundNum = rounds[rounds.length - 1].roundNumber;
+
+  // Dense mode: always show desktop layout (poster view)
+  if (dense) {
+    return <DesktopBracket rounds={rounds} totalRoundNum={totalRoundNum} dense theme={theme} />;
+  }
 
   return (
     <>

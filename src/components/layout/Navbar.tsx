@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/contexts/TranslationContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,11 +26,11 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/tournaments', label: 'Tournaments' },
-    { href: '/rankings', label: 'Rankings' },
-    { href: '/athletes', label: 'Athletes' },
-    { href: '/livefeed', label: 'Live Feed' },
+    { href: '/', label: t('common.home') },
+    { href: '/tournaments', label: t('common.tournaments') },
+    { href: '/rankings', label: t('common.rankings') },
+    { href: '/athletes', label: t('common.athletes') },
+    { href: '/livefeed', label: t('common.live_feed') },
   ];
 
   const handleSignOut = async () => {
@@ -51,13 +54,13 @@ export default function Navbar() {
             className="flex items-center space-x-2 group"
           >
             <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg group-hover:from-blue-600 group-hover:to-cyan-500 transition-all duration-200">
-              <span className="text-white font-bold text-xs sm:text-sm">1FTV</span>
+              <span className="text-white font-bold text-[8px] sm:text-[10px] leading-none">One<br/>FTV</span>
             </div>
             <span className="hidden sm:inline text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
               OneFTV
             </span>
             <span className="sm:hidden text-lg font-bold text-gray-900">
-              1FTV
+              OneFTV
             </span>
           </Link>
 
@@ -78,8 +81,9 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Auth Section */}
+          {/* Auth Section + Language Switcher */}
           <div className="hidden md:flex items-center space-x-4">
+            <LanguageSwitcher />
             {status === 'loading' ? (
               <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
             ) : session?.user ? (
@@ -97,59 +101,62 @@ export default function Navbar() {
                 </div>
                 <div className="border-l border-gray-200 pl-4 flex items-center space-x-3">
                   <Link href="/dashboard" className="btn-outline btn-sm">
-                    Dashboard
+                    {t('common.dashboard')}
                   </Link>
                   <button
                     onClick={handleSignOut}
                     className="btn-primary btn-sm"
                   >
-                    Logout
+                    {t('common.logout')}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
                 <Link href="/login" className="btn-outline btn-sm">
-                  Login
+                  {t('common.login')}
                 </Link>
                 <Link href="/register" className="btn-primary btn-sm">
-                  Register
+                  {t('common.register')}
                 </Link>
               </div>
             )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-            aria-label="Toggle menu"
-          >
-            <svg
-              className={`w-6 h-6 transition-transform duration-300 ${
-                isOpen ? 'rotate-90' : ''
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+              aria-label="Toggle menu"
             >
-                {isOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16C4 18h16"
-                  />
-                )}
-            </svg>
-          </button>
+              <svg
+                className={`w-6 h-6 transition-transform duration-300 ${
+                  isOpen ? 'rotate-90' : ''
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                  {isOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16C4 18h16"
+                    />
+                  )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -185,13 +192,13 @@ export default function Navbar() {
                       onClick={() => setIsOpen(false)}
                       className="block btn-outline w-full text-center"
                     >
-                      Dashboard
+                      {t('common.dashboard')}
                     </Link>
                     <button
                       onClick={handleSignOut}
                       className="block btn-primary w-full"
                     >
-                      Logout
+                      {t('common.logout')}
                     </button>
                   </>
                 ) : (
@@ -201,14 +208,14 @@ export default function Navbar() {
                       onClick={() => setIsOpen(false)}
                       className="block btn-outline w-full text-center"
                     >
-                      Login
+                      {t('common.login')}
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setIsOpen(false)}
                       className="block btn-primary w-full text-center"
                     >
-                      Register
+                      {t('common.register')}
                     </Link>
                   </>
                 )}

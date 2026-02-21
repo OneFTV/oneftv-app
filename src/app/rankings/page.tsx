@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface RankingEntry {
   rank: number;
@@ -21,6 +22,7 @@ interface RankingEntry {
 }
 
 export default function RankingsPage() {
+  const { t } = useTranslation();
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,10 +96,10 @@ export default function RankingsPage() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold mb-2">
-            👑 King of the Beach - Footvolley Ranking
+            {t('rankings.title')}
           </h1>
           <p className="text-blue-100 text-lg">
-            Track the top athletes in competitive footvolley
+            {t('rankings.subtitle')}
           </p>
         </div>
       </div>
@@ -106,14 +108,14 @@ export default function RankingsPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Overall Rankings</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('rankings.overall_rankings')}</h2>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
             >
               <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh Ranking'}
+              {refreshing ? t('rankings.refreshing') : t('rankings.refresh')}
             </button>
           </div>
         </div>
@@ -128,10 +130,10 @@ export default function RankingsPage() {
         ) : rankings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-2xl font-bold text-gray-900 mb-2">
-              No rankings available
+              {t('rankings.no_rankings')}
             </p>
             <p className="text-gray-600">
-              Rankings will be updated as tournaments are completed
+              {t('rankings.no_rankings_desc')}
             </p>
           </div>
         ) : (
@@ -143,25 +145,25 @@ export default function RankingsPage() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 w-20">
-                        Rank
+                        {t('rankings.col_rank')}
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                        Player
+                        {t('rankings.col_player')}
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        W
+                        {t('rankings.col_wins')}
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        L
+                        {t('rankings.col_losses')}
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        Win %
+                        {t('rankings.col_win_pct')}
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                        Tournaments
+                        {t('rankings.col_tournaments')}
                       </th>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                        Points
+                        {t('rankings.col_points')}
                       </th>
                     </tr>
                   </thead>
@@ -203,7 +205,7 @@ export default function RankingsPage() {
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className="font-semibold text-gray-900">
-                              {entry.stats.winRate}%
+                              {entry.stats.winRate ?? 0}%
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center">
@@ -213,7 +215,7 @@ export default function RankingsPage() {
                               </span>
                               {entry.stats.tournamentsWon > 0 && (
                                 <span className="text-sm text-yellow-600 font-bold">
-                                  ({entry.stats.tournamentsWon} won)
+                                  ({entry.stats.tournamentsWon} {t('rankings.tournaments_won')})
                                 </span>
                               )}
                             </div>
@@ -234,7 +236,7 @@ export default function RankingsPage() {
             {/* Performance Chart */}
             <div className="bg-white rounded-lg shadow-sm p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Top 10 Players by Total Points
+                {t('rankings.chart_title')}
               </h2>
               { chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
@@ -270,7 +272,7 @@ export default function RankingsPage() {
                 </ResponsiveContainer>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No data available for chart
+                  {t('rankings.no_chart_data')}
                 </div>
               )}
             </div>

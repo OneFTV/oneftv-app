@@ -29,6 +29,7 @@ export class AuthService {
       state: user.state || '',
       country: user.country || '',
       level: user.level || 'Beginner',
+      preferredLanguage: user.preferredLanguage || '',
     }
   }
 
@@ -43,6 +44,7 @@ export class AuthService {
       state: data.state || null,
       country: data.country || null,
       level: data.level || null,
+      preferredLanguage: data.preferredLanguage !== undefined ? (data.preferredLanguage || null) : undefined,
     })
   }
 
@@ -70,5 +72,26 @@ export class AuthService {
     const winRate = gamesPlayed > 0 ? Number(((totalWins / gamesPlayed) * 100).toFixed(1)) : 0
 
     return { gamesPlayed, wins: totalWins, losses: totalLosses, totalPoints, winRate, bestTournament }
+  }
+
+  static async getOrganizerStats(userId: string) {
+    const tournaments = await AuthRepository.getOrganizerTournaments(userId)
+
+    const totalPlayers = tournaments.reduce(
+      (sum, t) => sum + (t._count?.players || 0),
+      0
+    )
+
+    return {
+      tournamentCount: tournaments.length,
+      totalPlayers,
+      tournaments: tournaments.map(t => ({
+        id: t.id,
+        name: t.name,
+        status: t.status,
+        date: t.date.toISOString(),
+        playerCount: t._count?.players || 0,
+      })),
+    }
   }
 }

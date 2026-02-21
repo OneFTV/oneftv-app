@@ -1,55 +1,34 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function Home() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
-      {/* Header/Navigation */}
-      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-blue-800/30">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-lg flex items-center justify-center">
-              <span className="text-slate-900 font-bold text-sm">FV</span>
-            </div>
-            <span className="text-white font-bold text-xl">OneFTV</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-slate-300 hover:text-white transition-colors font-medium"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all"
-            >
-              Get Started
-            </Link>
-          </div>
-        </nav>
-      </header>
-
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
         <div className="text-center">
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Organize World-Class Footvolley Tournaments
+            {t('home.hero_title')}
           </h1>
           <p className="text-xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Manage King of the Beach and bracket tournaments globally. Automatic group generation, smart scheduling, and real-time rankings for athletes worldwide.
+            {t('home.hero_description')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/register"
+              href="/tournaments/create"
               className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105"
             >
-              Create Tournament
+              {t('home.create_tournament')}
             </Link>
             <Link
               href="/dashboard"
               className="px-8 py-4 border-2 border-blue-400 text-blue-300 rounded-lg font-bold text-lg hover:bg-blue-400/10 transition-all"
             >
-              View Rankings
+              {t('home.view_rankings')}
             </Link>
           </div>
         </div>
@@ -60,22 +39,22 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-xl p-8 text-center">
             <div className="text-5xl font-bold text-cyan-300 mb-2">500+</div>
-            <div className="text-slate-300 text-lg font-semibold">Active Athletes</div>
+            <div className="text-slate-300 text-lg font-semibold">{t('home.stat_athletes')}</div>
           </div>
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-xl p-8 text-center">
             <div className="text-5xl font-bold text-cyan-300 mb-2">100+</div>
-            <div className="text-slate-300 text-lg font-semibold">Tournaments Organized</div>
+            <div className="text-slate-300 text-lg font-semibold">{t('home.stat_tournaments')}</div>
           </div>
           <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-400/30 rounded-xl p-8 text-center">
             <div className="text-5xl font-bold text-cyan-300 mb-2">20+</div>
-            <div className="text-slate-300 text-lg font-semibold">Countries</div>
+            <div className="text-slate-300 text-lg font-semibold">{t('home.stat_countries')}</div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-16">Powerful Features</h2>
+        <h2 className="text-4xl font-bold text-white text-center mb-16">{t('home.features_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Feature 1 */}
           <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-blue-400/20 rounded-xl p-8 hover:border-blue-400/50 transition-all hover:shadow-lg hover:shadow-blue-500/20">
@@ -84,19 +63,19 @@ export default function Home() {
                 <path fillRule="evenodd" d="M10.5 1.5H5.75A2.25 2.25 0 003.5 3.75v12.5A2.25 2.25 0 005.75 18.5h8.5a2.25 2.25 0 002.25-2.25V6.5m-11-3v3m4-3v3m4-3v3M3.5 9.5h13" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-4">King of the Beach</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('home.feature_kotb_title')}</h3>
             <ul className="text-slate-300 space-y-3">
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Automatic group generation and rotation</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_kotb_1')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Dynamic rotating partners system</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_kotb_2')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Individual performance rankings</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_kotb_3')}</span>
               </li>
             </ul>
           </div>
@@ -109,19 +88,19 @@ export default function Home() {
                 <path fillRule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H3a1 1 0 00-1 1v10a1 1 0 001 1h14a1 1 0 001-1V6a1 1 0 00-1-1h3a1 1 0 000-2 2 2 0 01-2-2V3a1 1 0 10-2 0v1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 00-2 0zm6 7a1 1 0 11-2 0 1 1 0 012 0zm2 0a1 1 0 11-2 0 1 1 0 012 0zm2 0a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-4">Smart Scheduling</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('home.feature_scheduling_title')}</h3>
             <ul className="text-slate-300 space-y-3">
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>AI-optimized court usage algorithms</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_scheduling_1')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Multi-court and multi-day support</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_scheduling_2')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Automatic conflict resolution</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_scheduling_3')}</span>
               </li>
             </ul>
           </div>
@@ -133,19 +112,19 @@ export default function Home() {
                 <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-4">Global Rankings</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('home.feature_rankings_title')}</h3>
             <ul className="text-slate-300 space-y-3">
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Cross-tournament performance tracking</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_rankings_1')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Player evolution and stats visualization</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_rankings_2')}</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-cyan-400 font-bold mt-1">•</span>
-                <span>Real-time leaderboards and metrics</span>
+                <span className="text-cyan-400 font-bold mt-1">&bull;</span>
+                <span>{t('home.feature_rankings_3')}</span>
               </li>
             </ul>
           </div>
@@ -154,13 +133,13 @@ export default function Home() {
 
       {/* How It Works Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-2xl my-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-16">How It Works</h2>
+        <h2 className="text-4xl font-bold text-white text-center mb-16">{t('home.how_it_works')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[
-            { step: 1, title: 'Create Tournament', desc: 'Set up your tournament with venue, dates, and format' },
-            { step: 2, title: 'Register Athletes', desc: 'Athletes register and join your tournament easily' },
-            { step: 3, title: 'Generate Schedule', desc: 'AI creates optimal brackets and court assignments' },
-            { step: 4, title: 'Track Results', desc: 'Update scores and watch rankings update live' },
+            { step: 1, title: t('home.step1_title'), desc: t('home.step1_desc') },
+            { step: 2, title: t('home.step2_title'), desc: t('home.step2_desc') },
+            { step: 3, title: t('home.step3_title'), desc: t('home.step3_desc') },
+            { step: 4, title: t('home.step4_title'), desc: t('home.step4_desc') },
           ].map((item, idx) => (
             <div key={idx} className="text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -175,38 +154,38 @@ export default function Home() {
 
       {/* Tournament Formats Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-16">Tournament Formats</h2>
+        <h2 className="text-4xl font-bold text-white text-center mb-16">{t('home.formats_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-slate-800/50 border border-blue-400/20 rounded-xl p-8">
-            <h3 className="text-2xl font-bold text-white mb-4">King of the Beach (KotB)</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('home.format_kotb_title')}</h3>
             <p className="text-slate-300 mb-4">
-              Perfect for continuous play throughout the event. Players rotate partners dynamically, creating unpredictable matchups and fostering camaraderie. Ideal for community tournaments.
+              {t('home.format_kotb_desc')}
             </p>
             <ul className="text-slate-300 space-y-2">
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                Automatic partner rotation
+                {t('home.format_kotb_1')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                Individual skill tracking
+                {t('home.format_kotb_2')}
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                Continuous tournament flow
+                {t('home.format_kotb_3')}
               </li>
             </ul>
           </div>
 
           <div className="bg-slate-800/50 border border-blue-400/20 rounded-xl p-8">
-            <h3 className="text-2xl font-bold text-white mb-4">Bracket Tournaments</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('home.format_bracket_title')}</h3>
             <p className="text-slate-300 mb-4">
-              Traditional single or double elimination format. Teams compete through structured rounds until champions are crowned. Perfect for competitive events and championships.
+              {t('home.format_bracket_desc')}
             </p>
             <ul className="text-slate-300 space-y-2">
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                Seeded brackets and automatic advancement
+                {t('home.format_bracket_1')}
               </li>
             </ul>
           </div>
@@ -214,15 +193,15 @@ export default function Home() {
 
         {/* CTA Section */}
         <div className="text-center py-20">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to organize?</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">{t('home.cta_title')}</h2>
           <p className="text-slate-300 mb-8 max-w-xl mx-auto">
-            Join the global footvolley community. Create and manage tournaments with ease.
+            {t('home.cta_description')}
           </p>
           <Link
             href="/register"
             className="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all"
           >
-            Get Started Free
+            {t('home.cta_button')}
           </Link>
         </div>
       </section>

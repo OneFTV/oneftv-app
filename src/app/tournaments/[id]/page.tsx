@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, MapPin, Users, Trophy, Loader, AlertCircle, Edit, ArrowLeft } from 'lucide-react';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 interface CategoryInfo {
   id: string;
@@ -117,6 +118,7 @@ const formatLabels: Record<string, string> = {
 export default function TournamentDetailPage() {
   const params = useParams();
   const tournamentId = params.id as string;
+  const { t } = useTranslation();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -200,17 +202,17 @@ export default function TournamentDetailPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setRegisterMsg({ type: 'success', text: 'Successfully registered!' });
+        setRegisterMsg({ type: 'success', text: t('tournaments.register_success') });
         // Refresh players list
         const playersRes = await fetch(`/api/tournaments/${tournamentId}/players`);
         if (playersRes.ok) {
           setPlayers(await playersRes.json());
         }
       } else {
-        setRegisterMsg({ type: 'error', text: data.error || 'Registration failed' });
+        setRegisterMsg({ type: 'error', text: data.error || t('tournaments.register_failed') });
       }
     } catch {
-      setRegisterMsg({ type: 'error', text: 'Network error. Please try again.' });
+      setRegisterMsg({ type: 'error', text: t('tournaments.register_network_error') });
     } finally {
       setRegistering(false);
     }
@@ -221,7 +223,7 @@ export default function TournamentDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-gray-600">Loading tournament details...</p>
+          <p className="text-gray-600">{t('tournaments.loading_tournament')}</p>
         </div>
       </div>
     );
@@ -236,11 +238,11 @@ export default function TournamentDetailPage() {
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6"
           >
             <ArrowLeft size={20} />
-            Back to Tournaments
+            {t('tournaments.back_to_tournaments')}
           </Link>
           <div className="p-6 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-800">
             <AlertCircle size={20} />
-            {error || 'Tournament not found'}
+            {error || t('tournaments.tournament_not_found')}
           </div>
         </div>
       </div>
@@ -286,7 +288,7 @@ export default function TournamentDetailPage() {
                 className="inline-flex items-center gap-2 bg-footvolley-primary hover:bg-footvolley-primary/90 text-white font-medium py-2 px-4 rounded-lg transition"
               >
                 <Trophy size={18} />
-                View Brackets
+                {t('tournaments.view_brackets')}
               </Link>
               {isOrganizer && (
                 <Link
@@ -294,7 +296,7 @@ export default function TournamentDetailPage() {
                   className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
                 >
                   <Edit size={20} />
-                  Manage
+                  {t('tournaments.manage')}
                 </Link>
               )}
             </div>
@@ -321,11 +323,11 @@ export default function TournamentDetailPage() {
               {tournament.city || 'TBD'}{tournament.state ? `, ${tournament.state}` : ''}
             </span>
             <span className="text-gray-300">·</span>
-            <span>{tournament.numCourts || '-'} Courts</span>
+            <span>{tournament.numCourts || '-'} {t('tournaments.courts')}</span>
             <span className="text-gray-300">·</span>
             <span className="inline-flex items-center gap-1.5">
               <Users size={14} />
-              {tournament.players?.length ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''} Players
+              {tournament.players?.length ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''} {t('tournaments.players')}
             </span>
           </div>
         </div>
@@ -334,7 +336,7 @@ export default function TournamentDetailPage() {
         {tournament.categories && tournament.categories.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-semibold text-gray-700">Categorias</span>
+              <span className="text-sm font-semibold text-gray-700">{t('tournaments.manage_categories')}</span>
               <span className="text-xs text-gray-400">({tournament.categories.length})</span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -346,7 +348,7 @@ export default function TournamentDetailPage() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                Todas
+                {t('tournaments.all_categories')}
               </button>
               {tournament.categories.map((cat) => (
                 <button
@@ -372,17 +374,21 @@ export default function TournamentDetailPage() {
         <div className="bg-white rounded-lg shadow-md mb-8">
           <div className="border-b border-gray-200">
             <div className="flex flex-wrap">
-              {(['overview', 'players', 'standings'] as const).map((tab) => (
+              {([
+                { key: 'overview' as const, label: t('tournaments.tab_overview') },
+                { key: 'players' as const, label: t('tournaments.tab_players') },
+                { key: 'standings' as const, label: t('tournaments.tab_standings') },
+              ]).map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`px-6 py-4 font-medium text-sm transition border-b-2 ${
-                    activeTab === tab
+                    activeTab === tab.key
                       ? 'border-blue-600 text-blue-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -394,51 +400,51 @@ export default function TournamentDetailPage() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">Tournament Description</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{t('tournaments.description_title')}</h3>
                   <p className="text-gray-700 whitespace-pre-wrap">
-                    {tournament.description || 'No description provided'}
+                    {tournament.description || t('tournaments.no_description')}
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">Tournament Details</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{t('tournaments.details_title')}</h3>
                   <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">Venue</dt>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_venue')}</dt>
                       <dd className="text-gray-900">{tournament.location}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">City</dt>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_city')}</dt>
                       <dd className="text-gray-900">
-                        {[tournament.city, tournament.state, tournament.country].filter(Boolean).join(', ') || 'Not specified'}
+                        {[tournament.city, tournament.state, tournament.country].filter(Boolean).join(', ') || t('tournaments.detail_not_specified')}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">Format</dt>
-                      <dd className="text-gray-900">{tournament.format ? (formatLabels[tournament.format] || tournament.format) : 'Multi-categoria'}</dd>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_format')}</dt>
+                      <dd className="text-gray-900">{tournament.format ? (formatLabels[tournament.format] || tournament.format) : t('tournaments.detail_multi_category')}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">Points Per Set</dt>
-                      <dd className="text-gray-900">{tournament.pointsPerSet ?? 'Per category'}</dd>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_points_per_set')}</dt>
+                      <dd className="text-gray-900">{tournament.pointsPerSet ?? t('tournaments.detail_per_category')}</dd>
                     </div>
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">Tournament Tier</dt>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_tier')}</dt>
                       <dd className="text-gray-900">
                         {tournament.proLeague ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
-                            Professional League
+                            {t('tournaments.detail_pro_league')}
                           </span>
-                        ) : 'Standard'}
+                        ) : t('tournaments.detail_standard')}
                       </dd>
                     </div>
                     {tournament.proLeague && (
                       <div>
-                        <dt className="text-sm font-medium text-gray-600">Semis & Finals</dt>
-                        <dd className="text-gray-900">Best of 3 sets (3rd set to 15 pts)</dd>
+                        <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_semis_finals')}</dt>
+                        <dd className="text-gray-900">{t('tournaments.detail_best_of_3')}</dd>
                       </div>
                     )}
                     <div>
-                      <dt className="text-sm font-medium text-gray-600">Organizer</dt>
+                      <dt className="text-sm font-medium text-gray-600">{t('tournaments.detail_organizer')}</dt>
                       <dd className="text-gray-900">{tournament.organizer?.name}</dd>
                     </div>
                   </dl>
@@ -451,7 +457,7 @@ export default function TournamentDetailPage() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900">
-                    Registered Players ({players.length}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''})
+                    {t('tournaments.registered_players', { count: `${players.length}${tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''}` })}
                   </h3>
                   {tournament.status === 'registration' && user && !isRegistered && (
                     <button
@@ -459,13 +465,13 @@ export default function TournamentDetailPage() {
                       disabled={registering}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {registering ? 'Registering...' : 'Register'}
+                      {registering ? t('tournaments.registering') : t('tournaments.register_button')}
                     </button>
                   )}
                   {isRegistered && (
                     <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      Registered
+                      {t('tournaments.already_registered')}
                     </span>
                   )}
                 </div>
@@ -481,19 +487,19 @@ export default function TournamentDetailPage() {
                 {players.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                    <p className="text-gray-600">No players registered yet</p>
+                    <p className="text-gray-600">{t('tournaments.no_players')}</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Name</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">Seed</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">W</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">L</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">Pts</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">PD</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_name')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_seed')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_wins')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_losses')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_points')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_point_diff')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -517,23 +523,23 @@ export default function TournamentDetailPage() {
             {/* Standings Tab */}
             {activeTab === 'standings' && (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Standings</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-6">{t('tournaments.standings_title')}</h3>
                 {players.length === 0 ? (
                   <div className="text-center py-8">
                     <Trophy className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                    <p className="text-gray-600">No standings data available</p>
+                    <p className="text-gray-600">{t('tournaments.no_standings')}</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b-2 border-gray-300">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Rank</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-900">Player</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">W</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">L</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">Pts</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-900">PD</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_rank')}</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_player')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_wins')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_losses')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_points')}</th>
+                          <th className="text-center py-3 px-4 font-semibold text-gray-900">{t('tournaments.col_point_diff')}</th>
                         </tr>
                       </thead>
                       <tbody>

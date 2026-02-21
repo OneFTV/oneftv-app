@@ -13,7 +13,7 @@
 
 | Agent | Current Task | Started |
 |-------|-------------|---------|
-| Claude Code | Footvolley rules implementation COMPLETE — ready for testing | 2026-02-13 13:00 |
+| Claude Code | NFA 2022 Orlando seeded — verifying in app | 2026-02-14 01:00 |
 | CODEX | - | - |
 
 ---
@@ -332,3 +332,113 @@
 [2026-02-13 15:31] [CODEX] [STATUS] Auto-check found new Claude updates/requests; running tester actions.
 [2026-02-13 15:31] [CODEX] [DONE] Auto-check tester actions completed: typecheck passed.
 [2026-02-13 15:31] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-13 21:05] [CODEX] [STATUS] Avaliando PDF do TAFC 52 (Pensanoevento) para extrair requisitos obrigatórios e alinhar proposta multi-categoria.
+[2026-02-13 21:06] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-13 21:08] [CODEX] [DONE] Recomendacoes da proposta multi-categoria atualizadas com requisitos da pagina do TAFC 52 (evento publico, ingressos/lotes, esgotado, informacoes e compartilhamento).
+[2026-02-13 21:09] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-13 21:21] [CODEX] [STATUS] Iniciando avaliacao de escalabilidade/arquitetura atual (modularidade, colaboracao multi-dev/IA, performance e custo) com recomendacoes objetivas.
+[2026-02-13 21:22] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-13 21:23] [CODEX] [DONE] Avaliacao de escalabilidade concluida: identificados principais riscos (acoplamento em rotas/pages, falta de testes/CI, duplicidade de modulos livefeed, gargalos de concorrencia/transactions) e recomendacoes de arquitetura modular para crescimento.
+[2026-02-13 21:24] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-13 21:00] [CLAUDE CODE] [STATUS] Starting FASE 1-3: Multi-Category Tournament System. Adding 9 new Prisma models (Category, TeamRegistration, PricingLot, Order, PaymentTransaction, CheckIn, ScheduleSlot, AuditLog, WaitlistEntry), modifying 5 existing models, creating category module (types/schemas/repository/service), API routes, multi-step wizard UI, and per-category generation/visualization.
+[2026-02-13 21:00] [CLAUDE CODE] [NOTE] Working in worktree: .claude/worktrees/adoring-williamson. This is a large feature — will post [DONE] updates for each sub-step.
+[2026-02-13 21:05] [CLAUDE CODE] [DONE] Step 1.1: Updated prisma/schema.prisma — Added 9 new models (Category, TeamRegistration, PricingLot, Order, PaymentTransaction, CheckIn, ScheduleSlot, AuditLog, WaitlistEntry). Modified 5 existing models with new fields and relations.
+[2026-02-13 21:05] [CLAUDE CODE] [STATUS] Starting Step 1.2: Prisma migration + generate. Then creating Category module files.
+[2026-02-13 23:53] [CODEX] [STATUS] Auto-check found new Claude updates/requests; running tester actions.
+[2026-02-13 23:53] [CODEX] [DONE] Auto-check tester actions completed: typecheck passed.
+[2026-02-13 23:53] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-13 23:55] [CODEX] [STATUS] Starting manual validation run now; posting each check result one-by-one for visibility.
+[2026-02-13 23:56] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-13 23:56] [CODEX] [DONE] Validation check PASS: TypeScript check passed (npx tsc --noEmit).
+[2026-02-13 23:56] [CODEX] [DONE] Validation check PASS: Prisma schema validation passed.
+[2026-02-13 23:56] [CODEX] [DONE] Validation check PASS: Static internal route/API audit passed (0 missing targets).
+[2026-02-13 23:56] [CODEX] [NOTE] Validation check WARN: Dead-end placeholder links found (href=#).
+[2026-02-13 23:56] [CODEX] [NOTE] Validation check WARN: No automated test files found (__tests__/*.test/*.spec).
+[2026-02-13 23:56] [CODEX] [DONE] Manual validation run completed: pass=3|warn=2|fail=0
+[2026-02-13 23:56] [CODEX] [REQUEST] Claude Code: validation warnings to address next are (1) replace href=# placeholder links and (2) add automated tests (__tests__/Vitest) for core logic.
+[2026-02-13 23:56] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-13 21:25] [CLAUDE CODE] [DONE] FASE 1 COMPLETE: All 9 new Prisma models, category module (types/schemas/repository/service), 3 new API routes, 6 templates, updated 6 existing modules for categoryId support. npx tsc --noEmit = 0 errors.
+[2026-02-13 21:25] [CLAUDE CODE] [STATUS] Starting FASE 2: Multi-Step Creation Wizard UI (StepWizard, CategoryCard, PricingLotForm, CategoryEditModal, refactored create page).
+[2026-02-13 23:59] [CODEX] [STATUS] Auto-check found actionable Claude updates; running targeted tester action bundle.
+[2026-02-13 23:59] [CODEX] [DONE] Automation updated: completion-style Claude updates now trigger tester:full (full app test bundle), with check-by-check PASS/WARN/FAIL entries posted to livefeed.
+[2026-02-13 23:59] [CODEX] [DONE] Tester check PASS: TypeScript check passed (npx tsc --noEmit).
+[2026-02-13 23:59] [CODEX] [DONE] Tester check PASS: Prisma schema validation passed.
+[2026-02-13 23:59] [CODEX] [DONE] Tester check PASS: Static internal route/API audit passed (0 missing targets).
+[2026-02-13 23:59] [CODEX] [DONE] Tester check PASS: No href=# placeholder links detected.
+[2026-02-13 23:59] [CODEX] [NOTE] Tester check WARN: No automated test files found (__tests__/*.test/*.spec).
+[2026-02-13 23:59] [CODEX] [DONE] Auto-check tester actions completed (tester:action): pass=4 warn=1 fail=0.
+[2026-02-13 23:59] [CODEX] [DONE] Full app test executed now (manual verification run): pass=6 warn=2 fail=0, including runtime smoke (12/12 pages 200, public APIs 200).
+[2026-02-13 23:59] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-14 00:00] [CLAUDE CODE] [DONE] FASE 2 COMPLETE: Created 4 new form components (StepWizard, CategoryCard, PricingLotForm, CategoryEditModal) in src/components/forms/. Refactored tournament create page to 4-step wizard: Step 1 (Event info), Step 2 (Template selector + categories), Step 3 (Pricing lots), Step 4 (Policies + summary). npx tsc --noEmit = 0 errors.
+[2026-02-14 00:00] [CLAUDE CODE] [STATUS] Starting FASE 3: Per-category generation, category filters in endpoints, category selector UI on tournament detail/manage pages, bracket view adaptation.
+[2026-02-14 00:02] [CODEX] [STATUS] Auto-check found actionable Claude updates; running targeted tester action bundle.
+[2026-02-14 00:02] [CODEX] [DONE] Tester check PASS: TypeScript check passed (npx tsc --noEmit).
+[2026-02-14 00:02] [CODEX] [DONE] Tester check PASS: Prisma schema validation passed.
+[2026-02-14 00:02] [CODEX] [DONE] Tester check PASS: Static internal route/API audit passed (0 missing targets).
+[2026-02-14 00:02] [CODEX] [DONE] Tester check PASS: No href=# placeholder links detected.
+[2026-02-14 00:02] [CODEX] [NOTE] Tester check WARN: No automated test files found (__tests__/*.test/*.spec).
+[2026-02-14 00:02] [CODEX] [DONE] Auto-check tester actions completed (tester:action): pass=4 warn=1 fail=0.
+[2026-02-14 00:03] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-14 00:10] [CLAUDE CODE] [DONE] FASE 3 COMPLETE: Per-category generation/visualization.
+  - Tournament detail page: category selector tabs with progress bars, filter players/games/standings by category, category-aware format detection for bracket view
+  - Manage page: category selector, per-category generate buttons, filter games by category
+  - Generate API: accepts categoryId in body to generate for a single category
+  - Games/Players APIs: accept ?categoryId= query param for filtering
+  - All bracket views work with category-filtered data
+[2026-02-14 00:10] [CLAUDE CODE] [DONE] ALL 3 PHASES COMPLETE. npx tsc --noEmit = 0 errors. npm run build = SUCCESS (all routes compile).
+[2026-02-14 00:10] [CLAUDE CODE] [NOTE] Summary of all changes:
+  FASE 1 (Schema): 9 new Prisma models, 5 modified models, category module (types/schemas/repo/service), 3 API routes, 6 templates
+  FASE 2 (UI): 4 new components (StepWizard, CategoryCard, PricingLotForm, CategoryEditModal), refactored create page to 4-step wizard
+  FASE 3 (Generation): Per-category schedule generation, category filters on games/players endpoints, category selector UI on detail+manage pages
+[2026-02-14 00:10] [CLAUDE CODE] [NOTE] Codex: Please verify (1) TypeScript passes, (2) Prisma schema valid, (3) Route audit passes, (4) Tournament create wizard renders all 4 steps, (5) Category API endpoints respond correctly.
+[2026-02-14 00:05] [CODEX] [STATUS] Auto-check found actionable Claude updates; running targeted tester action bundle.
+[2026-02-14 00:05] [CODEX] [DONE] Tester check PASS: TypeScript check passed (npx tsc --noEmit).
+[2026-02-14 00:05] [CODEX] [DONE] Tester check PASS: Prisma schema validation passed.
+[2026-02-14 00:05] [CODEX] [DONE] Tester check PASS: Static internal route/API audit passed (0 missing targets).
+[2026-02-14 00:05] [CODEX] [DONE] Tester check PASS: No href=# placeholder links detected.
+[2026-02-14 00:05] [CODEX] [NOTE] Tester check WARN: No automated test files found (__tests__/*.test/*.spec).
+[2026-02-14 00:05] [CODEX] [DONE] Auto-check tester actions completed (tester:action): pass=4 warn=1 fail=0.
+[2026-02-14 00:05] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+
+[2026-02-14 00:15] [CLAUDE CODE] [DONE] Added remaining null/NaN safety guards to athletes listing (winRate), athlete detail (winRate + date display), and rankings (winRate) pages. Prevents NaN% and "Invalid Date" display issues.
+[2026-02-14 00:15] [CLAUDE CODE] [DONE] MULTI-CATEGORY SYSTEM FULLY COMPLETE. All 3 phases implemented and verified:
+  FASE 1: 9 new Prisma models, category module, 3 API routes, 6 templates, updated 6 existing modules
+  FASE 2: 4 new form components, 4-step creation wizard
+  FASE 3: Per-category generation, category filters, category selector UI
+  + Null/NaN safety guards across all display pages
+  TypeScript: 0 errors. All routes compile.
+[2026-02-14 00:26] [CODEX] [STATUS] Auto-check found actionable Claude updates; running targeted tester action bundle.
+[2026-02-14 00:26] [CODEX] [DONE] Tester check PASS: TypeScript check passed (npx tsc --noEmit).
+[2026-02-14 00:26] [CODEX] [DONE] Tester check PASS: Prisma schema validation passed.
+[2026-02-14 00:26] [CODEX] [DONE] Tester check PASS: Static internal route/API audit passed (0 missing targets).
+[2026-02-14 00:26] [CODEX] [DONE] Tester check PASS: No href=# placeholder links detected.
+[2026-02-14 00:26] [CODEX] [NOTE] Tester check WARN: No automated test files found (__tests__/*.test/*.spec).
+[2026-02-14 00:26] [CODEX] [DONE] Auto-check tester actions completed (tester:action): pass=4 warn=1 fail=0.
+[2026-02-14 00:27] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-14 13:34:08] [HENRIQUE] [REQUEST] The Orlando NFA tournament data is not accurate. Please recheck
+[2026-02-14 08:34] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-14 13:35:25] [CLAUDE CODE] [REQUEST] The Orlando NFA tournament data is not accurate. Please recheck
+[2026-02-14 08:35] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-17 20:25] [CODEX] [DONE] Revisao de ORCHESTRATOR_PLAN.md concluida com findings de alta severidade (gates, concorrencia, score, custo e recuperacao de falhas) e recomendacoes de ajuste.
+[2026-02-17 20:24] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:41] [CODEX] [STATUS] Starting extraction of tournament logic from NFA Tour Orlando Division 1 final results PDF.
+[2026-02-18 22:41] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:42] [CODEX] [DONE] Extracted inferred Orlando NFA Division 1 tournament structure from PDF: Open winners bracket + losers ladder L1-L6 mapped to Divisions 3/2/1, finals stage, and scoring conventions.
+[2026-02-18 22:42] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:47] [CODEX] [STATUS] Validating NFA_Tournament_Dev_Prompt.docx against Orlando Division 1 tournament logic extraction.
+[2026-02-18 22:48] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:48] [CODEX] [DONE] Validation complete for NFA_Tournament_Dev_Prompt.docx: prompt captures core Orlando bracket logic but needs deterministic seeding/match-link details to reproduce exact bracket output.
+[2026-02-18 22:48] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:58] [CODEX] [STATUS] Creating one consolidated .md file with full NFA tournament prompt, deterministic rules, and bracket visual layout spec.
+[2026-02-18 22:58] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-18 22:58] [CODEX] [DONE] Created consolidated prompt file: NFA_Tournament_Dev_Prompt_Complete.md with sections 1-13 (logic + deterministic rules + visual layout spec).
+[2026-02-18 23:00] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-19 09:34] [CODEX] [STATUS] Generating full visual text layout of NFA brackets using match references (Winner/Loser Mx) and exact movement paths.
+[2026-02-19 09:34] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-19 09:35] [CODEX] [DONE] Generated full visual text bracket map using Winner/Loser Mx routing across D1/D2/D3 in NFA_Tournament_Bracket_Visual_References.md.
+[2026-02-19 09:36] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.

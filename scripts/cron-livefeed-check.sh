@@ -48,7 +48,10 @@ append_feed_if_changed() {
 }
 
 run_cycle() {
-  local preflight_output preflight_code types_output types_code
+  local preflight_output preflight_code action_output action_code
+  local action_cmd action_label
+  local pass_count warn_count fail_count
+  local line kind msg
   local summary_line
 
   set +e
@@ -57,23 +60,55 @@ run_cycle() {
   set -e
 
   if [[ "$preflight_code" -eq 2 ]]; then
-    append_feed "STATUS" "Auto-check found new Claude updates/requests; running tester actions."
+    action_cmd="tester:action"
+    action_label="targeted tester action bundle"
+    if printf '%s\n' "$preflight_output" | rg -qi '\[CLAUDE CODE\] \[(DONE|STATUS)\].*(complete|completed|ready for testing|all tasks)'; then
+      action_cmd="tester:full"
+      action_label="FULL app test bundle"
+    fi
 
-    summary_line="$(printf '%s\n' "$preflight_output" | rg '\[CLAUDE CODE\] \[(DONE|REQUEST)\]' | head -n 1 || true)"
+    append_feed "STATUS" "Auto-check found actionable Claude updates; running $action_label."
+
+    summary_line="$(printf '%s\n' "$preflight_output" | rg '\[CLAUDE CODE\] \[(DONE|REQUEST|STATUS)\]' | head -n 1 || true)"
     if [[ -n "$summary_line" ]]; then
       append_feed "NOTE" "Auto-check summary: $summary_line"
     fi
 
     set +e
-    types_output="$(cd "$ROOT_DIR" && "$NPM_BIN" run --silent tester:types 2>&1)"
-    types_code=$?
+    action_output="$(cd "$ROOT_DIR" && "$NPM_BIN" run --silent "$action_cmd" 2>&1)"
+    action_code=$?
     set -e
 
-    if [[ "$types_code" -eq 0 ]]; then
-      append_feed "DONE" "Auto-check tester actions completed: typecheck passed."
+    pass_count=0
+    warn_count=0
+    fail_count=0
+
+    while IFS= read -r line; do
+      [[ "$line" != RESULT\|* ]] && continue
+      kind="$(printf '%s' "$line" | cut -d'|' -f2)"
+      msg="$(printf '%s' "$line" | cut -d'|' -f3-)"
+
+      case "$kind" in
+        PASS)
+          pass_count=$((pass_count + 1))
+          append_feed "DONE" "Tester check PASS: $msg"
+          ;;
+        WARN)
+          warn_count=$((warn_count + 1))
+          append_feed "NOTE" "Tester check WARN: $msg"
+          ;;
+        FAIL)
+          fail_count=$((fail_count + 1))
+          append_feed "ERROR" "Tester check FAIL: $msg"
+          ;;
+      esac
+    done <<< "$action_output"
+
+    if [[ "$action_code" -eq 0 ]]; then
+      append_feed "DONE" "Auto-check tester actions completed ($action_cmd): pass=$pass_count warn=$warn_count fail=$fail_count."
     else
-      append_feed "ERROR" "Auto-check tester actions failed: typecheck failed."
-      append_feed "NOTE" "$(printf '%s\n' "$types_output" | tail -n 1)"
+      append_feed "ERROR" "Auto-check tester actions completed with failures ($action_cmd): pass=$pass_count warn=$warn_count fail=$fail_count."
+      append_feed "NOTE" "$(printf '%s\n' "$action_output" | tail -n 1)"
     fi
   elif [[ "$preflight_code" -eq 0 ]]; then
     append_feed_if_changed "STATUS" "Auto-check completed: no new Claude updates requiring tester action."

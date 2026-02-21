@@ -4,9 +4,11 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,19 +26,19 @@ export default function LoginPage() {
 
   const validateForm = (): boolean => {
     if (!email.trim()) {
-      setError('Email is required');
+      setError(t('auth.email_required'));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError(t('auth.email_invalid'));
       return false;
     }
     if (!password) {
-      setError('Password is required');
+      setError(t('auth.password_required'));
       return false;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(t('auth.password_min_6'));
       return false;
     }
     return true;
@@ -60,12 +62,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError(t('auth.invalid_credentials'));
       } else if (result?.ok) {
         router.push('/dashboard');
       }
     } catch {
-      setError('An error occurred. Please try again.');
+      setError(t('common.error_occurred'));
     } finally {
       setLoading(false);
     }
@@ -82,8 +84,8 @@ export default function LoginPage() {
             </div>
             <span className="text-white font-bold text-xl">FootVolley Pro</span>
           </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">Sign In</h1>
-          <p className="text-slate-400">Access your tournament dashboard</p>
+          <h1 className="text-4xl font-bold text-white mb-2">{t('auth.sign_in_title')}</h1>
+          <p className="text-slate-400">{t('auth.sign_in_subtitle')}</p>
         </div>
 
         {/* Login Card */}
@@ -92,14 +94,14 @@ export default function LoginPage() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-white mb-2">
-                Email Address
+                {t('auth.email_label')}
               </label>
               <input
                 type="email"
                 id="email"
                 value={email}
                 onChange={handleEmailChange}
-                placeholder="you@example.com"
+                placeholder={t('auth.email_placeholder')}
                 className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={loading}
               />
@@ -108,14 +110,14 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-white mb-2">
-                Password
+                {t('auth.password_label')}
               </label>
               <input
                 type="password"
                 id="password"
                 value={password}
                 onChange={handlePasswordChange}
-                placeholder="••••••••"
+                placeholder={t('auth.password_placeholder')}
                 className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={loading}
               />
@@ -137,10 +139,10 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-                  Signing in...
+                  {t('auth.signing_in')}
                 </span>
               ) : (
-                'Sign In'
+                t('auth.sign_in_button')
               )}
             </button>
           </form>
@@ -148,7 +150,7 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="my-6 flex items-center">
             <div className="flex-1 border-t border-slate-600/50"></div>
-            <span className="px-4 text-slate-400 text-sm">New to FootVolley Pro?</span>
+            <span className="px-4 text-slate-400 text-sm">{t('auth.new_to_app')}</span>
             <div className="flex-1 border-t border-slate-600/50"></div>
           </div>
 
@@ -157,16 +159,16 @@ export default function LoginPage() {
             href="/register"
             className="w-full block text-center py-3 border-2 border-blue-400 text-blue-300 rounded-lg font-bold text-lg hover:bg-blue-400/10 transition-all"
           >
-            Create Account
+            {t('auth.create_account')}
           </Link>
         </div>
 
         {/* Additional Info */}
         <div className="mt-8 text-center">
           <p className="text-slate-400 text-sm">
-            Having trouble?{' '}
+            {t('auth.having_trouble')}{' '}
             <a href="#" className="text-blue-300 hover:text-blue-200 font-semibold transition-colors">
-              Contact support
+              {t('auth.contact_support')}
             </a>
           </p>
         </div>
