@@ -76,7 +76,7 @@ export default async function BracketPage({ params }: PageProps) {
                 </svg>
                 <span className="hidden sm:inline">{tournament.name}</span>
               </Link>
-              <span className="text-gray-600 hidden sm:inline">/</span>
+              <span className="text-slate-400 hidden sm:inline">/</span>
               <h1 className="font-bold text-white truncate">{categoryName}</h1>
             </div>
             {allCategories.length > 1 && (
