@@ -285,13 +285,13 @@ function ThemeToggle({
   onToggle: () => void;
 }) {
   return (
-    <div className="inline-flex rounded-full overflow-hidden shadow-md border border-gray-300/30">
+    <div className="inline-flex rounded-full overflow-hidden shadow-md border border-slate-600/30">
       <button
         onClick={() => isDark && onToggle()}
         className={`
           inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all
           ${!isDark
-            ? 'bg-amber-400 text-gray-900'
+            ? 'bg-amber-400 text-slate-900'
             : 'bg-gray-700 text-gray-400 hover:text-gray-200'
           }
         `}
@@ -316,7 +316,7 @@ function ThemeToggle({
           inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all
           ${isDark
             ? 'bg-indigo-600 text-white'
-            : 'bg-gray-200 text-gray-500 hover:text-gray-700'
+            : 'bg-slate-700 text-slate-400 hover:text-slate-200'
           }
         `}
         title="Night mode"
@@ -484,7 +484,7 @@ export default function DoubleEliminationBracketView({
         <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
       </div>
 
-      <div className={`rounded-xl transition-colors ${isDark ? '' : 'bg-white p-3'}`}>
+      <div className={`rounded-xl transition-colors ${isDark ? '' : 'bg-slate-800/50 p-3'}`}>
         {dense ? (
           <DesktopBracket sections={sections} dense theme={theme} />
         ) : (
