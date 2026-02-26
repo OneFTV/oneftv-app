@@ -66,7 +66,7 @@ const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro'];
 type ProfileTab = 'player' | 'organizer';
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
+  draft: 'bg-slate-700/30 text-slate-300',
   registration: 'bg-blue-100 text-blue-700',
   in_progress: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
@@ -454,7 +454,7 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 ml-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[t.status] || 'bg-gray-100 text-gray-700'}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[t.status] || 'bg-slate-700/30 text-slate-300'}`}>
                           {t.status.replace('_', ' ')}
                         </span>
                         <Link
