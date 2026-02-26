@@ -132,13 +132,14 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           redirect: false,
+          callbackUrl: '/dashboard',
         });
 
         if (signInResult?.ok) {
-          router.push('/dashboard');
+          router.push(signInResult.url || '/dashboard');
         } else {
-          // Auto-login failed, redirect to login page
-          router.push('/login');
+          // Auto-login failed, still send to dashboard via login
+          router.push('/login?callbackUrl=%2Fdashboard');
         }
       } else {
         const data = await res.json();
