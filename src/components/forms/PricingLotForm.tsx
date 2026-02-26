@@ -41,7 +41,7 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-700">{categoryName}</h4>
+        <h4 className="text-sm font-medium text-slate-300">{categoryName}</h4>
         <button
           type="button"
           onClick={addLot}
@@ -57,13 +57,13 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
       )}
 
       {lots.map((lot, index) => (
-        <div key={index} className="border border-gray-200 rounded-lg p-3 space-y-2">
+        <div key={index} className="border border-slate-600/50 rounded-lg p-3 space-y-2">
           <div className="flex items-center justify-between">
             <input
               type="text"
               value={lot.name}
               onChange={(e) => updateLot(index, 'name', e.target.value)}
-              className="text-sm font-medium text-gray-900 border-none bg-transparent focus:outline-none focus:ring-0 p-0"
+              className="text-sm font-medium text-white border-none bg-transparent focus:outline-none focus:ring-0 p-0"
               placeholder="Nome do lote"
             />
             <button
@@ -84,7 +84,7 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
                 onChange={(e) => updateLot(index, 'price', parseFloat(e.target.value) || 0)}
                 min={0}
                 step={10}
-                className="w-full text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full text-sm px-2 py-1.5 border border-slate-600/50 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -95,7 +95,7 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
                 onChange={(e) => updateLot(index, 'maxEntries', parseInt(e.target.value) || 0)}
                 min={0}
                 placeholder="Ilimitado"
-                className="w-full text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full text-sm px-2 py-1.5 border border-slate-600/50 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -104,7 +104,7 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
                 type="date"
                 value={lot.startDate}
                 onChange={(e) => updateLot(index, 'startDate', e.target.value)}
-                className="w-full text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full text-sm px-2 py-1.5 border border-slate-600/50 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function PricingLotForm({ lots, categoryName, onChange }: Pricing
                 type="date"
                 value={lot.endDate}
                 onChange={(e) => updateLot(index, 'endDate', e.target.value)}
-                className="w-full text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full text-sm px-2 py-1.5 border border-slate-600/50 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
