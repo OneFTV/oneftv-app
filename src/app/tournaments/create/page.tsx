@@ -646,7 +646,7 @@ export default function CreateTournamentPage() {
                   <p><strong>{t('tournaments.wizard_event')}:</strong> {formData.name || '—'}</p>
                   <p><strong>{t('tournaments.field_location')}:</strong> {formData.location}, {formData.city}{formData.state ? `, ${formData.state}` : ''} - {formData.country}</p>
                   <p><strong>{t('tournaments.field_start_date').replace(' *', '')}:</strong> {formData.startDate || '—'} — {formData.endDate || '—'}</p>
-                  <p><strong>{t('tournaments.dates_infrastructure')}:</strong> {formData.courts} {t('tournaments.field_courts').toLowerCase()}, {formData.days} {t('tournaments.field_days').toLowerCase()}, {formData.hoursPerDay}h/{t('tournaments.field_days').toLowerCase()}</p>
+                  <p><strong>{t('tournaments.dates_infrastructure')}:</strong> {formData.courts} {formData.courts === 1 ? 'court' : 'courts'}, {formData.days} {formData.days === 1 ? 'day' : 'days'}, {formData.hoursPerDay}h/{formData.days === 1 ? 'day' : 'days'}</p>
                   <p><strong>{t('tournaments.wizard_categories')}:</strong> {categories.length}</p>
                   {categories.map((cat, i) => (
                     <p key={i} className="ml-4">- {cat.name} ({cat.format}, {cat.maxTeams} duplas{cat.proLeague ? ', Pro League' : ''})</p>
