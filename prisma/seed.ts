@@ -58,6 +58,23 @@ async function main() {
 
   console.log("Created organizer user:", organizerUser.email);
 
+  // Create QA organizer user
+  const qaOrganizerPassword = await bcryptjs.hash("Test1234!", 10);
+  const qaOrganizer = await prisma.user.create({
+    data: {
+      name: "QA Organizer",
+      email: "organizer@oneftv.com",
+      password: qaOrganizerPassword,
+      role: "organizer",
+      nationality: "American",
+      country: "United States",
+      state: "FL",
+      level: "Advanced",
+    },
+  });
+
+  console.log("Created QA organizer user:", qaOrganizer.email);
+
   // Athletes data with Brazilian/international names
   const athletes: AthleteData[] = [
     { name: "Rafael Palhinha", nationality: "Portuguese", level: "Pro", state: "SP", country: "Brazil" },
@@ -301,7 +318,7 @@ async function main() {
       pointsPerSet: 18,
       numSets: 1,
       groupSize: 4,
-      organizerId: organizerUser.id,
+      organizerId: qaOrganizer.id,
     },
   });
 
