@@ -74,15 +74,15 @@ export default function CategoryEditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-slate-800 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-white">
             {category ? 'Editar Categoria' : 'Nova Categoria'}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 transition"
+            className="p-1 text-slate-400 hover:text-slate-200 transition"
           >
             <X size={20} />
           </button>
@@ -91,23 +91,23 @@ export default function CategoryEditModal({
         <div className="p-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Categoria *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Nome da Categoria *</label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ex: Pro Masculino"
             />
           </div>
 
           {/* Format */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Formato</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Formato</label>
             <select
               value={form.format}
               onChange={(e) => setForm((prev) => ({ ...prev, format: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {FORMATS.map((f) => (
                 <option key={f.value} value={f.value}>{f.label}</option>
@@ -118,11 +118,11 @@ export default function CategoryEditModal({
           {/* Gender + Skill Level */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gênero</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Gênero</label>
               <select
                 value={form.gender || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value || undefined }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {GENDERS.map((g) => (
                   <option key={g.value} value={g.value}>{g.label}</option>
@@ -130,11 +130,11 @@ export default function CategoryEditModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nível</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Nível</label>
               <select
                 value={form.skillLevel || ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, skillLevel: e.target.value || undefined }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {SKILL_LEVELS.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -146,25 +146,25 @@ export default function CategoryEditModal({
           {/* Max Teams + Points */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Máx. Duplas</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Máx. Duplas</label>
               <input
                 type="number"
                 value={form.maxTeams}
                 onChange={(e) => setForm((prev) => ({ ...prev, maxTeams: parseInt(e.target.value) || 16 }))}
                 min={2}
                 max={256}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pontos por Set</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Pontos por Set</label>
               <input
                 type="number"
                 value={form.pointsPerSet}
                 onChange={(e) => setForm((prev) => ({ ...prev, pointsPerSet: parseInt(e.target.value) || 18 }))}
                 min={1}
                 max={50}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -172,22 +172,22 @@ export default function CategoryEditModal({
           {/* Group Size (for KotB/Group formats) */}
           {(form.format === 'king_of_the_beach' || form.format === 'group_knockout') && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tamanho do Grupo</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Tamanho do Grupo</label>
               <input
                 type="number"
                 value={form.groupSize}
                 onChange={(e) => setForm((prev) => ({ ...prev, groupSize: parseInt(e.target.value) || 4 }))}
                 min={2}
                 max={16}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
 
           {/* Pro League Toggle */}
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
             <div>
-              <span className="text-sm font-medium text-gray-700">Professional League</span>
+              <span className="text-sm font-medium text-slate-300">Professional League</span>
               <p className="text-xs text-gray-500 mt-0.5">Semifinais e finais em melhor de 3 sets</p>
             </div>
             <button
@@ -198,7 +198,7 @@ export default function CategoryEditModal({
               }`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-slate-700 rounded-full shadow transition-transform ${
                   form.proLeague ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
@@ -211,7 +211,7 @@ export default function CategoryEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="px-4 py-2 text-sm font-medium text-slate-300 border border-slate-600/50 rounded-lg hover:bg-slate-700/30 transition"
           >
             Cancelar
           </button>
