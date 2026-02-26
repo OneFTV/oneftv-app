@@ -215,14 +215,228 @@ export default function CreateAthleteePage() {
     }
   };
 
+  const inputClass =
+    'w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all';
+  const labelClass = 'block text-sm font-semibold text-white mb-2';
+  const errorClass = 'text-red-400 text-xs mt-1';
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-12">
       <div className="max-w-2xl mx-auto px-4">
-        <button onClick={() => router.back()} className="text-slate-400 hover:text-white mb-6 flex items-center gap-2">
+        <button
+          onClick={() => router.back()}
+          className="text-slate-400 hover:text-white mb-6 flex items-center gap-2"
+        >
           <ArrowLeft size={20} /> Back
         </button>
-        <h1 className="text-3xl font-bold text-white mb-8">Create Athlete Profile</h1>
-        <p className="text-slate-400">This page is being reconstructed. Please check back soon.</p>
+        <h1 className="text-3xl font-bold text-white mb-8">
+          Create Athlete Profile
+        </h1>
+
+        {successMessage && (
+          <div className="bg-green-500/10 border border-green-400/30 rounded-lg p-4 mb-6">
+            <p className="text-green-300 text-sm">{successMessage}</p>
+          </div>
+        )}
+
+        {errors.submit && (
+          <div className="bg-red-500/10 border border-red-400/30 rounded-lg p-4 mb-6">
+            <p className="text-red-300 text-sm">{errors.submit}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name & Email */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Name *</label>
+              <input
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Full name"
+                className={inputClass}
+              />
+              {errors.name && <p className={errorClass}>{errors.name}</p>}
+            </div>
+            <div>
+              <label className={labelClass}>Email *</label>
+              <input
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="athlete@email.com"
+                className={inputClass}
+              />
+              {errors.email && <p className={errorClass}>{errors.email}</p>}
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Password *</label>
+              <input
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Min 8 characters"
+                className={inputClass}
+              />
+              {errors.password && (
+                <p className={errorClass}>{errors.password}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClass}>Confirm Password *</label>
+              <input
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Repeat password"
+                className={inputClass}
+              />
+              {errors.confirmPassword && (
+                <p className={errorClass}>{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Level & Nationality */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Level</label>
+              <select
+                name="level"
+                value={formData.level}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                {LEVELS.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Nationality *</label>
+              <input
+                name="nationality"
+                value={formData.nationality}
+                onChange={handleChange}
+                placeholder="e.g. Brazilian"
+                className={inputClass}
+              />
+              {errors.nationality && (
+                <p className={errorClass}>{errors.nationality}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Country & State */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Country *</label>
+              <select
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="">Select country</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.country && (
+                <p className={errorClass}>{errors.country}</p>
+              )}
+            </div>
+            <div>
+              <label className={labelClass}>State *</label>
+              <select
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="">Select state</option>
+                {STATES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              {errors.state && <p className={errorClass}>{errors.state}</p>}
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className={labelClass}>Phone *</label>
+            <input
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="+1 (555) 000-0000"
+              className={inputClass}
+            />
+            {errors.phone && <p className={errorClass}>{errors.phone}</p>}
+          </div>
+
+          {/* Address */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className={labelClass}>Street *</label>
+              <input
+                name="street"
+                value={formData.street}
+                onChange={handleChange}
+                placeholder="Street address"
+                className={inputClass}
+              />
+              {errors.street && <p className={errorClass}>{errors.street}</p>}
+            </div>
+            <div>
+              <label className={labelClass}>Number *</label>
+              <input
+                name="number"
+                value={formData.number}
+                onChange={handleChange}
+                placeholder="123"
+                className={inputClass}
+              />
+              {errors.number && <p className={errorClass}>{errors.number}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Complement</label>
+            <input
+              name="complement"
+              value={formData.complement}
+              onChange={handleChange}
+              placeholder="Apt, suite, etc. (optional)"
+              className={inputClass}
+            />
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-900 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+          >
+            {loading && <Loader size={20} className="animate-spin" />}
+            {loading ? 'Creating...' : 'Create Athlete'}
+          </button>
+        </form>
       </div>
     </div>
   );
