@@ -86,6 +86,25 @@ export class AthleteService {
     const gamesPlayed = totalWins + totalLosses
     const winRate = gamesPlayed > 0 ? (totalWins / gamesPlayed) * 100 : 0
 
+    // Compute bestFinish: for each tournament, rank this player among all participants
+    let bestFinish = 0
+    if (user.tournamentPlayers.length > 0) {
+      const finishes = await Promise.all(
+        user.tournamentPlayers.map(async (tp) => {
+          const allPlayers = await AthleteRepository.getTournamentPlayers(tp.tournamentId, tp.categoryId ?? undefined)
+          // Sort by wins desc, then pointDiff desc, then points desc
+          const sorted = allPlayers.sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins
+            if (b.pointDiff !== a.pointDiff) return b.pointDiff - a.pointDiff
+            return b.points - a.points
+          })
+          const rank = sorted.findIndex((p) => p.userId === user.id) + 1
+          return rank > 0 ? rank : sorted.length
+        })
+      )
+      bestFinish = Math.min(...finishes)
+    }
+
     return {
       id: user.id,
       name: user.name,
@@ -103,13 +122,14 @@ export class AthleteService {
         winRate: Number(winRate.toFixed(2)),
         tournamentsPlayed,
         tournamentsWon,
+        bestFinish,
       },
       tournamentHistory: user.tournamentPlayers.map((tp) => ({
         id: tp.id,
         tournament: {
           id: tp.tournament.id,
           name: tp.tournament.name,
-          format: tp.tournament.format,
+          format: tp.tournament.format || (tp.category ? tp.category.format : null) || 'N/A',
           startDate: tp.tournament.date,
           endDate: tp.tournament.endDate,
           location: tp.tournament.location,

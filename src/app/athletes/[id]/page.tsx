@@ -235,7 +235,7 @@ export default function AthleteProfilePage() {
               {t('athletes.best_finish')}
             </p>
             <p className="text-3xl font-bold text-indigo-600">
-              #{athlete.bestFinish}
+              {athlete.bestFinish > 0 ? `#${athlete.bestFinish}` : 'N/A'}
             </p>
           </div>
         </div>

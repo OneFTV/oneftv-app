@@ -39,6 +39,15 @@ export class AthleteRepository {
     return { total, users }
   }
 
+  static async getTournamentPlayers(tournamentId: string, categoryId?: string) {
+    const where: Record<string, unknown> = { tournamentId }
+    if (categoryId) where.categoryId = categoryId
+    return prisma.tournamentPlayer.findMany({
+      where,
+      select: { userId: true, wins: true, losses: true, points: true, pointDiff: true },
+    })
+  }
+
   static async findById(id: string) {
     return prisma.user.findUnique({
       where: { id },
@@ -46,6 +55,7 @@ export class AthleteRepository {
         tournamentPlayers: {
           include: {
             tournament: { select: tournamentSelectFull },
+            category: { select: { id: true, name: true, format: true } },
           },
           orderBy: { tournament: { date: 'desc' } },
         },
