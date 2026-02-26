@@ -81,45 +81,45 @@ export interface TournamentTheme {
 
 export const lightTheme: TournamentTheme = {
   // Card
-  cardBorder: 'border-gray-200',
+  cardBorder: 'border-slate-600/50',
   cardLiveBorder: 'border-red-400 ring-2 ring-red-300/40',
-  cardBg: 'bg-white text-gray-700',
+  cardBg: 'bg-slate-800/50 text-slate-300',
   cardWinnerBg: 'bg-footvolley-primary text-white',
   cardText: '',
   cardScoreText: '',
-  cardFooterBg: 'bg-gray-50',
+  cardFooterBg: 'bg-slate-700/30',
   cardFooterText: 'text-gray-400',
   cardDivider: 'border-gray-100',
   cardTbdOpacity: 'opacity-50',
   cardBo3Badge: 'bg-[#1a2744] text-[#c4a35a]',
-  cardSetScoreBg: 'bg-gray-50',
+  cardSetScoreBg: 'bg-slate-700/30',
   cardSet3Text: 'text-amber-600',
 
   // Bracket
-  connectorBorder: 'border-gray-300',
+  connectorBorder: 'border-slate-600/50',
   roundLabel: 'text-gray-400',
-  roundPillInactive: 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+  roundPillInactive: 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30',
   bracketColumnMinWidth: 'min-w-[240px]',
 
   // Group stage
-  groupCardBorder: 'border-gray-200',
+  groupCardBorder: 'border-slate-600/50',
   groupHeaderBg: 'bg-footvolley-primary',
-  tableHeaderBg: 'bg-gray-50',
+  tableHeaderBg: 'bg-slate-700/30',
   tableHeaderText: 'text-gray-400',
-  tableRowHover: 'hover:bg-gray-50',
+  tableRowHover: 'hover:bg-slate-700/30',
   tableRowBorder: 'border-gray-100',
   tableCellBg: '',
   rankText: 'text-gray-400',
-  teamNameText: 'text-gray-800',
+  teamNameText: 'text-slate-200',
   winsText: 'text-green-600',
   lossesText: 'text-red-500',
   diffPositive: 'text-green-600',
   diffNegative: 'text-red-500',
   diffNeutral: 'text-gray-400',
-  legendBg: 'bg-gray-50',
+  legendBg: 'bg-slate-700/30',
   legendText: 'text-gray-400',
   matchesSectionBg: '',
-  matchesSectionHeaderBg: 'bg-gray-50',
+  matchesSectionHeaderBg: 'bg-slate-700/30',
   matchesSectionHeaderText: 'text-gray-400',
 
   // Round robin
@@ -128,16 +128,16 @@ export const lightTheme: TournamentTheme = {
   lossCell: 'bg-red-50 text-red-600',
   pendingCell: 'text-gray-300',
   emptyCell: 'text-gray-200',
-  rowEven: 'bg-white',
-  rowOdd: 'bg-gray-50/50',
-  rowLabel: 'text-gray-800',
+  rowEven: 'bg-slate-800/30',
+  rowOdd: 'bg-slate-700/30',
+  rowLabel: 'text-slate-200',
   cellBorder: 'border-gray-100',
-  tableBorder: 'border-gray-200 shadow-sm',
+  tableBorder: 'border-slate-600/50 shadow-sm',
   standingsRowBg: '',
-  pointsText: 'text-gray-600',
+  pointsText: 'text-slate-400',
 
   // Section headings
-  sectionHeading: 'text-gray-900',
+  sectionHeading: 'text-white',
 
   // Empty state
   emptyIcon: 'text-gray-300',
@@ -145,10 +145,10 @@ export const lightTheme: TournamentTheme = {
   emptySubtext: 'text-gray-300',
 
   // Toggle
-  toggleBg: 'bg-gray-100',
-  toggleActive: 'bg-white text-gray-900 shadow-sm',
-  toggleInactive: 'text-gray-500 hover:text-gray-700',
-  gamesHeading: 'text-gray-900',
+  toggleBg: 'bg-slate-700/30',
+  toggleActive: 'bg-slate-800 text-white shadow-sm',
+  toggleInactive: 'text-slate-400 hover:text-slate-200',
+  gamesHeading: 'text-white',
   flatRoundDivider: 'bg-gray-300',
   flatRoundLabel: 'text-gray-400',
 
@@ -156,8 +156,8 @@ export const lightTheme: TournamentTheme = {
   sectionHeaderWinners: 'bg-emerald-600 text-white',
   sectionHeaderLosers: 'bg-orange-500 text-white',
   sectionHeaderFinals: 'bg-amber-500 text-white',
-  sectionDivider: 'border-gray-200',
-  matchNumberBadge: 'bg-gray-100 text-gray-500',
+  sectionDivider: 'border-slate-600/50',
+  matchNumberBadge: 'bg-slate-700/30 text-slate-400',
 };
 
 export const darkTheme: TournamentTheme = {
@@ -207,8 +207,8 @@ export const darkTheme: TournamentTheme = {
   diagonalCell: 'bg-dark-bg',
   winCell: 'bg-green-900/30 text-green-400 font-semibold',
   lossCell: 'bg-red-900/20 text-red-400',
-  pendingCell: 'text-gray-600',
-  emptyCell: 'text-gray-700',
+  pendingCell: 'text-slate-400',
+  emptyCell: 'text-slate-300',
   rowEven: 'bg-dark-surface',
   rowOdd: 'bg-dark-elevated',
   rowLabel: 'text-gray-200',
@@ -221,9 +221,9 @@ export const darkTheme: TournamentTheme = {
   sectionHeading: 'text-gray-100',
 
   // Empty state
-  emptyIcon: 'text-gray-600',
+  emptyIcon: 'text-slate-400',
   emptyText: 'text-gray-500',
-  emptySubtext: 'text-gray-600',
+  emptySubtext: 'text-slate-400',
 
   // Toggle
   toggleBg: 'bg-dark-elevated',
