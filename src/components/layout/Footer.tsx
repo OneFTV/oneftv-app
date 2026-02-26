@@ -167,8 +167,8 @@ export default function Footer() {
             <div>
               <h3 className="text-white font-semibold mb-4">{t('common.footer_company')}</h3>
               <ul className="space-y-2">
-                {footerLinks.company.map((link) => (
-                  <li key={link.href}>
+                {footerLinks.company.map((link, index) => (
+                  <li key={`company-${index}`}>
                     <Link
                       href={link.href}
                       className="text-gray-400 hover:text-white transition-colors duration-200"
