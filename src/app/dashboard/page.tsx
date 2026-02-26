@@ -12,7 +12,8 @@ interface Tournament {
   location: string;
   startDate: string;
   format: string;
-  athletesCount: number;
+  athletesCount?: number;
+  registeredPlayers?: number;
   status: 'upcoming' | 'ongoing' | 'completed';
 }
 
@@ -272,7 +273,7 @@ export default function DashboardPage() {
                       <svg className="w-4 h-4 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                       </svg>
-                      {t('dashboard.athletes_count', { count: String(tournament.athletesCount) })}
+                      {t('dashboard.athletes_count', { count: String(tournament.athletesCount ?? tournament.registeredPlayers ?? 0) })}
                     </div>
                   </div>
                 </Link>
