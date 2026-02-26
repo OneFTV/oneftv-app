@@ -70,6 +70,7 @@ export class SchedulingRepository {
     player2AwayId: string | null
     status: string
     categoryId?: string
+    matchNumber?: number
   }) {
     return prisma.game.create({ data })
   }

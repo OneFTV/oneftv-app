@@ -75,29 +75,48 @@ export function generateBracketGames(players: string[]): GameTemplate[][] {
 
   if (players.length < 2) return bracket
 
-  const validPlayerCount = Math.pow(2, Math.ceil(Math.log2(players.length)))
+  const totalRounds = Math.ceil(Math.log2(players.length))
+  const validPlayerCount = Math.pow(2, totalRounds)
   const seeded: (string | null)[] = [...players]
 
   while (seeded.length < validPlayerCount) {
     seeded.push(null)
   }
 
-  const roundGames: GameTemplate[] = []
+  // Round 1: pair seeded players, handle byes
+  const firstRoundGames: GameTemplate[] = []
+  const byeAdvancers: (string | null)[] = [] // players who get a bye to round 2
 
   for (let i = 0; i < seeded.length; i += 2) {
     const p1 = seeded[i]
     const p2 = seeded[i + 1]
 
     if (p1 && p2) {
-      roundGames.push({
-        team1: [p1],
-        team2: [p2],
-      })
+      firstRoundGames.push({ team1: [p1], team2: [p2] })
+    } else if (p1) {
+      // p1 gets a bye
+      byeAdvancers.push(p1)
+    } else if (p2) {
+      byeAdvancers.push(p2)
+    } else {
+      byeAdvancers.push(null)
     }
   }
 
-  if (roundGames.length > 0) {
-    bracket.push(roundGames)
+  if (firstRoundGames.length > 0) {
+    bracket.push(firstRoundGames)
+  }
+
+  // Generate subsequent rounds with TBD (null) players
+  let gamesInPrevRound = firstRoundGames.length + byeAdvancers.length
+  while (gamesInPrevRound > 1) {
+    const nextRoundGames: GameTemplate[] = []
+    const gamesNeeded = Math.floor(gamesInPrevRound / 2)
+    for (let i = 0; i < gamesNeeded; i++) {
+      nextRoundGames.push({ team1: [null as unknown as string], team2: [null as unknown as string] })
+    }
+    bracket.push(nextRoundGames)
+    gamesInPrevRound = gamesNeeded
   }
 
   return bracket

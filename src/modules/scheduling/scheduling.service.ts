@@ -190,6 +190,10 @@ export class SchedulingService {
     const rounds = generateBracketGames(playerIds)
     const totalBracketRounds = Math.ceil(Math.log2(playerIds.length))
 
+    // First pass: create all rounds and games, collecting IDs
+    const createdGames: { id: string; roundIndex: number; gameIndex: number }[][] = []
+    let matchCounter = 1
+
     for (let r = 0; r < rounds.length; r++) {
       const roundsFromEnd = totalBracketRounds - r
       let roundName = `Round ${r + 1}`
@@ -218,8 +222,11 @@ export class SchedulingService {
         categoryId,
       })
 
-      for (const game of rounds[r]) {
-        await SchedulingRepository.createGame({
+      const roundGames: { id: string; roundIndex: number; gameIndex: number }[] = []
+
+      for (let g = 0; g < rounds[r].length; g++) {
+        const game = rounds[r][g]
+        const created = await SchedulingRepository.createGame({
           tournamentId,
           roundId: round.id,
           courtNumber: 1,
@@ -229,7 +236,28 @@ export class SchedulingService {
           player2AwayId: game.team2[1] || null,
           status: 'scheduled',
           categoryId,
+          matchNumber: matchCounter++,
         })
+        roundGames.push({ id: created.id, roundIndex: r, gameIndex: g })
+      }
+
+      createdGames.push(roundGames)
+    }
+
+    // Second pass: wire up winnerNextGameId and winnerSlot
+    // Game i in round r feeds into game floor(i/2) in round r+1
+    // If i is even → home slot; if i is odd → away slot
+    for (let r = 0; r < createdGames.length - 1; r++) {
+      for (let g = 0; g < createdGames[r].length; g++) {
+        const nextGameIndex = Math.floor(g / 2)
+        const nextRound = createdGames[r + 1]
+        if (nextRound && nextRound[nextGameIndex]) {
+          const winnerSlot = g % 2 === 0 ? 'home' : 'away'
+          await SchedulingRepository.updateGameRouting(createdGames[r][g].id, {
+            winnerNextGameId: nextRound[nextGameIndex].id,
+            winnerSlot,
+          })
+        }
       }
     }
   }
