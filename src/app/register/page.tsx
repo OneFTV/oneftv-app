@@ -128,11 +128,18 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        await signIn('credentials', {
+        const signInResult = await signIn('credentials', {
           email: formData.email,
           password: formData.password,
-          callbackUrl: '/dashboard',
+          redirect: false,
         });
+
+        if (signInResult?.ok) {
+          router.push('/dashboard');
+        } else {
+          // Auto-login failed, redirect to login page
+          router.push('/login');
+        }
       } else {
         const data = await res.json();
         setErrors({ submit: data.error || t('auth.registration_failed') });
