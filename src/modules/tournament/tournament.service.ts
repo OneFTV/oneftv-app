@@ -84,6 +84,17 @@ export class TournamentService {
       updateData.date = new Date(updateData.date as string)
     }
 
+    // If status is being changed, validate the transition
+    if (updateData.status && typeof updateData.status === 'string') {
+      const tournament = await this.getById(id)
+      const allowed = VALID_STATUS_TRANSITIONS[tournament.status] || []
+      if (!allowed.includes(updateData.status as string)) {
+        throw new PolicyViolationError(
+          `Cannot transition from '${tournament.status}' to '${updateData.status}'`
+        )
+      }
+    }
+
     return TournamentRepository.update(id, updateData)
   }
 
