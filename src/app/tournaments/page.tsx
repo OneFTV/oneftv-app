@@ -37,7 +37,7 @@ const statusMap: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-800',
+  draft: 'bg-slate-700/30 text-slate-200',
   registration: 'bg-green-100 text-green-800',
   in_progress: 'bg-blue-100 text-blue-800',
   completed: 'bg-purple-100 text-purple-800',
@@ -237,10 +237,10 @@ export default function TournamentsPage() {
                   <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}
                 </div>
                 <div className="flex gap-2 mb-3">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tournament.format ? (formatColors[tournament.format] || 'bg-gray-100 text-gray-800') : 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tournament.format ? (formatColors[tournament.format] || 'bg-slate-700/30 text-slate-200') : 'bg-slate-700/30 text-slate-200'}`}>
                     {tournament.format ? (formatLabels[tournament.format] || tournament.format) : (tournament.categoryCount ? `${tournament.categoryCount} categorias` : 'Multi-cat')}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[tournament.status] || 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[tournament.status] || 'bg-slate-700/30 text-slate-200'}`}>
                     {statusMap[tournament.status] || tournament.status}
                   </span>
                 </div>
