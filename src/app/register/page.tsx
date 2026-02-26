@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, FormEvent, ChangeEvent } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -66,6 +66,7 @@ const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro'];
 export default function RegisterPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { data: session, status } = useSession();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -77,6 +78,12 @@ export default function RegisterPage() {
   });
   const [errors, setErrors] = useState<Partial<FormData> & { submit?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/dashboard');
+    }
+  }, [status, router]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> & { submit?: string } = {};
