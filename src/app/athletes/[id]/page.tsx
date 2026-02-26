@@ -113,10 +113,10 @@ export default function AthleteProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{t('athletes.loading_profile')}</p>
+          <p className="text-slate-400">{t('athletes.loading_profile')}</p>
         </div>
       </div>
     );
@@ -124,9 +124,9 @@ export default function AthleteProfilePage() {
 
   if (!athlete) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900 mb-2">
+          <p className="text-2xl font-bold text-white mb-2">
             {t('athletes.athlete_not_found')}
           </p>
           <button
@@ -141,9 +141,9 @@ export default function AthleteProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-slate-800/50 border-b border-blue-400/20">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <button
             onClick={() => router.back()}
@@ -156,13 +156,13 @@ export default function AthleteProfilePage() {
       </div>
 
       {/* Profile Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-slate-800/50 border-b border-blue-400/20">
         <div className="max-w-6xl mx-auto px-4 py-12">
           <div className="flex items-start gap-8">
             <div className="text-7xl">{athlete.flagEmoji}</div>
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-4">
-                <h1 className="text-4xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold text-white">
                   {athlete.name}
                 </h1>
                 <span
@@ -173,7 +173,7 @@ export default function AthleteProfilePage() {
                   {athlete.level}
                 </span>
               </div>
-              <p className="text-xl text-gray-600 mb-2">
+              <p className="text-xl text-slate-400 mb-2">
                 {athlete.nationality} • {athlete.country}
               </p>
             </div>
@@ -185,8 +185,8 @@ export default function AthleteProfilePage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.total_points')}
             </p>
             <p className="text-3xl font-bold text-blue-600">
@@ -194,8 +194,8 @@ export default function AthleteProfilePage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.games_played')}
             </p>
             <p className="text-3xl font-bold text-green-600">
@@ -203,8 +203,8 @@ export default function AthleteProfilePage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.games_won')}
             </p>
             <p className="text-3xl font-bold text-purple-600">
@@ -212,8 +212,8 @@ export default function AthleteProfilePage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.win_rate')}
             </p>
             <p className="text-3xl font-bold text-yellow-600">
@@ -221,8 +221,8 @@ export default function AthleteProfilePage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-red-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.tournaments_played')}
             </p>
             <p className="text-3xl font-bold text-red-600">
@@ -230,8 +230,8 @@ export default function AthleteProfilePage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-500">
-            <p className="text-gray-600 text-sm font-medium mb-2">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 border-l-4 border-indigo-500">
+            <p className="text-slate-400 text-sm font-medium mb-2">
               {t('athletes.best_finish')}
             </p>
             <p className="text-3xl font-bold text-indigo-600">
@@ -241,8 +241,8 @@ export default function AthleteProfilePage() {
         </div>
 
         {/* Performance Chart */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6">
             {t('athletes.points_over_time')}
           </h2>
           {athlete.pointsOverTime && athlete.pointsOverTime.length > 0 ? (
@@ -277,16 +277,16 @@ export default function AthleteProfilePage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-400">
               {t('athletes.no_points_history')}
             </div>
           )}
         </div>
 
         {/* Tournament History */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">
+        <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-600/50">
+            <h2 className="text-2xl font-bold text-white">
               {t('athletes.tournament_history')}
             </h2>
           </div>
@@ -294,24 +294,24 @@ export default function AthleteProfilePage() {
           {athlete.tournamentHistory && athlete.tournamentHistory.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-slate-700/30 border-b border-slate-600/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">
                       {t('athletes.col_tournament')}
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">
                       {t('athletes.col_date')}
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">
                       {t('athletes.col_format')}
                     </th>
-                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-center text-sm font-semibold text-white">
                       {t('athletes.col_placement')}
                     </th>
-                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-center text-sm font-semibold text-white">
                       {t('athletes.col_record')}
                     </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">
                       {t('athletes.col_points')}
                     </th>
                   </tr>
@@ -320,17 +320,17 @@ export default function AthleteProfilePage() {
                   {athlete.tournamentHistory.map((tournament, idx) => (
                     <tr
                       key={tournament.id}
-                      className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      className={`border-b border-slate-600/50 hover:bg-slate-700/30 transition-colors ${
+                        idx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/30'
                       }`}
                     >
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 text-sm font-medium text-white">
                         {tournament.name}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-slate-400">
                         {tournament.date ? new Date(tournament.date).toLocaleDateString() : '—'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-slate-400">
                         {tournament.format}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-center">
@@ -356,7 +356,7 @@ export default function AthleteProfilePage() {
               </table>
             </div>
           ) : (
-            <div className="p-6 text-center text-gray-500">
+            <div className="p-6 text-center text-slate-400">
               {t('athletes.no_tournament_history')}
             </div>
           )}
