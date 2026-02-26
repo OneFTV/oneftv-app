@@ -33,7 +33,7 @@ export default function LanguageSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-gray-100 transition-colors duration-200"
+        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-slate-700/30 transition-colors duration-200"
         aria-label="Select language"
       >
         {/* Globe icon */}
@@ -67,7 +67,7 @@ export default function LanguageSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-lg border border-blue-400/20 py-1 z-50">
           {SUPPORTED_LOCALES.map((loc) => (
             <button
               key={loc}
@@ -75,7 +75,7 @@ export default function LanguageSwitcher() {
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                 locale === loc
                   ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  : 'text-slate-300 hover:bg-slate-700/30'
               }`}
             >
               <span className="text-base">{LOCALE_FLAGS[loc]}</span>
