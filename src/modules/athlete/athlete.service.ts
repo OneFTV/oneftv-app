@@ -86,24 +86,22 @@ export class AthleteService {
     const gamesPlayed = totalWins + totalLosses
     const winRate = gamesPlayed > 0 ? (totalWins / gamesPlayed) * 100 : 0
 
-    // Compute bestFinish: for each tournament, rank this player among all participants
-    let bestFinish = 0
-    if (user.tournamentPlayers.length > 0) {
-      const finishes = await Promise.all(
-        user.tournamentPlayers.map(async (tp) => {
-          const allPlayers = await AthleteRepository.getTournamentPlayers(tp.tournamentId, tp.categoryId ?? undefined)
-          // Sort by wins desc, then pointDiff desc, then points desc
-          const sorted = allPlayers.sort((a, b) => {
-            if (b.wins !== a.wins) return b.wins - a.wins
-            if (b.pointDiff !== a.pointDiff) return b.pointDiff - a.pointDiff
-            return b.points - a.points
-          })
-          const rank = sorted.findIndex((p) => p.userId === user.id) + 1
-          return rank > 0 ? rank : sorted.length
+    // Compute placement per tournament: rank this player among all participants
+    const placements = await Promise.all(
+      user.tournamentPlayers.map(async (tp) => {
+        const allPlayers = await AthleteRepository.getTournamentPlayers(tp.tournamentId, tp.categoryId ?? undefined)
+        // Sort by wins desc, then pointDiff desc, then points desc
+        const sorted = allPlayers.sort((a, b) => {
+          if (b.wins !== a.wins) return b.wins - a.wins
+          if (b.pointDiff !== a.pointDiff) return b.pointDiff - a.pointDiff
+          return b.points - a.points
         })
-      )
-      bestFinish = Math.min(...finishes)
-    }
+        const rank = sorted.findIndex((p) => p.userId === user.id) + 1
+        return rank > 0 ? rank : sorted.length
+      })
+    )
+
+    const bestFinish = placements.length > 0 ? Math.min(...placements) : 0
 
     return {
       id: user.id,
@@ -124,8 +122,9 @@ export class AthleteService {
         tournamentsWon,
         bestFinish,
       },
-      tournamentHistory: user.tournamentPlayers.map((tp) => ({
+      tournamentHistory: user.tournamentPlayers.map((tp, idx) => ({
         id: tp.id,
+        placement: placements[idx] || null,
         tournament: {
           id: tp.tournament.id,
           name: tp.tournament.name,

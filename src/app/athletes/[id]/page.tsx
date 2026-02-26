@@ -335,7 +335,7 @@ export default function AthleteProfilePage() {
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-center">
                         <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                          #{tournament.placement}
+                          {tournament.placement > 0 ? `#${tournament.placement}` : '—'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
