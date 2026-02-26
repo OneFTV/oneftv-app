@@ -122,10 +122,10 @@ export default function TournamentGamesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-gray-600">Loading tournament games...</p>
+          <p className="text-slate-400">Loading tournament games...</p>
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ export default function TournamentGamesPage() {
 
   if (error || !tournament) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             href={`/tournaments/${tournamentId}`}
@@ -152,7 +152,7 @@ export default function TournamentGamesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Link
@@ -165,27 +165,27 @@ export default function TournamentGamesPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tournament Games</h1>
-          <p className="text-gray-600">{tournament.name}</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Tournament Games</h1>
+          <p className="text-slate-400">{tournament.name}</p>
         </div>
 
         {/* Stats */}
         {games.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <p className="text-sm text-gray-600 mb-1">Total Games</p>
-              <p className="text-3xl font-bold text-gray-900">{games.length}</p>
+            <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-md p-4">
+              <p className="text-sm text-slate-400 mb-1">Total Games</p>
+              <p className="text-3xl font-bold text-white">{games.length}</p>
             </div>
             <div className="bg-green-50 rounded-lg shadow-md p-4 border border-green-200">
-              <p className="text-sm text-gray-600 mb-1">Completed</p>
+              <p className="text-sm text-slate-400 mb-1">Completed</p>
               <p className="text-3xl font-bold text-green-600">{completedCount}</p>
             </div>
             <div className="bg-blue-50 rounded-lg shadow-md p-4 border border-blue-200">
-              <p className="text-sm text-gray-600 mb-1">In Progress</p>
+              <p className="text-sm text-slate-400 mb-1">In Progress</p>
               <p className="text-3xl font-bold text-blue-600">{inProgressCount}</p>
             </div>
             <div className="bg-yellow-50 rounded-lg shadow-md p-4 border border-yellow-200">
-              <p className="text-sm text-gray-600 mb-1">Pending</p>
+              <p className="text-sm text-slate-400 mb-1">Pending</p>
               <p className="text-3xl font-bold text-yellow-600">{pendingCount}</p>
             </div>
           </div>
@@ -193,16 +193,16 @@ export default function TournamentGamesPage() {
 
         {/* Filters */}
         {games.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Filters</h2>
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-4">Filters</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Status Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -214,11 +214,11 @@ export default function TournamentGamesPage() {
               {/* Round Filter */}
               {rounds.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Round</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Round</label>
                   <select
                     value={selectedRound}
                     onChange={(e) => setSelectedRound(e.target.value)}
-                    className="v-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="v-full px-3 py-2 border border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="all">All Rounds</option>
                     {rounds.map((round) => (
@@ -233,11 +233,11 @@ export default function TournamentGamesPage() {
               {/* Group Filter */}
               {groups.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Group</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Group</label>
                   <select
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
-                    className="v-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="v-full px-3 py-2 border border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="all">All Groups</option>
                     {groups.map((group) => (
@@ -252,11 +252,11 @@ export default function TournamentGamesPage() {
               {/* Court Filter */}
               {courts.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Court</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Court</label>
                   <select
                     value={selectedCourt}
                     onChange={(e) => setSelectedCourt(e.target.value)}
-                    className="v-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="v-full px-3 py-2 border border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="all">All Courts</option>
                     {courts.map((court) => (
@@ -273,12 +273,12 @@ export default function TournamentGamesPage() {
 
         {/* Games List */}
         {filteredGames.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-md p-12 text-center">
             <Trophy className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               {games.length === 0 ? 'No games scheduled' : 'No games match your filters'}
             </h3>
-            <p className="text-gray-600">
+            <p className="text-slate-400">
               {games.length === 0
                 ? 'Games will appear here once the schedule is generated'
                 : 'Try adjusting your filter selections'}
@@ -305,7 +305,7 @@ export default function TournamentGamesPage() {
                 <Link
                   key={game.id}
                   href={isOrganizer ? `${tournament.id}/manage` : '#'}
-                  className="block bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden border-l-4"
+                  className="block bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-md hover:shadow-lg transition overflow-hidden border-l-4"
                   style={{
                     borderLeftColor:
                       game.status === 'completed'
@@ -319,7 +319,7 @@ export default function TournamentGamesPage() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-600">
+                        <p className="text-sm font-semibold text-slate-400">
                           {game.roundName}
                           {game.groupName && ` - ${game.groupName}`}
                         </p>
@@ -339,7 +339,7 @@ export default function TournamentGamesPage() {
                             ? 'bg-green-100 text-green-800'
                             : game.status === 'in_progress'
                             ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
+                            : 'bg-slate-700/30 text-slate-200'
                         }`}
                       >
                         {game.status === 'completed'
@@ -356,7 +356,7 @@ export default function TournamentGamesPage() {
                       <div className="flex-1">
                         <p
                           className={`font-semibold text-sm ${
-                            player1Won ? 'text-green-600' : 'text-gray-900'
+                            player1Won ? 'text-green-600' : 'text-white'
                           }`}
                         >
                           {game.player1}
@@ -367,11 +367,11 @@ export default function TournamentGamesPage() {
                       <div className="flex items-center gap-3">
                         {isCompleted ? (
                           <>
-                            <span className="text-2xl font-bold text-gray-900 w-12 text-center">
+                            <span className="text-2xl font-bold text-white w-12 text-center">
                               {score1}
                             </span>
                             <span className="text-gray-400">-</span>
-                            <span className="text-2xl font-bold text-gray-900 w-12 text-center">
+                            <span className="text-2xl font-bold text-white w-12 text-center">
                               {score2}
                             </span>
                           </>
@@ -389,7 +389,7 @@ export default function TournamentGamesPage() {
                       <div className="flex-1 text-right">
                         <p
                           className={`font-semibold text-sm ${
-                            player2Won ? 'text-green-600' : 'text-gray-900'
+                            player2Won ? 'text-green-600' : 'text-white'
                           }`}
                         >
                           {game.player2}
@@ -399,7 +399,7 @@ export default function TournamentGamesPage() {
 
                     {/* Edit Button for Organizer */}
                     {isOrganizer && !isCompleted && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mt-4 pt-4 border-t border-slate-600/50">
                         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                           Enter Score
                         </button>
@@ -414,7 +414,7 @@ export default function TournamentGamesPage() {
 
         {/* Results Summary */}
         {filteredGames.length > 0 && (
-          <div className="mt-8 text-center text-sm text-gray-600">
+          <div className="mt-8 text-center text-sm text-slate-400">
             Showing {filteredGames.length} of {games.length} games
           </div>
         )}
