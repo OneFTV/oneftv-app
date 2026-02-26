@@ -31,7 +31,7 @@ const statusMap: Record<string, string> = {
 };
 
 const statusDotColor: Record<string, string> = {
-  draft: 'bg-gray-500',
+  draft: 'bg-slate-500',
   registration: 'bg-emerald-500',
   in_progress: 'bg-blue-500',
   completed: 'bg-purple-500',
@@ -172,7 +172,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
               )}
             </div>
             <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-dark-elevated border border-dark-border`}>
-              <span className={`w-2 h-2 rounded-full ${statusDotColor[tournament.status] || 'bg-gray-500'} ${tournament.status === 'in_progress' ? 'animate-pulse' : ''}`} />
+              <span className={`w-2 h-2 rounded-full ${statusDotColor[tournament.status] || 'bg-slate-500'} ${tournament.status === 'in_progress' ? 'animate-pulse' : ''}`} />
               {statusMap[tournament.status] || tournament.status}
             </span>
           </div>
@@ -282,7 +282,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           cat.status === 'in_progress' ? 'bg-blue-500 animate-pulse' :
                           cat.status === 'completed' ? 'bg-purple-500' :
-                          cat.status === 'registration' ? 'bg-emerald-500' : 'bg-gray-500'
+                          cat.status === 'registration' ? 'bg-emerald-500' : 'bg-slate-500'
                         }`} />
                         <h3 className="font-semibold text-gray-100 truncate">{cat.name}</h3>
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-dark-elevated text-gray-400">
@@ -314,7 +314,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                               )}
                               <span className={`truncate flex-1 ${homeWon ? 'text-white font-semibold' : 'text-gray-400'}`}>{home}</span>
                               <span className="font-mono text-xs text-gray-500 w-[60px] text-center">
-                                {game.scoreHome ?? 0} <span className="text-gray-600">x</span> {game.scoreAway ?? 0}
+                                {game.scoreHome ?? 0} <span className="text-slate-400">x</span> {game.scoreAway ?? 0}
                               </span>
                               <span className={`truncate flex-1 text-right ${awayWon ? 'text-white font-semibold' : 'text-gray-400'}`}>{away}</span>
                             </div>
@@ -322,7 +322,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                         })}
                       </div>
                     ) : (
-                      <div className="px-4 py-3 text-sm text-gray-600">No matches played yet</div>
+                      <div className="px-4 py-3 text-sm text-slate-400">No matches played yet</div>
                     )}
 
                     {/* View Bracket link */}
@@ -356,7 +356,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-600 flex-shrink-0" />
                         <span className={`truncate flex-1 ${homeWon ? 'text-white font-semibold' : 'text-gray-400'}`}>{home}</span>
                         <span className="font-mono text-xs text-gray-500 w-[60px] text-center">
-                          {game.scoreHome ?? 0} <span className="text-gray-600">x</span> {game.scoreAway ?? 0}
+                          {game.scoreHome ?? 0} <span className="text-slate-400">x</span> {game.scoreAway ?? 0}
                         </span>
                         <span className={`truncate flex-1 text-right ${awayWon ? 'text-white font-semibold' : 'text-gray-400'}`}>{away}</span>
                       </div>
