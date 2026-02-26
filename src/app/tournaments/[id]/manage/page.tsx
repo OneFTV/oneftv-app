@@ -361,10 +361,10 @@ export default function ManageTournamentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader className="mx-auto h-12 w-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-gray-600">{t('tournaments.manage_loading')}</p>
+          <p className="text-slate-400">{t('tournaments.manage_loading')}</p>
         </div>
       </div>
     );
@@ -372,12 +372,12 @@ export default function ManageTournamentPage() {
 
   if (error && !authorized) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-8">
         <div className="max-w-3xl mx-auto px-4">
           <Link href="/tournaments" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6">
             <ArrowLeft size={20} /> {t('tournaments.back_to_tournaments')}
           </Link>
-          <div className="p-6 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-800">
+          <div className="p-6 bg-red-900/30 border border-red-400/30 rounded-lg flex items-center gap-3 text-red-300">
             <AlertCircle size={20} />
             {error}
           </div>
@@ -393,16 +393,16 @@ export default function ManageTournamentPage() {
   const renderScoreMatrix = (roundGames: Game[]) => (
     <table className="w-full text-sm">
       <thead>
-        <tr className="border-b-2 border-gray-200 text-left">
-          <th className="py-2 px-2 font-semibold text-gray-600 w-14">#</th>
-          <th className="py-2 px-2 font-semibold text-gray-600">Home Team</th>
-          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 1</th>
-          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 2</th>
-          <th className="py-2 px-2 font-semibold text-gray-600 text-center" colSpan={2}>Set 3</th>
-          <th className="py-2 px-2 font-semibold text-gray-600">Away Team</th>
-          <th className="py-2 px-2 font-semibold text-gray-600 text-center w-20">Status</th>
+        <tr className="border-b-2 border-slate-600/50 text-left">
+          <th className="py-2 px-2 font-semibold text-slate-400 w-14">#</th>
+          <th className="py-2 px-2 font-semibold text-slate-400">Home Team</th>
+          <th className="py-2 px-2 font-semibold text-slate-400 text-center" colSpan={2}>Set 1</th>
+          <th className="py-2 px-2 font-semibold text-slate-400 text-center" colSpan={2}>Set 2</th>
+          <th className="py-2 px-2 font-semibold text-slate-400 text-center" colSpan={2}>Set 3</th>
+          <th className="py-2 px-2 font-semibold text-slate-400">Away Team</th>
+          <th className="py-2 px-2 font-semibold text-slate-400 text-center w-20">Status</th>
         </tr>
-        <tr className="border-b border-gray-100 text-[10px] text-gray-400">
+        <tr className="border-b border-slate-700/30 text-[10px] text-gray-400">
           <th />
           <th />
           <th className="px-2 text-center">H</th>
@@ -432,26 +432,26 @@ export default function ManageTournamentPage() {
 
           const inputClass = (dirty: boolean) =>
             `w-12 px-1 py-1 border rounded text-center text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 ${
-              dirty ? 'border-amber-400 bg-amber-50' : 'border-gray-200'
+              dirty ? 'border-amber-400 bg-amber-900/30' : 'border-slate-600/50'
             }`;
 
           return (
             <tr key={game.id}
-              className={`border-b border-gray-100 transition-colors ${
-                isDirty ? 'bg-amber-50' : isCompleted && !isDirty ? 'bg-green-50/30' : 'hover:bg-gray-50'
+              className={`border-b border-slate-700/30 transition-colors ${
+                isDirty ? 'bg-amber-900/30' : isCompleted && !isDirty ? 'bg-green-900/20' : 'hover:bg-slate-700/30'
               }`}>
               <td className="py-2 px-2">
                 {game.matchNumber != null ? (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-700/30 text-slate-400">
                     M{game.matchNumber}
                   </span>
                 ) : (
-                  <span className="text-gray-400 text-xs">-</span>
+                  <span className="text-slate-500 text-xs">-</span>
                 )}
               </td>
 
-              <td className="py-2 px-2 font-medium text-gray-900 text-xs max-w-[180px] truncate">
-                {game.player1 || <span className="text-gray-400 italic">TBD</span>}
+              <td className="py-2 px-2 font-medium text-white text-xs max-w-[180px] truncate">
+                {game.player1 || <span className="text-slate-500 italic">TBD</span>}
               </td>
 
               {/* Set 1 */}
@@ -487,29 +487,29 @@ export default function ManageTournamentPage() {
                 {isBo3 && setsTied ? (
                   <input type="number" min={0} value={scores.set3Home}
                     onChange={e => updateSetScore(game.id, 'set3Home', parseInt(e.target.value) || 0)}
-                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-50/50' : ''}`} />
+                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-900/30/50' : ''}`} />
                 ) : <span className="text-gray-300">-</span>}
               </td>
               <td className="py-2 px-1 text-center">
                 {isBo3 && setsTied ? (
                   <input type="number" min={0} value={scores.set3Away}
                     onChange={e => updateSetScore(game.id, 'set3Away', parseInt(e.target.value) || 0)}
-                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-50/50' : ''}`} />
+                    className={`${inputClass(isDirty)} ${!isDirty ? '!border-amber-200 !bg-amber-900/30/50' : ''}`} />
                 ) : <span className="text-gray-300">-</span>}
               </td>
 
-              <td className="py-2 px-2 font-medium text-gray-900 text-xs max-w-[180px] truncate">
-                {game.player2 || <span className="text-gray-400 italic">TBD</span>}
+              <td className="py-2 px-2 font-medium text-white text-xs max-w-[180px] truncate">
+                {game.player2 || <span className="text-slate-500 italic">TBD</span>}
               </td>
 
               <td className="py-2 px-2 text-center">
                 {isDirty ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">changed</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-900/40 text-amber-300">changed</span>
                 ) : (
                   <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                    isCompleted ? 'bg-green-100 text-green-800'
+                    isCompleted ? 'bg-green-100 text-green-300'
                     : game.status === 'in_progress' ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-slate-700/30 text-slate-400'
                   }`}>
                     {game.status === 'scheduled' ? 'pending' : game.status}
                   </span>
@@ -523,7 +523,7 @@ export default function ManageTournamentPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back */}
         <Link href={`/tournaments/${tournamentId}`} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6">
@@ -531,11 +531,11 @@ export default function ManageTournamentPage() {
         </Link>
 
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Manage: {tournament.name}</h1>
-              <p className="text-gray-600">Status: {statusLabels[tournament.status]}</p>
+              <h1 className="text-2xl font-bold text-white mb-2">Manage: {tournament.name}</h1>
+              <p className="text-slate-400">Status: {statusLabels[tournament.status]}</p>
             </div>
             {tournament.proLeague && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
@@ -547,19 +547,19 @@ export default function ManageTournamentPage() {
 
         {/* Messages */}
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-800">
+          <div className="mb-6 p-4 bg-green-900/30 border border-green-400/30 rounded-lg flex items-center gap-3 text-green-300">
             <CheckCircle size={20} /> {success}
           </div>
         )}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-800">
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-400/30 rounded-lg flex items-center gap-3 text-red-300">
             <AlertCircle size={20} /> {error}
           </div>
         )}
 
         {/* Status */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Tournament Status</h2>
+        <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
+          <h2 className="text-lg font-bold text-white mb-4">Tournament Status</h2>
           {availableTransitions.length > 0 ? (
             <div className="flex gap-3">
               {availableTransitions.map(nextStatus => (
@@ -570,25 +570,25 @@ export default function ManageTournamentPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-600">This tournament is completed. No further status changes available.</p>
+            <p className="text-slate-400">This tournament is completed. No further status changes available.</p>
           )}
         </div>
 
         {/* Category Selector */}
         {tournament.categories && tournament.categories.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Categorias</h2>
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-4">Categorias</h2>
             <div className="flex flex-wrap gap-2 mb-4">
               <button onClick={() => setSelectedCategoryId(null)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
-                  selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30'
                 }`}>
                 Todas
               </button>
               {tournament.categories.map(cat => (
                 <button key={cat.id} onClick={() => setSelectedCategoryId(cat.id)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
-                    selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30'
                   }`}>
                   {cat.name}
                   <span className="ml-1 text-xs opacity-70">({cat._count?.players || 0}/{cat.maxTeams})</span>
@@ -596,13 +596,13 @@ export default function ManageTournamentPage() {
               ))}
             </div>
             {(tournament.status === 'registration' || tournament.status === 'draft') && (
-              <div className="border-t border-gray-100 pt-4 mt-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Gerar Schedule por Categoria</h3>
+              <div className="border-t border-slate-700/30 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">Gerar Schedule por Categoria</h3>
                 <div className="flex flex-wrap gap-2">
                   {tournament.categories.map(cat => (
                     <button key={cat.id} onClick={() => handleGenerateSchedule(cat.id)}
                       disabled={generating || generatingCategoryId === cat.id}
-                      className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition disabled:opacity-50">
+                      className="px-3 py-1.5 text-xs font-medium bg-green-900/30 text-green-300 border border-green-400/30 rounded-lg hover:bg-green-100 transition disabled:opacity-50">
                       {generatingCategoryId === cat.id ? 'Gerando...' : `Gerar ${cat.name}`}
                     </button>
                   ))}
@@ -614,8 +614,8 @@ export default function ManageTournamentPage() {
 
         {/* Generate Schedule */}
         {(tournament.status === 'registration' || tournament.status === 'draft') && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Schedule</h2>
+          <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-4">Schedule</h2>
             <button onClick={() => handleGenerateSchedule()} disabled={generating}
               className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50">
               {generating ? 'Generating...' : 'Generate Schedule (All Categories)'}
@@ -626,10 +626,10 @@ export default function ManageTournamentPage() {
         {/* Score Matrix — Grouped by Round */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Score Matrix ({games.length} games)</h2>
+            <h2 className="text-lg font-bold text-white">Score Matrix ({games.length} games)</h2>
             <div className="flex items-center gap-3">
               <button onClick={() => fetchGames()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200 border border-slate-600/50 rounded-lg hover:bg-slate-700/30 transition">
                 <RefreshCw size={14} /> Refresh
               </button>
               {dirtyGames.size > 0 && (
@@ -643,8 +643,8 @@ export default function ManageTournamentPage() {
           </div>
 
           {games.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <p className="text-gray-600">No games scheduled yet. Generate a schedule first.</p>
+            <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6">
+              <p className="text-slate-400">No games scheduled yet. Generate a schedule first.</p>
             </div>
           ) : (
             roundGroups.map(rg => {
@@ -654,20 +654,20 @@ export default function ManageTournamentPage() {
               const dirtyInRound = rg.games.filter(g => dirtyGames.has(g.id)).length;
 
               return (
-                <div key={key} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div key={key} className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm overflow-hidden">
                   {/* Round header — click to expand/collapse */}
                   <button
                     onClick={() => toggleRound(key)}
-                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-700/30 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
                       {isCollapsed
                         ? <ChevronRight size={18} className="text-gray-400" />
                         : <ChevronDown size={18} className="text-gray-400" />
                       }
-                      <span className="font-semibold text-gray-900">{rg.roundName}</span>
+                      <span className="font-semibold text-white">{rg.roundName}</span>
                       {rg.bracketSide && (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${bracketSideColors[rg.bracketSide] || 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${bracketSideColors[rg.bracketSide] || 'bg-slate-700/30 text-slate-400'}`}>
                           {bracketSideLabels[rg.bracketSide] || rg.bracketSide}
                         </span>
                       )}
@@ -677,7 +677,7 @@ export default function ManageTournamentPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       {dirtyInRound > 0 && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-900/40 text-amber-300">
                           {dirtyInRound} changed
                         </span>
                       )}
@@ -701,8 +701,8 @@ export default function ManageTournamentPage() {
 
         {/* Sticky bottom save bar */}
         {dirtyGames.size > 0 && (
-          <div className="sticky bottom-4 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between shadow-lg">
-            <p className="text-amber-800 text-sm font-medium">
+          <div className="sticky bottom-4 mt-4 p-4 bg-amber-900/30 border border-amber-400/30 rounded-lg flex items-center justify-between shadow-lg">
+            <p className="text-amber-300 text-sm font-medium">
               {dirtyGames.size} game{dirtyGames.size !== 1 ? 's' : ''} modified
             </p>
             <button onClick={handleBatchSave} disabled={batchSaving}
