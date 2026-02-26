@@ -260,6 +260,18 @@ export default function CreateTournamentPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (errorData.details?.fieldErrors) {
+          const fieldErrors: FormErrors = {};
+          for (const [field, messages] of Object.entries(errorData.details.fieldErrors)) {
+            fieldErrors[field] = (messages as string[]).join(', ');
+          }
+          setErrors(fieldErrors);
+          throw new Error(
+            Object.entries(errorData.details.fieldErrors)
+              .map(([f, m]) => `${f}: ${(m as string[]).join(', ')}`)
+              .join('; ') || errorData.error
+          );
+        }
         throw new Error(errorData.error || t('tournaments.create_error'));
       }
 

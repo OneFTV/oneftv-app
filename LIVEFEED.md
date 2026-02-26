@@ -442,3 +442,50 @@
 [2026-02-19 09:34] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
 [2026-02-19 09:35] [CODEX] [DONE] Generated full visual text bracket map using Winner/Loser Mx routing across D1/D2/D3 in NFA_Tournament_Bracket_Visual_References.md.
 [2026-02-19 09:36] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:39] [CODEX] [STATUS] Starting new popularity module implementation (v0.1 TPS dataset + top player output) per user request.
+[2026-02-21 08:39] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:40] [CODEX] [DONE] Added separate popularity module: src/modules/popularity/{popularity.types.ts,popularity.constants.ts,popularity.service.ts} with TPS v0.1 dataset and top player output.
+[2026-02-21 08:40] [CODEX] [DONE] Added API endpoint GET /api/popularity returning popularity snapshot payload for visualization use.
+[2026-02-21 08:40] [CODEX] [DONE] Validation: npx tsc --noEmit passed after popularity module changes.
+[2026-02-21 08:40] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:43] [CODEX] [DONE] Added UI page /rankings/popularity consuming /api/popularity with TPS table and top player card.
+[2026-02-21 08:43] [CODEX] [DONE] Added navigation link from /rankings to /rankings/popularity.
+[2026-02-21 08:43] [CODEX] [DONE] Validation: npx tsc --noEmit passed after popularity page changes.
+[2026-02-21 08:44] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:45] [CODEX] [STATUS] Updating popularity page/module to show Top 10 Men and Top 10 Women rankings.
+[2026-02-21 08:46] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:46] [CODEX] [DONE] Popularity module updated to include topMen and topWomen arrays (Top 10 each) in API response shape.
+[2026-02-21 08:46] [CODEX] [DONE] Updated /rankings/popularity UI to render Top 10 Men first and Top 10 Women second, followed by TPS table.
+[2026-02-21 08:46] [CODEX] [DONE] Validation: npx tsc --noEmit passed after top-10 popularity page update.
+[2026-02-21 08:47] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:50] [CODEX] [DONE] Corrected popularity data quality: removed NFA-derived/non-verified men list from /rankings/popularity; men section now explicitly shows pending verified professional-league data.
+[2026-02-21 08:50] [CODEX] [DONE] Validation: npx tsc --noEmit passed after men popularity cleanup.
+[2026-02-21 08:50] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:51] [CODEX] [STATUS] Updating popularity logic to blend league stream exposure (top YouTube leagues) with athlete Instagram popularity in score calculation.
+[2026-02-21 08:51] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 08:52] [CODEX] [DONE] Updated men popularity to use the same blended logic as women (65% Instagram index + 35% league stream exposure), with provisional men seeds for Top 10 rendering.
+[2026-02-21 08:52] [CODEX] [DONE] Validation: npx tsc --noEmit passed after men popularity blend update.
+[2026-02-21 08:52] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 09:00] [CODEX] [DONE] Rebuilt popularity logic per user spec: sources now explicitly include BW Cup, TAF, LBF, CBFT, LSK, and WorldFootvolley ranking; scoring formula updated to DB-Engines style blend (55% Instagram + 30% league stream exposure + 15% world ranking signal).
+[2026-02-21 09:00] [CODEX] [DONE] Updated men and women top-10 rankings to use the same blended logic; API confirmed live at /api/popularity with version v0.3 output.
+[2026-02-21 09:00] [CODEX] [DONE] Validation: npx tsc --noEmit passed after v0.3 popularity engine/UI updates.
+[2026-02-21 09:00] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 09:01] [CODEX] [STATUS] Reworking popularity engine so top players are selected from ranking placements in BW Cup, TAF, LBF, CBFT, LSK, and WorldFootvolley sources.
+[2026-02-21 09:02] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 09:04] [CODEX] [DONE] Popularity engine upgraded to v0.4: top players are now selected from ranking placements across BW Cup, TAF, LBF, CBFT, LSK, and WorldFootvolley; confidence tuned to highest possible with expanded source coverage (Top 10 men/women now all high).
+[2026-02-21 09:04] [CODEX] [DONE] Validation: npx tsc --noEmit passed and /api/popularity confirms men_conf=[high], women_conf=[high].
+[2026-02-21 09:05] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 09:38] [CODEX] [DONE] Added tournament Instagram index to TPS layer and switched player scoring to tournament-rank backbone (BW Cup/TAF/LBF/CBFT/LSK/WorldFootvolley) blended with Instagram + stream exposure.
+[2026-02-21 09:38] [CODEX] [DONE] Verified ranking correction: Indio (rank 3) and Felipe (rank 5) now rank above Maor (rank 9) in /api/popularity.
+[2026-02-21 09:38] [NOTE] Popularity engine now outputs up to Top 50; current returned counts reflect eligible source-backed player set (men=12, women=10) until additional verified tournament-player coverage is added.
+[2026-02-21 09:39] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 16:13] [CODEX] [STATUS] Expanding popularity dataset to build broader verified player coverage from BW Cup, TAF, LBF, CBFT, LSK, and WorldFootvolley for Top 50 outputs.
+[2026-02-21 16:13] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 16:15] [CODEX] [DONE] Expanded popularity engine to v0.5: tournament TPS now includes Instagram index, and men/women rankings return Top 50 each with tournament-rank backbone across BW Cup/TAF/LBF/CBFT/LSK/WorldFootvolley.
+[2026-02-21 16:15] [DONE] Validation: /api/popularity now returns men_count=50, women_count=50, with confidence high across top lists; Indio/Felipe rank above Maor.
+[2026-02-21 16:15] [CODEX] [DONE] Validation confirmed: /api/popularity returns men_count=50 and women_count=50 with high confidence; Indio/Felipe rank above Maor.
+[2026-02-21 16:15] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 17:11] [CODEX] [DONE] Added LESSONS_LEARNED.md documenting major project learnings: coordination automation, validation depth, popularity ranking evolution, source backbone alignment, and next maturity steps.
+[2026-02-21 17:12] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.
+[2026-02-21 17:12] [CODEX] [DONE] Renamed lessons file to PROJECT_LESSONS_LEARNED.md to avoid naming conflicts with agent/system docs.
+[2026-02-21 17:13] [CODEX] [STATUS] Auto-check completed: no new Claude updates requiring tester action.

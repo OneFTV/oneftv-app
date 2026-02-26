@@ -103,6 +103,9 @@ export default function Navbar() {
                   <Link href="/dashboard" className="btn-outline btn-sm">
                     {t('common.dashboard')}
                   </Link>
+                  <Link href="/profile" className="btn-outline btn-sm">
+                    {t('common.profile') || 'Profile'}
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="btn-primary btn-sm"
@@ -193,6 +196,13 @@ export default function Navbar() {
                       className="block btn-outline w-full text-center"
                     >
                       {t('common.dashboard')}
+                    </Link>
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="block btn-outline w-full text-center"
+                    >
+                      {t('common.profile') || 'Profile'}
                     </Link>
                     <button
                       onClick={handleSignOut}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/contexts/TranslationContext';
@@ -109,14 +110,22 @@ export default function RankingsPage() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{t('rankings.overall_rankings')}</h2>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-            >
-              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? t('rankings.refreshing') : t('rankings.refresh')}
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/rankings/popularity"
+                className="px-4 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors font-semibold"
+              >
+                Popularity Rankings
+              </Link>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? t('rankings.refreshing') : t('rankings.refresh')}
+              </button>
+            </div>
           </div>
         </div>
       </div>

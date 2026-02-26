@@ -1,0 +1,16 @@
+scripts/cron-livefeed-check.sh: line 59: utput | tail -n 1): command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 62: rg: command not found
+scripts/cron-livefeed-check.sh: line 65: rg: command not found
+scripts/cron-livefeed-check.sh: line 72: rg: command not found
+scripts/cron-livefeed-check.sh: line 65: rg: command not found
+scripts/cron-livefeed-check.sh: line 72: rg: command not found
+scripts/cron-livefeed-check.sh: line 65: rg: command not found
+scripts/cron-livefeed-check.sh: line 72: rg: command not found
+scripts/cron-livefeed-check.sh: line 65: rg: command not found
+scripts/cron-livefeed-check.sh: line 72: rg: command not found

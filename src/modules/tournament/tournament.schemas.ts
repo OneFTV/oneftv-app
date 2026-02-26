@@ -38,7 +38,10 @@ export const createTournamentSchema = z.object({
   allowMultiCategory: z.boolean().optional(),
   refundPolicy: z.string().optional(),
   bannerUrl: z.string().optional(),
-  contactEmail: z.string().email().optional(),
+  contactEmail: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().email().optional(),
+  ),
   contactPhone: z.string().optional(),
   // Inline categories (created with tournament)
   categories: z.array(categoryInlineSchema).optional(),
