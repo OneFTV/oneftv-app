@@ -15,5 +15,5 @@
   "col_tournaments": "Torneios",
   "col_points": "Pontos",
   "chart_title": "Top 10 Jogadores por Pontos Totais",
-  "tournaments_won": "{count} vencido(s)"
+  "tournaments_won": "vencido(s)"
 }

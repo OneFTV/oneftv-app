@@ -15,5 +15,5 @@
   "col_tournaments": "Tournois",
   "col_points": "Points",
   "chart_title": "Top 10 des Joueurs par Points Totaux",
-  "tournaments_won": "{count} gagnes"
+  "tournaments_won": "gagné(s)"
 }
