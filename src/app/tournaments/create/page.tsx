@@ -584,7 +584,7 @@ export default function CreateTournamentPage() {
                           formData.allowMultiCategory ? 'bg-blue-600' : 'bg-slate-600'
                         }`}
                       >
-                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-slate-700 rounded-full shadow transition-transform ${
                           formData.allowMultiCategory ? 'translate-x-5' : 'translate-x-0'
                         }`} />
                       </button>
