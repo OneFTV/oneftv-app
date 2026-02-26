@@ -26,10 +26,8 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   const navLinks = [
-    { href: '/', label: t('common.home') },
     { href: '/tournaments', label: t('common.tournaments') },
     { href: '/rankings', label: t('common.rankings') },
-    { href: '/athletes', label: t('common.athletes') },
     { href: '/livefeed', label: t('common.live_feed') },
   ];
 
@@ -102,9 +100,6 @@ export default function Navbar() {
                 <div className="border-l border-slate-700 pl-4 flex items-center space-x-3">
                   <Link href="/dashboard" className="btn-outline btn-sm">
                     {t('common.dashboard')}
-                  </Link>
-                  <Link href="/profile" className="btn-outline btn-sm">
-                    {t('common.profile') || 'Profile'}
                   </Link>
                   <button
                     onClick={handleSignOut}
