@@ -70,6 +70,7 @@ export default function DashboardPage() {
         const data = await tournamentsRes.json();
         const tournamentList = Array.isArray(data) ? data : (data.tournaments || []);
         setTournaments(tournamentList);
+        setStats(prev => ({ ...prev, myTournaments: tournamentList.length }));
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
