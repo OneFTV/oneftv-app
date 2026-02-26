@@ -49,7 +49,7 @@ export default function AthletesPage() {
 
         // Extract unique countries
         const uniqueCountries = Array.from(
-          new Set(data.map((athlete: Athlete) => athlete.country))
+          new Set(data.map((athlete: Athlete) => athlete.country).filter(Boolean))
         ).sort() as string[];
         setCountries(uniqueCountries);
       } catch (error) {
