@@ -43,8 +43,8 @@ export default function StepWizard({ steps, currentStep, onStepClick, children }
                       isCompleted
                         ? 'border-blue-600 bg-blue-600 text-white'
                         : isCurrent
-                        ? 'border-blue-600 bg-white text-blue-600'
-                        : 'border-gray-300 bg-white text-gray-400'
+                        ? 'border-blue-500 bg-slate-800 text-blue-400'
+                        : 'border-slate-600/50 bg-slate-800 text-slate-500'
                     }`}
                   >
                     {isCompleted ? <CheckCircle size={16} /> : index + 1}
@@ -67,7 +67,7 @@ export default function StepWizard({ steps, currentStep, onStepClick, children }
 
       {/* Step Content */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">{steps[currentStep].title}</h2>
+        <h2 className="text-xl font-bold text-white">{steps[currentStep].title}</h2>
         {steps[currentStep].description && (
           <p className="text-sm text-gray-500 mt-1">{steps[currentStep].description}</p>
         )}
