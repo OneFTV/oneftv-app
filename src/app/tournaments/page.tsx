@@ -148,7 +148,7 @@ export default function TournamentsPage() {
   };
 
   const TournamentSkeleton = () => (
-    <div className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+    <div className="bg-slate-800/50 rounded-lg shadow-md p-6 animate-pulse border border-blue-400/20">
       <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
       <div className="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
       <div className="h-3 bg-gray-200 rounded w-2/3 mb-4"></div>
