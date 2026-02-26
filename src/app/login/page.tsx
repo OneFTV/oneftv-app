@@ -79,10 +79,10 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-lg flex items-center justify-center">
-              <span className="text-slate-900 font-bold">FV</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-[10px] leading-none">One<br/>FTV</span>
             </div>
-            <span className="text-white font-bold text-xl">FootVolley Pro</span>
+            <span className="text-white font-bold text-xl">OneFTV</span>
           </Link>
           <h1 className="text-4xl font-bold text-white mb-2">{t('auth.sign_in_title')}</h1>
           <p className="text-slate-400">{t('auth.sign_in_subtitle')}</p>
