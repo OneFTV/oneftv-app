@@ -121,9 +121,10 @@ export default async function ScoreboardPage({ params }: PageProps) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
   const endDateStr = tournament.endDate && tournament.endDate.getTime() !== tournament.date.getTime()
-    ? ` - ${new Date(tournament.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    ? ` - ${new Date(tournament.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`
     : '';
   const locationStr = [tournament.city, tournament.state].filter(Boolean).join(', ');
 

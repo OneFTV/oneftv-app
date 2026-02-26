@@ -234,7 +234,7 @@ export default function TournamentsPage() {
                   <MapPin size={14} /> {tournament.city || 'Unknown'}{tournament.country ? `, ${tournament.country}` : ''}
                 </div>
                 <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-                  <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString()}
+                  <Calendar size={14} /> {new Date(tournament.startDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}
                 </div>
                 <div className="flex gap-2 mb-3">
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${tournament.format ? (formatColors[tournament.format] || 'bg-gray-100 text-gray-800') : 'bg-gray-100 text-gray-800'}`}>

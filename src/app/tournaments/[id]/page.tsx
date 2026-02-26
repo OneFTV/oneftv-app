@@ -310,11 +310,13 @@ export default function TournamentDetailPage() {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
+                timeZone: 'UTC',
               })}
               {tournament.endDate && tournament.endDate !== tournament.date &&
                 ` – ${new Date(tournament.endDate).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
+                  timeZone: 'UTC',
                 })}`}
             </span>
             <span className="text-gray-300">·</span>
