@@ -65,8 +65,11 @@ export class SchedulingService {
       }
     }
 
-    // Update tournament status
-    await SchedulingRepository.updateTournamentStatus(tournamentId, 'in_progress')
+    // Only advance to in_progress if currently in registration or draft
+    // (don't downgrade if already completed, etc.)
+    if (tournament.status === 'registration' || tournament.status === 'draft') {
+      await SchedulingRepository.updateTournamentStatus(tournamentId, 'in_progress')
+    }
 
     return SchedulingRepository.getTournamentWithSchedule(tournamentId)
   }
