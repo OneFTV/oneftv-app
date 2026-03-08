@@ -284,6 +284,7 @@ export default function CreateTournamentPage() {
   if (!user) return null;
 
   const totalAllocated = categories.reduce((sum, c) => sum + c.maxTeams, 0);
+  const isOverCapacity = totalAllocated > capacity.maxTeams;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-blue-900 to-slate-900 py-8">
@@ -567,7 +568,7 @@ export default function CreateTournamentPage() {
                   {categories.map((cat, i) => (
                     <p key={i} className="ml-4">— {cat.name} ({cat.format}, {cat.maxTeams} teams)</p>
                   ))}
-                  <p><strong>Teams allocated:</strong> {totalAllocated} of {capacity.maxTeams}</p>
+                  <p className={isOverCapacity ? 'text-red-400 font-semibold' : ''}><strong>Teams allocated:</strong> {totalAllocated} of {capacity.maxTeams}{isOverCapacity && ' ⚠️ Over capacity! Reduce teams to proceed.'}</p>
                   {formData.venmoHandle && <p><strong>Venmo:</strong> {formData.venmoHandle}</p>}
                   {formData.zelleInfo && <p><strong>Zelle:</strong> {formData.zelleInfo}</p>}
                 </div>
@@ -589,9 +590,10 @@ export default function CreateTournamentPage() {
                 Next
               </button>
             ) : (
-              <button type="button" onClick={handleSubmit} disabled={submitting}
-                className="px-8 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                {submitting ? 'Creating...' : '🚀 Create Tournament'}
+              <button type="button" onClick={handleSubmit} disabled={submitting || isOverCapacity}
+                className="px-8 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                title={isOverCapacity ? `Over capacity: ${totalAllocated} teams allocated, max ${capacity.maxTeams}` : ''}>
+                {submitting ? 'Creating...' : isOverCapacity ? '⚠️ Over Capacity' : '🚀 Create Tournament'}
               </button>
             )}
           </div>
