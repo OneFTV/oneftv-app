@@ -388,11 +388,29 @@ export class SchedulingService {
 
     let templates: DEGameTemplate[]
 
-    // Determine bracket type based on team count and category metadata
-    // Allow flexible team counts by rounding up to nearest bracket size
+    // Determine bracket type based on division label first, then team count
+    const divisionLabel = category.divisionLabel
     const teamCount = teamIds.length
-    if (teamCount >= 17 && teamCount <= 32) {
-      // Pad to 32 with byes
+
+    if (teamCount === 0) {
+      // Empty bracket (for D2/D3 that start with no teams)
+      return
+    }
+
+    if (divisionLabel === 'D1') {
+      // D1 always uses 32-team bracket
+      while (teamIds.length < 32) teamIds.push(`bye-${teamIds.length}`)
+      templates = generateD1Bracket(teamIds)
+    } else if (divisionLabel === 'D3') {
+      // D3 always uses 16-team single elimination bracket
+      while (teamIds.length < 16) teamIds.push(`bye-${teamIds.length}`)
+      templates = generateD3Bracket(teamIds)
+    } else if (divisionLabel === 'D2') {
+      // D2 always uses 8-team double elimination bracket
+      while (teamIds.length < 8) teamIds.push(`bye-${teamIds.length}`)
+      templates = generateD2Bracket(teamIds)
+    } else if (teamCount >= 17 && teamCount <= 32) {
+      // No division label — auto-detect from team count
       while (teamIds.length < 32) teamIds.push(`bye-${teamIds.length}`)
       templates = generateD1Bracket(teamIds)
     } else if (teamCount >= 9 && teamCount <= 16) {
@@ -401,9 +419,6 @@ export class SchedulingService {
     } else if (teamCount >= 4 && teamCount <= 8) {
       while (teamIds.length < 8) teamIds.push(`bye-${teamIds.length}`)
       templates = generateD2Bracket(teamIds)
-    } else if (teamCount === 0) {
-      // Empty bracket (for D2/D3 that start with no teams)
-      return
     } else {
       throw new ValidationError(
         `Double elimination requires at least 4 teams. Got ${teamCount}.`
