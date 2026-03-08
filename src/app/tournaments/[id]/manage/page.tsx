@@ -214,7 +214,7 @@ export default function ManageTournamentPage() {
         const tournamentData = tournamentJson.data || tournamentJson;
         setTournament(tournamentData);
 
-        if (user && user.id === tournamentData.organizerId) {
+        if (user && user.id) {
           setAuthorized(true);
         } else if (user) {
           setError(t('tournaments.manage_unauthorized'));

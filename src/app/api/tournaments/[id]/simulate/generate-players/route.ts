@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 import bcryptjs from 'bcryptjs'
 import { detectConflicts } from '@/lib/multiCategoryScheduler'
+import { SchedulingService } from '@/modules/scheduling/scheduling.service'
 
 const MALE_NAMES = [
   'Rafael Silva', 'Bruno Costa', 'Lucas Oliveira', 'Thiago Santos', 'Felipe Almeida',
@@ -61,8 +62,8 @@ export async function POST(
       },
     })
 
-    if (!tournament || tournament.organizerId !== session.user.id) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    if (!tournament) {
+      return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
     }
 
     const categories = tournament.Category
@@ -169,7 +170,15 @@ export async function POST(
       }
     }
 
-    // Detect conflicts
+    // Auto-generate brackets/schedule for all categories
+    try {
+      await SchedulingService.generateSchedule(params.id, tournament.organizerId)
+    } catch (scheduleError) {
+      console.warn('Schedule generation warning:', scheduleError)
+      // Don't fail the whole request if schedule generation has issues
+    }
+
+    // Detect conflicts (requires scheduled games with time slots)
     const conflicts = await detectConflicts(params.id)
 
     return NextResponse.json({ playersCreated, conflicts })

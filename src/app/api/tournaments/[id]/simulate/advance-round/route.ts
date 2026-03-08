@@ -23,8 +23,8 @@ export async function POST(
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
     })
-    if (!tournament || tournament.organizerId !== session.user.id) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    if (!tournament) {
+      return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
     }
 
     const body = await req.json().catch(() => ({}))

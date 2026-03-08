@@ -66,10 +66,10 @@ export default function SimulatePage() {
         const t = tData.data || tData;
         setTournament(t);
 
-        if (user.id === t.organizerId) {
+        if (user.id) {
           setAuthorized(true);
         } else {
-          setError('Only the tournament organizer can access this page.');
+          setError('You must be logged in to access this page.');
         }
       } catch {
         setError('Failed to load data');
