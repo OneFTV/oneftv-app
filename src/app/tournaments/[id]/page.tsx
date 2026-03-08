@@ -289,15 +289,19 @@ export default function TournamentDetailPage() {
                 <Trophy size={18} />
                 {t('tournaments.view_brackets')}
               </Link>
-              {isOrganizer && (
-                <Link
-                  href={`/tournaments/${tournament.id}/manage`}
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
-                >
-                  <Edit size={20} />
-                  {t('tournaments.manage')}
-                </Link>
-              )}
+              <Link
+                href={`/tournaments/${tournament.id}/manage`}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition"
+              >
+                <Edit size={20} />
+                {t('tournaments.manage')}
+              </Link>
+              <Link
+                href={`/tournaments/${tournament.id}/simulate`}
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition"
+              >
+                🧪 Simulate
+              </Link>
             </div>
           </div>
 
