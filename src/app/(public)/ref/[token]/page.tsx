@@ -21,24 +21,7 @@ interface GameData {
   matchNumber: number | null;
 }
 
-// Mock data for development — TODO: replace with API calls
-const MOCK_GAME: GameData = {
-  id: 'mock-game-1',
-  tournamentName: 'NFA Austin 2026',
-  courtNumber: 1,
-  homeTeam: 'Player A & Player B',
-  awayTeam: 'Player C & Player D',
-  scoreHome: 0,
-  scoreAway: 0,
-  set2Home: null,
-  set2Away: null,
-  set3Home: null,
-  set3Away: null,
-  numSets: 1,
-  pointsPerSet: 18,
-  status: 'in_progress',
-  matchNumber: 1,
-};
+// GameData is populated from API response
 
 export default function RefereePage({ params }: { params: { token: string } }) {
   const { token } = params;
@@ -53,20 +36,44 @@ export default function RefereePage({ params }: { params: { token: string } }) {
     try {
       const res = await fetch(`/api/referee/${token}`);
       if (res.ok) {
-        const data = await res.json();
-        setGame(data);
+        const json = await res.json();
+        const refData = json.data;
+        if (refData?.currentGame) {
+          // Map API game to our GameData shape
+          const g = refData.currentGame;
+          const homeTeam = [g.player1Home?.name, g.player2Home?.name].filter(Boolean).join(' & ') || 'TBD';
+          const awayTeam = [g.player1Away?.name, g.player2Away?.name].filter(Boolean).join(' & ') || 'TBD';
+          setGame({
+            id: g.id,
+            tournamentName: refData.tournament?.name || '',
+            courtNumber: refData.courtNumber,
+            homeTeam,
+            awayTeam,
+            scoreHome: g.scoreHome ?? 0,
+            scoreAway: g.scoreAway ?? 0,
+            set2Home: g.set2Home ?? null,
+            set2Away: g.set2Away ?? null,
+            set3Home: g.set3Home ?? null,
+            set3Away: g.set3Away ?? null,
+            numSets: g.category?.numSets ?? 1,
+            pointsPerSet: g.category?.pointsPerSet ?? 18,
+            status: g.status,
+            matchNumber: g.matchNumber,
+          });
+        } else {
+          // No current game on this court
+          setGame(null);
+        }
         setError(null);
       } else if (res.status === 404) {
-        // No current game for this court
         setGame(null);
-        setError(null);
+        setError('Invalid or expired referee link');
       } else {
         throw new Error('Failed to load game');
       }
     } catch {
-      // TODO: API not yet implemented — use mock data
-      setGame({ ...MOCK_GAME });
-      setError(null);
+      setGame(null);
+      setError('Unable to connect. Will retry...');
     } finally {
       setLoading(false);
     }
@@ -179,6 +186,24 @@ export default function RefereePage({ params }: { params: { token: string } }) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error</h1>
+          <p className="text-gray-500 mb-6">{error}</p>
+          <button
+            onClick={fetchGame}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl text-lg font-semibold active:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

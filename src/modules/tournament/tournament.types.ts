@@ -63,6 +63,7 @@ export interface CreateTournamentInput {
   bannerUrl?: string
   contactEmail?: string
   contactPhone?: string
+  numReferees?: number
   // Inline categories
   categories?: {
     name: string

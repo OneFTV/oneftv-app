@@ -43,6 +43,7 @@ export const createTournamentSchema = z.object({
     z.string().email().optional(),
   ),
   contactPhone: z.string().optional(),
+  numReferees: z.number().int().min(1).max(50).optional(),
   // Inline categories (created with tournament)
   categories: z.array(categoryInlineSchema).optional(),
 })
