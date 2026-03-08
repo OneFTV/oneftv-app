@@ -89,11 +89,15 @@ export default async function ScoreboardPage({ params }: PageProps) {
 
   const liveGames = tournament.Game.filter((g) => g.status === 'in_progress');
   const recentGames = tournament.Game.filter((g) => g.status === 'completed');
-  const hasCategories = tournament.Category.length > 0;
+  // Filter out empty categories (0 players)
+  const activeCategories = tournament.Category.filter(
+    (cat) => cat._count.TournamentPlayer > 0
+  );
+  const hasCategories = activeCategories.length > 0;
 
   // Group categories by division name (strip trailing number/letter)
   const categoryGroups = new Map<string, typeof tournament.Category>();
-  for (const cat of tournament.Category) {
+  for (const cat of activeCategories) {
     const baseName = cat.name
       .replace(/\s*\d+$/, '')
       .replace(/\s*[A-D]$/, '')
@@ -108,7 +112,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
   const groupedCategoryIds = new Set(
     divisionGroups.flatMap(([, cats]) => cats.map((c) => c.id))
   );
-  const ungroupedCategories = tournament.Category.filter(
+  const ungroupedCategories = activeCategories.filter(
     (cat) => !groupedCategoryIds.has(cat.id)
   );
 
@@ -288,7 +292,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
 
             {/* Individual category cards (ungrouped + grouped shown individually) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tournament.Category.map((cat) => {
+              {activeCategories.map((cat) => {
                 const catGames = cat.Game;
                 return (
                   <div key={cat.id} className="rounded-xl border border-dark-border bg-dark-surface overflow-hidden hover:border-dark-divider transition-colors">
