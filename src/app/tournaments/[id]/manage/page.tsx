@@ -622,7 +622,11 @@ export default function ManageTournamentPage() {
         )}
 
         {/* Multi-Day Assignment */}
-        <DayAssignment tournamentId={tournamentId} />
+        <DayAssignment
+          tournamentId={tournamentId}
+          numDays={tournament.startDate && tournament.endDate ? Math.max(1, Math.round((new Date(tournament.endDate).getTime() - new Date(tournament.startDate).getTime()) / 86400000) + 1) : 1}
+          startDate={tournament.startDate || tournament.endDate}
+        />
 
         {/* Generate Schedule */}
         {(tournament.status === 'registration' || tournament.status === 'draft') && (

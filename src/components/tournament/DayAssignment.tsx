@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, AlertTriangle, CheckCircle, Sparkles, Loader } from 'lucide-react';
+import { Calendar, AlertTriangle, CheckCircle, Sparkles, Loader, Save } from 'lucide-react';
 
 interface CategoryAssignment {
   id: string;
@@ -20,61 +20,74 @@ interface CategoryAssignment {
 interface Conflict {
   playerId: string;
   playerName: string;
-  categories: { id: string; name: string; day: number }[];
-  severity: 'yellow' | 'red';
+  categories: string[];
+  severity: 'red' | 'yellow';
+  message: string;
 }
 
-interface DayData {
-  startTime: string;
-  endTime: string;
-  categories: CategoryAssignment[];
-}
-
-interface Props {
+interface DayAssignmentProps {
   tournamentId: string;
+  numDays: number;
+  startDate: string;
+  endDate?: string;
+  defaultStartTime?: string;
+  defaultEndTime?: string;
 }
 
-export default function DayAssignment({ tournamentId }: Props) {
+export default function DayAssignment({
+  tournamentId,
+  numDays,
+  startDate,
+  endDate,
+  defaultStartTime = '09:00',
+  defaultEndTime = '18:00',
+}: DayAssignmentProps) {
   const [categories, setCategories] = useState<CategoryAssignment[]>([]);
-  const [suggestion, setSuggestion] = useState<Record<string, string[]>>({});
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
-  const [numDays, setNumDays] = useState(1);
-  const [tournamentDate, setTournamentDate] = useState<string>('');
-  const [defaultStartTime, setDefaultStartTime] = useState('09:00');
-  const [defaultEndTime, setDefaultEndTime] = useState('18:00');
-  const [dayTimes, setDayTimes] = useState<Record<number, { start: string; end: string }>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [dayTimes, setDayTimes] = useState<Record<number, { start: string; end: string }>>({});
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Generate day labels
+  const days = Array.from({ length: numDays }, (_, i) => {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+    const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    return { num: i + 1, label: `${dayName} ${dayDate}` };
+  });
+
+  // Init day times
+  useEffect(() => {
+    const times: Record<number, { start: string; end: string }> = {};
+    days.forEach(d => {
+      times[d.num] = { start: defaultStartTime, end: defaultEndTime };
+    });
+    setDayTimes(times);
+  }, [numDays]);
 
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
       const res = await fetch(`/api/tournaments/${tournamentId}/schedule/day-assignment`);
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
-      setCategories(data.categories);
-      setSuggestion(data.suggestion);
-      setConflicts(data.conflicts);
-      setNumDays(data.numDays);
-      setTournamentDate(data.tournamentDate);
-      setDefaultStartTime(data.defaultStartTime);
-      setDefaultEndTime(data.defaultEndTime);
-
-      // Init day times from categories or defaults
-      const times: Record<number, { start: string; end: string }> = {};
-      for (let d = 1; d <= data.numDays; d++) {
-        const dayCats = data.categories.filter((c: CategoryAssignment) => c.scheduledDay === d);
-        times[d] = {
-          start: dayCats[0]?.dayStartTime || data.defaultStartTime,
-          end: dayCats[0]?.dayEndTime || data.defaultEndTime,
-        };
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.categories || []);
+        if (data.conflicts) setConflicts(data.conflicts);
+        // Update day times from category data
+        const times = { ...dayTimes };
+        (data.categories || []).forEach((c: CategoryAssignment) => {
+          if (c.dayStartTime && c.dayEndTime) {
+            times[c.scheduledDay] = { start: c.dayStartTime, end: c.dayEndTime };
+          }
+        });
+        setDayTimes(times);
       }
-      setDayTimes(times);
     } catch {
-      setError('Failed to load day assignments');
+      // silent
     } finally {
       setLoading(false);
     }
@@ -82,60 +95,74 @@ export default function DayAssignment({ tournamentId }: Props) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const getDayLabel = (dayNum: number): string => {
-    if (!tournamentDate) return `Day ${dayNum}`;
-    const d = new Date(tournamentDate);
-    d.setDate(d.getDate() + dayNum - 1);
-    return `Day ${dayNum}: ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+  const handleDayChange = (catId: string, day: number) => {
+    setCategories(prev => prev.map(c => c.id === catId ? { ...c, scheduledDay: day } : c));
+    setHasChanges(true);
+    setMessage(null);
   };
 
-  const assignToDay = (categoryId: string, day: number) => {
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId ? { ...c, scheduledDay: day } : c
-    ));
+  const handleDayTimeChange = (day: number, field: 'start' | 'end', value: string) => {
+    setDayTimes(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+    setHasChanges(true);
   };
 
-  const applySuggestion = () => {
-    setCategories(prev => {
-      const updated = [...prev];
-      for (const [dayKey, catIds] of Object.entries(suggestion)) {
-        const dayNum = parseInt(dayKey.replace('day', ''));
-        for (const catId of catIds) {
-          const idx = updated.findIndex(c => c.id === catId);
-          if (idx >= 0) updated[idx] = { ...updated[idx], scheduledDay: dayNum };
+  const applySuggestion = async () => {
+    setApplying(true);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/schedule/day-assignment`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.suggestion) {
+          const newCats = [...categories];
+          Object.entries(data.suggestion).forEach(([dayKey, catIds]) => {
+            const dayNum = parseInt(dayKey.replace('day', ''));
+            (catIds as string[]).forEach(id => {
+              const cat = newCats.find(c => c.id === id);
+              if (cat) cat.scheduledDay = dayNum;
+            });
+          });
+          setCategories(newCats);
+          setHasChanges(true);
+          setMessage({ type: 'success', text: 'Suggestion applied! Review and save.' });
         }
       }
-      return updated;
-    });
-    setSuccess('Suggestion applied! Review and save.');
-    setTimeout(() => setSuccess(''), 3000);
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to get suggestion' });
+    } finally {
+      setApplying(false);
+    }
   };
 
-  const handleSave = async () => {
+  const save = async () => {
+    setSaving(true);
+    setMessage(null);
     try {
-      setSaving(true);
-      setError('');
       const assignments = categories.map(c => ({
         categoryId: c.id,
         day: c.scheduledDay,
         startTime: dayTimes[c.scheduledDay]?.start || defaultStartTime,
         endTime: dayTimes[c.scheduledDay]?.end || defaultEndTime,
       }));
-
       const res = await fetch(`/api/tournaments/${tournamentId}/schedule/day-assignment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assignments }),
       });
-
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setConflicts(data.conflicts);
-      setSuccess('Day assignments saved!');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save');
+      if (res.ok) {
+        setConflicts(data.conflicts || []);
+        setHasChanges(false);
+        setMessage({
+          type: data.conflicts?.length > 0 ? 'error' : 'success',
+          text: data.conflicts?.length > 0
+            ? `Saved! ${data.conflicts.length} conflict(s) found — review below.`
+            : 'Saved! No conflicts detected. ✅',
+        });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to save' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Network error' });
     } finally {
       setSaving(false);
     }
@@ -143,185 +170,133 @@ export default function DayAssignment({ tournamentId }: Props) {
 
   const checkConflicts = async () => {
     setChecking(true);
-    await handleSave();
+    await save();
     setChecking(false);
   };
 
-  if (loading) {
-    return (
-      <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg p-6">
-        <div className="flex items-center gap-2 text-slate-400">
-          <Loader className="animate-spin" size={18} /> Loading day assignments...
-        </div>
-      </div>
-    );
-  }
+  if (numDays <= 1) return null;
+  if (loading) return <div className="flex items-center gap-2 text-slate-400 p-4"><Loader className="animate-spin" size={16} /> Loading...</div>;
 
-  if (numDays <= 1) {
-    return (
-      <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg p-6">
-        <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-          <Calendar size={20} /> Multi-Day Scheduling
-        </h2>
-        <p className="text-slate-400">This tournament is a single-day event. Multi-day scheduling is not needed.</p>
-      </div>
-    );
-  }
-
-  // Group categories by day for display
-  const dayGroups: Record<number, DayData> = {};
-  for (let d = 1; d <= numDays; d++) {
-    dayGroups[d] = {
-      startTime: dayTimes[d]?.start || defaultStartTime,
-      endTime: dayTimes[d]?.end || defaultEndTime,
-      categories: categories.filter(c => c.scheduledDay === d),
-    };
-  }
-
-  const conflictCount = conflicts.length;
-  const redConflicts = conflicts.filter(c => c.severity === 'red').length;
+  // Group categories by day for summary
+  const byDay: Record<number, CategoryAssignment[]> = {};
+  days.forEach(d => { byDay[d.num] = categories.filter(c => c.scheduledDay === d.num); });
 
   return (
-    <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Calendar size={20} /> Multi-Day Category Assignment
-        </h2>
-        <div className="flex items-center gap-3">
-          {Object.keys(suggestion).length > 0 && (
-            <button onClick={applySuggestion}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-purple-900/40 text-purple-300 border border-purple-400/30 rounded-lg hover:bg-purple-900/60 transition">
-              <Sparkles size={14} /> Apply Suggestion
-            </button>
-          )}
-          <button onClick={checkConflicts} disabled={checking}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-amber-900/40 text-amber-300 border border-amber-400/30 rounded-lg hover:bg-amber-900/60 transition disabled:opacity-50">
-            <AlertTriangle size={14} /> {checking ? 'Checking...' : 'Check Conflicts'}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Calendar size={20} className="text-cyan-400" />
+          Schedule by Day
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={applySuggestion}
+            disabled={applying}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-lg hover:bg-purple-600/50 transition disabled:opacity-50"
+          >
+            {applying ? <Loader className="animate-spin" size={14} /> : <Sparkles size={14} />}
+            Suggest
           </button>
-          <button onClick={handleSave} disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save Assignments'}
+          <button
+            onClick={save}
+            disabled={saving || !hasChanges}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded-lg hover:bg-cyan-600/50 transition disabled:opacity-50"
+          >
+            {saving ? <Loader className="animate-spin" size={14} /> : <Save size={14} />}
+            Save
           </button>
         </div>
       </div>
 
-      {success && (
-        <div className="mb-4 p-3 bg-green-900/30 border border-green-400/30 rounded-lg flex items-center gap-2 text-green-300 text-sm">
-          <CheckCircle size={16} /> {success}
-        </div>
-      )}
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-400/30 rounded-lg text-red-300 text-sm">
-          {error}
-        </div>
-      )}
+      {/* Day time settings */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {days.map(d => (
+          <div key={d.num} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+            <div className="text-sm font-medium text-white mb-2">{d.label}</div>
+            <div className="flex items-center gap-3 text-sm">
+              <label className="text-slate-400">Start</label>
+              <input
+                type="time"
+                value={dayTimes[d.num]?.start || '09:00'}
+                onChange={e => handleDayTimeChange(d.num, 'start', e.target.value)}
+                className="bg-slate-700 text-white rounded px-2 py-1 border border-slate-600 text-sm"
+              />
+              <label className="text-slate-400">End</label>
+              <input
+                type="time"
+                value={dayTimes[d.num]?.end || '18:00'}
+                onChange={e => handleDayTimeChange(d.num, 'end', e.target.value)}
+                className="bg-slate-700 text-white rounded px-2 py-1 border border-slate-600 text-sm"
+              />
+              <span className="text-xs text-slate-500">({byDay[d.num]?.length || 0} cats)</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Day columns */}
-      <div className={`grid gap-4 mb-6 ${numDays === 2 ? 'grid-cols-2' : numDays === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        {Array.from({ length: numDays }, (_, i) => i + 1).map(dayNum => {
-          const day = dayGroups[dayNum];
-          return (
-            <div key={dayNum} className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-4">
-              <h3 className="font-semibold text-white mb-3">{getDayLabel(dayNum)}</h3>
-
-              {/* Time inputs */}
-              <div className="flex items-center gap-2 mb-4">
-                <label className="text-xs text-slate-400">Start:</label>
-                <input type="time" value={day.startTime}
-                  onChange={e => setDayTimes(prev => ({ ...prev, [dayNum]: { ...prev[dayNum], start: e.target.value } }))}
-                  className="px-2 py-1 bg-slate-800 border border-slate-600/50 rounded text-sm text-white" />
-                <label className="text-xs text-slate-400 ml-2">End:</label>
-                <input type="time" value={day.endTime}
-                  onChange={e => setDayTimes(prev => ({ ...prev, [dayNum]: { ...prev[dayNum], end: e.target.value } }))}
-                  className="px-2 py-1 bg-slate-800 border border-slate-600/50 rounded text-sm text-white" />
-              </div>
-
-              {/* Category cards */}
-              <div className="space-y-2 min-h-[100px]">
-                {day.categories.length === 0 ? (
-                  <p className="text-slate-500 text-sm italic py-4 text-center">No categories assigned</p>
-                ) : (
-                  day.categories.map(cat => {
-                    const catConflicts = conflicts.filter(c =>
-                      c.categories.some(cc => cc.id === cat.id) && c.categories.some(cc => cc.day === dayNum)
-                    );
-                    const hasRed = catConflicts.some(c => c.severity === 'red');
-                    const hasYellow = catConflicts.some(c => c.severity === 'yellow');
-
-                    let borderColor = 'border-slate-600/30';
-                    let bgColor = 'bg-slate-800/50';
-                    if (hasRed) { borderColor = 'border-red-400/50'; bgColor = 'bg-red-900/20'; }
-                    else if (hasYellow) { borderColor = 'border-amber-400/50'; bgColor = 'bg-amber-900/20'; }
-                    else if (catConflicts.length === 0 && conflicts.length > 0) { borderColor = 'border-green-400/30'; bgColor = 'bg-green-900/10'; }
-
-                    return (
-                      <div key={cat.id} className={`${bgColor} border ${borderColor} rounded-lg p-3 transition-all`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-medium text-white text-sm">{cat.name}</span>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-slate-400">{cat.playerCount} players</span>
-                              <span className="text-xs text-slate-400">·</span>
-                              <span className="text-xs text-slate-400">{cat.gameCount} games</span>
-                              {cat.gender && <span className="text-xs text-slate-500">· {cat.gender}</span>}
-                            </div>
-                          </div>
-                          {/* Day toggle buttons */}
-                          <div className="flex gap-1">
-                            {Array.from({ length: numDays }, (_, i) => i + 1).map(d => (
-                              <button key={d} onClick={() => assignToDay(cat.id, d)}
-                                className={`w-7 h-7 rounded text-xs font-bold transition ${
-                                  cat.scheduledDay === d
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30'
-                                }`}>
-                                {d}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Day summary */}
-              <div className="mt-3 pt-3 border-t border-slate-700/30 flex justify-between text-xs text-slate-400">
-                <span>{day.categories.length} categories</span>
-                <span>{day.categories.reduce((sum, c) => sum + c.gameCount, 0)} total games</span>
+      {/* Category list */}
+      <div className="space-y-2">
+        {categories.map(cat => (
+          <div key={cat.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-white text-sm">{cat.name}</span>
+                <span className="text-xs text-slate-500">{cat.playerCount} players</span>
+                {cat.gender && <span className="text-xs text-slate-500">• {cat.gender}</span>}
               </div>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-1 ml-3">
+              {days.map(d => (
+                <button
+                  key={d.num}
+                  onClick={() => handleDayChange(cat.id, d.num)}
+                  className={`w-20 py-1.5 text-xs font-medium rounded-md transition ${
+                    cat.scheduledDay === d.num
+                      ? 'bg-cyan-500 text-slate-900'
+                      : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                  }`}
+                >
+                  {d.label.split(' ')[0]} {d.num}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Conflicts section */}
-      {conflictCount > 0 && (
-        <div className="bg-slate-900/50 border border-slate-600/30 rounded-lg p-4">
-          <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-            <AlertTriangle size={16} className={redConflicts > 0 ? 'text-red-400' : 'text-amber-400'} />
-            {conflictCount} Conflict{conflictCount !== 1 ? 's' : ''} Detected
-            {redConflicts > 0 && <span className="text-xs text-red-400">({redConflicts} critical)</span>}
-          </h3>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {conflicts.map((conflict, i) => (
-              <div key={i} className={`p-2 rounded text-sm ${
-                conflict.severity === 'red' ? 'bg-red-900/20 border border-red-400/30 text-red-300'
-                : 'bg-amber-900/20 border border-amber-400/30 text-amber-300'
-              }`}>
-                <span className="font-medium">{conflict.playerName}</span>
-                <span className="text-slate-400"> plays in </span>
-                {conflict.categories.map((c, j) => (
-                  <span key={c.id}>
-                    {j > 0 && ' & '}
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-slate-400"> (Day {c.day})</span>
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+      {/* Save + Check */}
+      <button
+        onClick={checkConflicts}
+        disabled={checking}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-amber-600/30 text-amber-300 border border-amber-500/30 rounded-lg hover:bg-amber-600/50 transition disabled:opacity-50"
+      >
+        {checking ? <Loader className="animate-spin" size={16} /> : <AlertTriangle size={16} />}
+        Save & Check Conflicts
+      </button>
+
+      {/* Message */}
+      {message && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+          message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+        }`}>
+          {message.type === 'success' ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+          {message.text}
+        </div>
+      )}
+
+      {/* Conflicts */}
+      {conflicts.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-amber-400">⚠️ Conflicts ({conflicts.length})</h4>
+          {conflicts.map((c, i) => (
+            <div key={i} className={`p-3 rounded-lg text-sm border ${
+              c.severity === 'red' ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+            }`}>
+              <span className="font-medium">{c.playerName}</span>
+              <span className="text-slate-400 ml-1">— {c.categories.join(' + ')}</span>
+              <div className="text-xs mt-1 opacity-80">{c.message}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>
