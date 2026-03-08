@@ -79,6 +79,10 @@ model Tournament {
 
   numReferees     Int      @default(1)
   primaryCourts   String?  @db.Text // JSON array of court numbers marked as center courts, e.g. "[1]"
+  registrationDeadline DateTime?
+  registrationFee      Float?
+  acceptedPaymentMethods String? @db.Text
+
   venmoHandle     String?
   zelleInfo       String?
   stripeAccountId String?

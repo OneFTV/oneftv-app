@@ -63,6 +63,9 @@ export interface CreateTournamentInput {
   bannerUrl?: string
   contactEmail?: string
   contactPhone?: string
+  registrationDeadline?: string
+  registrationFee?: number
+  acceptedPaymentMethods?: string[]
   numReferees?: number
   primaryCourts?: string
   startTime?: string
@@ -96,6 +99,9 @@ export interface UpdateTournamentInput {
   bannerUrl?: string
   contactEmail?: string
   contactPhone?: string
+  registrationDeadline?: string
+  registrationFee?: number
+  acceptedPaymentMethods?: string[]
   startTime?: string
   endTime?: string
 }

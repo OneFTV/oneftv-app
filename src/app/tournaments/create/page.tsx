@@ -16,6 +16,7 @@ interface FormData {
   city: string;
   state: string;
   country: string;
+  registrationDeadline: string;
   startDate: string;
   endDate: string;
   // Step 2 — Infrastructure
@@ -30,6 +31,8 @@ interface FormData {
   // Step 4 — Categories
   allowMultiCategory: boolean;
   // Step 5 — Payment & Contact
+  registrationFee: number;
+  acceptedPaymentMethods: string[];
   stripeConnect: boolean;
   venmoHandle: string;
   zelleInfo: string;
@@ -75,6 +78,7 @@ export default function CreateTournamentPage() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
+    registrationDeadline: '',
     location: '',
     city: '',
     state: '',
@@ -90,6 +94,8 @@ export default function CreateTournamentPage() {
     startTime: '09:00',
     endTime: '18:00',
     allowMultiCategory: false,
+    registrationFee: 0,
+    acceptedPaymentMethods: [],
     stripeConnect: false,
     venmoHandle: '',
     zelleInfo: '',
@@ -185,6 +191,9 @@ export default function CreateTournamentPage() {
       if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
         newErrors.endDate = 'End date must be after start date';
       }
+      if (formData.registrationDeadline && new Date(formData.registrationDeadline) <= new Date()) {
+        newErrors.registrationDeadline = 'Registration deadline must be in the future';
+      }
     }
 
     if (step === 2) {
@@ -193,6 +202,12 @@ export default function CreateTournamentPage() {
       if (formData.numDays < 1) newErrors.numDays = 'At least 1 day required';
       if (formData.hoursPerDay < 1) newErrors.hoursPerDay = 'At least 1 hour per day';
       if (formData.avgGameMinutes < 5) newErrors.avgGameMinutes = 'Min 5 minutes per game';
+    }
+
+    if (step === 4) {
+      if (formData.registrationFee > 0 && formData.acceptedPaymentMethods.length === 0) {
+        newErrors.acceptedPaymentMethods = 'Select at least one payment method when fee > 0';
+      }
     }
 
     setErrors(newErrors);
@@ -249,6 +264,9 @@ export default function CreateTournamentPage() {
         startTime: formData.startTime,
         endTime: formData.endTime,
         allowMultiCategory: categories.length > 1 || formData.allowMultiCategory,
+        registrationDeadline: formData.registrationDeadline ? new Date(formData.registrationDeadline).toISOString() : undefined,
+        registrationFee: formData.registrationFee > 0 ? formData.registrationFee : undefined,
+        acceptedPaymentMethods: formData.acceptedPaymentMethods.length > 0 ? formData.acceptedPaymentMethods : undefined,
         venmoHandle: formData.venmoHandle || undefined,
         zelleInfo: formData.zelleInfo || undefined,
         bannerUrl: formData.bannerUrl || undefined,
@@ -456,6 +474,13 @@ export default function CreateTournamentPage() {
                       className={inputClass} />
                     {errors.endDate && <p className="text-red-400 text-sm mt-1">{errors.endDate}</p>}
                   </div>
+                </div>
+                <div className="mt-4">
+                  <label className={labelClass}>Registration Deadline</label>
+                  <input type="datetime-local" name="registrationDeadline" value={formData.registrationDeadline} onChange={handleChange}
+                    className={inputClass} />
+                  <p className="text-xs text-slate-500 mt-1">After this date/time, registration closes automatically</p>
+                  {errors.registrationDeadline && <p className="text-red-400 text-sm mt-1">{errors.registrationDeadline}</p>}
                 </div>
               </div>
             </div>
@@ -674,6 +699,43 @@ export default function CreateTournamentPage() {
           {/* ─── STEP 5: Payment & Confirmation ─── */}
           {currentStep === 4 && (
             <div className="space-y-6">
+              <div className={cardClass}>
+                <h3 className="text-lg font-semibold text-white mb-4">Registration Fee</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Fee (USD)</label>
+                    <input type="number" name="registrationFee" value={formData.registrationFee} min={0} step={0.01}
+                      onChange={(e) => setFormData(prev => ({ ...prev, registrationFee: parseFloat(e.target.value) || 0 }))}
+                      className={inputClass} placeholder="0.00" />
+                    {errors.registrationFee && <p className="text-red-400 text-sm mt-1">{errors.registrationFee}</p>}
+                  </div>
+                  {formData.registrationFee > 0 && (
+                    <div>
+                      <label className={labelClass}>Accepted Payment Methods *</label>
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        {['stripe', 'venmo', 'zelle', 'pix'].map((method) => {
+                          const checked = formData.acceptedPaymentMethods.includes(method);
+                          return (
+                            <label key={method} className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition ${checked ? 'border-cyan-400 bg-cyan-500/10 text-cyan-300' : 'border-slate-600/50 bg-slate-800/30 text-slate-400 hover:border-slate-500'}`}>
+                              <input type="checkbox" checked={checked}
+                                onChange={() => setFormData(prev => ({
+                                  ...prev,
+                                  acceptedPaymentMethods: checked
+                                    ? prev.acceptedPaymentMethods.filter(m => m !== method)
+                                    : [...prev.acceptedPaymentMethods, method],
+                                }))}
+                                className="sr-only" />
+                              <span className="capitalize text-sm font-medium">{method}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {errors.acceptedPaymentMethods && <p className="text-red-400 text-sm mt-1">{errors.acceptedPaymentMethods}</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className={cardClass}>
                 <h3 className="text-lg font-semibold text-white mb-4">Payment Methods</h3>
                 <div className="space-y-4">

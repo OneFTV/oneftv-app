@@ -15,6 +15,7 @@ import {
 import type { DEGameTemplate } from './scheduling.types'
 import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/api/errors'
 import { prisma } from '@/shared/database/prisma'
+import { generateNFACascade } from '@/lib/nfaCascadeGenerator'
 
 export class SchedulingService {
   /**
@@ -566,5 +567,39 @@ export class SchedulingService {
         )
       )
     }
+  }
+
+  /**
+   * Generate NFA cascade divisions for an Open category.
+   * Creates D2/D3 division categories and sets up cross-division routing.
+   * After calling this, generate brackets for each division separately.
+   */
+  static async generateCascade(tournamentId: string, categoryId: string, userId: string) {
+    const tournament = await SchedulingRepository.getTournamentForGeneration(tournamentId)
+    if (!tournament) throw new NotFoundError('Tournament', tournamentId)
+    if (tournament.organizer.id !== userId) {
+      throw new ForbiddenError('Only the organizer can generate cascade divisions')
+    }
+
+    const category = await SchedulingRepository.getCategoryForGeneration(categoryId)
+    if (!category) throw new NotFoundError('Category', categoryId)
+
+    const teamRegs = await SchedulingRepository.getTeamRegistrations(categoryId)
+
+    return generateNFACascade({
+      tournamentId,
+      openCategoryId: categoryId,
+      teamCount: teamRegs.length,
+    })
+  }
+
+  /**
+   * Check if a category should use cascade divisions.
+   * Returns true if it's an "Open" format category with enough teams.
+   */
+  static isCascadeEligible(categoryName: string, format: string, teamCount: number): boolean {
+    const isOpen = categoryName.toLowerCase().includes('open')
+    const isDE = format === 'double_elimination'
+    return isOpen && isDE && teamCount >= 8
   }
 }
