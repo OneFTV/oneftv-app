@@ -26,7 +26,10 @@ export class SchedulingRepository {
         Tournament: {
           select: { id: true, organizerId: true, numCourts: true },
         },
-        TournamentPlayer: { select: { id: true, userId: true } },
+        TournamentPlayer: {
+          where: { categoryId },
+          select: { id: true, userId: true },
+        },
       },
     })
   }

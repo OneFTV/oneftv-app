@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/shared/database/prisma'
+import { advanceWinner } from '@/lib/advanceWinner'
+
+export const dynamic = 'force-dynamic'
 
 export async function PUT(
   req: NextRequest,
@@ -51,6 +54,21 @@ export async function PUT(
       updateData.status = 'in_progress'
     }
 
+    // Determine winner if completing the game
+    let determinedWinner = winningSide as string | undefined
+    if (status === 'completed' && !determinedWinner) {
+      const finalScoreHome = scoreHome ?? game.scoreHome ?? 0
+      const finalScoreAway = scoreAway ?? game.scoreAway ?? 0
+      if (finalScoreHome > finalScoreAway) {
+        determinedWinner = 'home'
+      } else if (finalScoreAway > finalScoreHome) {
+        determinedWinner = 'away'
+      }
+      if (determinedWinner) {
+        updateData.winningSide = determinedWinner
+      }
+    }
+
     const updated = await prisma.game.update({
       where: { id: gameId },
       data: updateData,
@@ -62,6 +80,13 @@ export async function PUT(
         Category: { select: { name: true } },
       },
     })
+
+    // Advance winner to next bracket game
+    if (updateData.status === 'completed' && determinedWinner) {
+      advanceWinner(gameId, determinedWinner).catch((err) => {
+        console.error(`[advanceWinner] Referee route error for game ${gameId}:`, err)
+      })
+    }
 
     return NextResponse.json({ data: updated })
   } catch (error) {
