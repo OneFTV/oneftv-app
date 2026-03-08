@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader, Layers } from 'lucide-react';
 import { useTranslation } from '@/contexts/TranslationContext';
 import StepWizard from '@/components/forms/StepWizard';
 import CapacityCalculator from '@/components/tournament/CapacityCalculator';
@@ -67,6 +67,7 @@ export default function CreateTournamentPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [activeTemplate, setActiveTemplate] = useState<string>('');
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string; categories: Array<{ name: string; format: string; gender?: string; skillLevel?: string; maxTeams: number }> }>>([]);
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -131,7 +132,19 @@ export default function CreateTournamentPage() {
       }
     };
     checkUser();
+    fetch('/api/templates').then(r => r.json()).then(d => setTemplates(d.data || [])).catch(() => {});
   }, [router]);
+
+  const applyTemplate = (tmpl: typeof templates[0]) => {
+    setCategories(tmpl.categories.map(c => ({
+      name: c.name,
+      format: c.format,
+      gender: c.gender || '',
+      skillLevel: c.skillLevel || '',
+      maxTeams: c.maxTeams,
+    })));
+    setActiveTemplate(tmpl.id);
+  };
 
   const applyNFATemplate = () => {
     setFormData((prev) => ({
@@ -314,21 +327,29 @@ export default function CreateTournamentPage() {
           {currentStep === 0 && (
             <div className="space-y-6">
               {/* Template Selection */}
-              <div className={cardClass}>
-                <h3 className="text-lg font-semibold text-white mb-4">Choose a Template</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button type="button" onClick={() => { applyNFATemplate(); }}
-                    className={`p-4 rounded-xl border-2 text-left transition ${activeTemplate === 'nfa' ? 'border-amber-400 bg-amber-500/10' : 'border-slate-600/50 bg-slate-800/30 hover:border-slate-500'}`}>
-                    <p className="text-sm font-semibold text-amber-300">🏐 NFA Tournament</p>
-                    <p className="text-xs text-slate-400 mt-1">Pre-configured: 6 courts, 6 refs, 2 days, 9h/day, 20min games</p>
-                  </button>
-                  <button type="button" onClick={() => setActiveTemplate('custom')}
-                    className={`p-4 rounded-xl border-2 text-left transition ${activeTemplate === 'custom' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-600/50 bg-slate-800/30 hover:border-slate-500'}`}>
-                    <p className="text-sm font-semibold text-cyan-300">⚙️ Custom Tournament</p>
-                    <p className="text-xs text-slate-400 mt-1">Configure everything from scratch</p>
-                  </button>
+              {templates.length > 0 && (
+                <div className={cardClass}>
+                  <h3 className="text-lg font-semibold text-white mb-3">Start with a Template</h3>
+                  <p className="text-sm text-slate-400 mb-4">Choose a preset or build from scratch below</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {templates.map((tmpl) => (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => applyTemplate(tmpl)}
+                        className={`text-left p-4 border rounded-lg transition ${activeTemplate === tmpl.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-600/50 hover:border-blue-400/50 hover:bg-blue-500/10'}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Layers size={16} className="text-cyan-400" />
+                          <span className="font-medium text-white text-sm">{tmpl.name}</span>
+                        </div>
+                        <p className="text-xs text-slate-400">{tmpl.description}</p>
+                        <p className="text-xs text-cyan-400 mt-1">{tmpl.categories.length} {tmpl.categories.length === 1 ? 'category' : 'categories'}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Categories */}
               <CategoryManager
