@@ -129,6 +129,8 @@ export default async function PrintPage({ params }: PageProps) {
           roundType: g.round?.type || null,
           groupName: g.group?.name || null,
           bracketSide: g.bracketSide,
+          winnerNextGameId: g.winnerNextGameId,
+          loserNextGameId: g.loserNextGameId,
         };
       }),
       rounds: cat.rounds.map((r) => ({
