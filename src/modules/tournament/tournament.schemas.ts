@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const categoryInlineSchema = z.object({
   name: z.string().min(2).max(100),
-  format: z.enum(['king_of_the_beach', 'bracket', 'group_knockout', 'round_robin']),
+  format: z.enum(['king_of_the_beach', 'bracket', 'group_knockout', 'round_robin', 'double_elimination']),
   gender: z.enum(['male', 'female', 'mixed']).optional(),
   skillLevel: z.enum(['beginner', 'intermediate', 'advanced', 'pro']).optional(),
   maxTeams: z.number().int().min(2).max(256).optional().default(16),
