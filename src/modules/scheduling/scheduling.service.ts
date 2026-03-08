@@ -96,6 +96,17 @@ export class SchedulingService {
       throw new ValidationError(`Category "${categoryId}" needs at least 2 players`)
     }
 
+    // Check if this category is eligible for NFA cascade divisions (Open + DE + enough teams)
+    const teamCount = category.TournamentPlayer.length
+    if (this.isCascadeEligible(category.name || '', category.format, teamCount)) {
+      // Generate cascade divisions (D1/D2/D3) — creates child categories
+      try {
+        await this.generateCascadeInternal(category.Tournament.id, categoryId, teamCount)
+      } catch (e) {
+        console.warn('Cascade generation skipped:', e)
+      }
+    }
+
     await this.generateForCategoryInternal(
       category.Tournament.id,
       categoryId,
@@ -592,6 +603,17 @@ export class SchedulingService {
       tournamentId,
       openCategoryId: categoryId,
       teamCount: teamRegs.length,
+    })
+  }
+
+  /**
+   * Internal cascade generation (no auth check) — used by auto-generate flow.
+   */
+  private static async generateCascadeInternal(tournamentId: string, categoryId: string, teamCount: number) {
+    return generateNFACascade({
+      tournamentId,
+      openCategoryId: categoryId,
+      teamCount,
     })
   }
 

@@ -49,12 +49,12 @@ export const CATEGORY_TEMPLATES: CategoryTemplate[] = [
     name: 'NFA (6 categorias)',
     description: 'NFA: Master, Open (D1/D2/D3), Coed, Beginners, Women, Stars',
     categories: [
-      { name: 'Master', format: 'bracket', gender: 'male', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Open', format: 'bracket', gender: 'male', skillLevel: 'pro', maxTeams: 96, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
-      { name: 'Coed', format: 'bracket', gender: 'mixed', skillLevel: 'advanced', maxTeams: 32, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Beginners', format: 'bracket', gender: 'mixed', skillLevel: 'beginner', maxTeams: 32, pointsPerSet: 15, numSets: 1, groupSize: 4, proLeague: false },
-      { name: "Women's", format: 'bracket', gender: 'female', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Stars', format: 'bracket', gender: 'mixed', skillLevel: 'pro', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
+      { name: 'Master', format: 'double_elimination', gender: 'male', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
+      { name: 'Open', format: 'double_elimination', gender: 'male', skillLevel: 'pro', maxTeams: 96, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
+      { name: 'Coed', format: 'double_elimination', gender: 'mixed', skillLevel: 'advanced', maxTeams: 32, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
+      { name: 'Beginners', format: 'double_elimination', gender: 'mixed', skillLevel: 'beginner', maxTeams: 32, pointsPerSet: 15, numSets: 1, groupSize: 4, proLeague: false },
+      { name: "Women's", format: 'double_elimination', gender: 'female', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
+      { name: 'Stars', format: 'double_elimination', gender: 'mixed', skillLevel: 'pro', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
     ],
   },
   {
