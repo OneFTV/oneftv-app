@@ -66,6 +66,7 @@ export default function CreateTournamentPage() {
   const [user, setUser] = useState<{ id: string; name: string } | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [activeTemplate, setActiveTemplate] = useState<string>('');
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -141,6 +142,7 @@ export default function CreateTournamentPage() {
       hoursPerDay: 9,
       avgGameMinutes: 20,
     }));
+    setActiveTemplate('nfa');
   };
 
   const validateStep = (step: number): boolean => {
@@ -480,6 +482,7 @@ export default function CreateTournamentPage() {
                 categories={categories}
                 onChange={setCategories}
                 maxCapacity={capacity.maxTeams}
+                template={activeTemplate}
               />
               {errors.categories && <p className="text-red-400 text-sm">{errors.categories}</p>}
 

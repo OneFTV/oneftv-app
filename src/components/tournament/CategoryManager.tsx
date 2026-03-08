@@ -33,6 +33,13 @@ const SUGGESTIONS = [
   { name: 'Feminino', format: 'bracket', gender: 'female', skillLevel: '', maxTeams: 16 },
 ];
 
+const NFA_PRESETS: CategoryData[] = [
+  { name: 'Open', format: 'double_elimination', gender: '', skillLevel: '', maxTeams: 32 },
+  { name: 'Beginner', format: 'bracket', gender: '', skillLevel: 'beginner', maxTeams: 16 },
+  { name: 'Coed', format: 'bracket', gender: 'mixed', skillLevel: '', maxTeams: 20 },
+  { name: 'Women', format: 'bracket', gender: 'female', skillLevel: '', maxTeams: 20 },
+];
+
 export interface CategoryData {
   name: string;
   format: string;
@@ -45,13 +52,18 @@ interface CategoryManagerProps {
   categories: CategoryData[];
   onChange: (categories: CategoryData[]) => void;
   maxCapacity: number;
+  template?: string;
 }
 
 const selectClass = "w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 const inputClass = "w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
-export default function CategoryManager({ categories, onChange, maxCapacity }: CategoryManagerProps) {
+export default function CategoryManager({ categories, onChange, maxCapacity, template }: CategoryManagerProps) {
   const [showSuggestions, setShowSuggestions] = useState(categories.length === 0);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+
+  const presets = template === 'nfa' ? NFA_PRESETS : SUGGESTIONS;
+  const usedNames = new Set(categories.map(c => c.name.toLowerCase()));
 
   const totalAllocated = categories.reduce((sum, c) => sum + c.maxTeams, 0);
   const isOverCapacity = totalAllocated > maxCapacity;
@@ -204,15 +216,42 @@ export default function CategoryManager({ categories, onChange, maxCapacity }: C
         </div>
       ))}
 
-      {/* Add button */}
-      <button
-        type="button"
-        onClick={() => addCategory()}
-        className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-600/50 rounded-xl text-slate-400 hover:border-blue-400/50 hover:text-blue-400 transition"
-      >
-        <Plus size={16} />
-        <span className="text-sm font-medium">Add Category</span>
-      </button>
+      {/* Add button with preset menu */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowAddMenu(!showAddMenu)}
+          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-600/50 rounded-xl text-slate-400 hover:border-blue-400/50 hover:text-blue-400 transition"
+        >
+          <Plus size={16} />
+          <span className="text-sm font-medium">Add Category</span>
+        </button>
+        {showAddMenu && (
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-600/50 rounded-xl shadow-xl z-10 overflow-hidden">
+            {presets.filter(p => !usedNames.has(p.name.toLowerCase())).map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => { addCategory(preset); setShowAddMenu(false); }}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-200 hover:bg-blue-600/20 transition border-b border-slate-700/50 last:border-b-0"
+              >
+                <span className="font-medium">{preset.name}</span>
+                <span className="text-xs text-slate-500">
+                  {FORMATS.find(f => f.value === preset.format)?.label} · {preset.maxTeams} teams
+                </span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => { addCategory(); setShowAddMenu(false); }}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-cyan-400 hover:bg-cyan-600/10 transition"
+            >
+              <Plus size={14} />
+              <span>Custom Category</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
