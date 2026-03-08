@@ -14,6 +14,7 @@ import {
 } from './double-elimination'
 import type { DEGameTemplate } from './scheduling.types'
 import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/api/errors'
+import { prisma } from '@/shared/database/prisma'
 
 export class SchedulingService {
   /**
@@ -65,6 +66,9 @@ export class SchedulingService {
       }
     }
 
+    // Assign courts based on primary court preferences
+    await this.assignCourts(tournamentId, tournament.numCourts, tournament.primaryCourts)
+
     // Only advance to in_progress if currently in registration or draft
     // (don't downgrade if already completed, etc.)
     if (tournament.status === 'registration' || tournament.status === 'draft') {
@@ -95,6 +99,14 @@ export class SchedulingService {
       category.format,
       category.groupSize,
       category.proLeague
+    )
+
+    // Assign courts for this category's games
+    await this.assignCourts(
+      category.tournament.id,
+      category.tournament.numCourts,
+      null, // primaryCourts not on category query; fetch from tournament
+      categoryId
     )
 
     // Update category status
@@ -417,6 +429,142 @@ export class SchedulingService {
       if (Object.keys(routingData).length > 0) {
         await SchedulingRepository.updateGameRouting(gameId, routingData)
       }
+    }
+  }
+
+  /**
+   * Assign court numbers to games based on importance.
+   * - Finals and semifinals get primary (center) courts
+   * - Higher-seeded/ranked player games get center court preference for pool play
+   * - Remaining games are distributed round-robin across other courts
+   */
+  private static async assignCourts(
+    tournamentId: string,
+    numCourts: number,
+    primaryCourtsJson?: string | null,
+    categoryId?: string
+  ) {
+    // Parse primary courts; default to [1] if not set
+    let primaryCourts: number[] = [1]
+    if (primaryCourtsJson) {
+      try {
+        const parsed = JSON.parse(primaryCourtsJson)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          primaryCourts = parsed.map(Number).filter((n) => n >= 1 && n <= numCourts)
+          if (primaryCourts.length === 0) primaryCourts = [1]
+        }
+      } catch {
+        // ignore parse errors, use default
+      }
+    } else if (!primaryCourtsJson && primaryCourtsJson !== '') {
+      // Fetch from tournament if not provided (e.g. single-category generation)
+      const t = await prisma.tournament.findUnique({
+        where: { id: tournamentId },
+        select: { primaryCourts: true },
+      })
+      if (t?.primaryCourts) {
+        try {
+          const parsed = JSON.parse(t.primaryCourts)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            primaryCourts = parsed.map(Number).filter((n) => n >= 1 && n <= numCourts)
+            if (primaryCourts.length === 0) primaryCourts = [1]
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (numCourts <= 1) return // Only one court, nothing to distribute
+
+    // Build list of all non-primary courts
+    const secondaryCourts: number[] = []
+    for (let c = 1; c <= numCourts; c++) {
+      if (!primaryCourts.includes(c)) secondaryCourts.push(c)
+    }
+
+    // Fetch all games for this tournament (or category)
+    const whereClause: { tournamentId: string; categoryId?: string } = { tournamentId }
+    if (categoryId) whereClause.categoryId = categoryId
+
+    const games = await prisma.game.findMany({
+      where: whereClause,
+      include: {
+        round: { select: { name: true, type: true, roundNumber: true } },
+      },
+      orderBy: [
+        { round: { roundNumber: 'asc' } },
+        { matchNumber: 'asc' },
+      ],
+    })
+
+    if (games.length === 0) return
+
+    // Classify games by importance
+    const FINAL_NAMES = ['final', 'finals', 'grand final', 'grand finals', 'championship']
+    const SEMI_NAMES = ['semifinal', 'semifinals', 'semi-final', 'semi-finals']
+
+    type GamePriority = { id: string; priority: number }
+    const gamePriorities: GamePriority[] = games.map((game) => {
+      const roundName = (game.round?.name ?? '').toLowerCase()
+      const roundType = game.round?.type ?? 'group'
+
+      // Priority: lower = more important = center court
+      let priority = 100
+
+      if (FINAL_NAMES.some((n) => roundName.includes(n))) {
+        priority = 1 // Finals → highest priority
+      } else if (SEMI_NAMES.some((n) => roundName.includes(n))) {
+        priority = 2 // Semifinals
+      } else if (roundName.includes('quarterfinal')) {
+        priority = 3
+      } else if (roundType === 'knockout') {
+        // Later knockout rounds = higher priority (higher roundNumber = later)
+        priority = 10 - Math.min(game.round?.roundNumber ?? 0, 9)
+      } else {
+        // Pool/group play — use matchNumber as tiebreaker (lower match = higher seed games)
+        priority = 50 + (game.matchNumber ?? 999)
+      }
+
+      return { id: game.id, priority }
+    })
+
+    // Sort by priority (most important first)
+    gamePriorities.sort((a, b) => a.priority - b.priority)
+
+    // Assign courts: primary courts for top-priority games, round-robin secondary for rest
+    const allCourts = [...primaryCourts, ...secondaryCourts]
+    let primaryIdx = 0
+    let secondaryIdx = 0
+
+    const updates: { id: string; courtNumber: number }[] = []
+
+    for (const gp of gamePriorities) {
+      let court: number
+
+      if (gp.priority <= 10 && primaryIdx < primaryCourts.length) {
+        // Important games get primary courts (cycle through primary courts)
+        court = primaryCourts[primaryIdx % primaryCourts.length]
+        primaryIdx++
+      } else {
+        // Distribute across all courts round-robin
+        court = allCourts[secondaryIdx % allCourts.length]
+        secondaryIdx++
+      }
+
+      updates.push({ id: gp.id, courtNumber: court })
+    }
+
+    // Batch update
+    if (updates.length > 0) {
+      await prisma.$transaction(
+        updates.map((u) =>
+          prisma.game.update({
+            where: { id: u.id },
+            data: { courtNumber: u.courtNumber },
+          })
+        )
+      )
     }
   }
 }

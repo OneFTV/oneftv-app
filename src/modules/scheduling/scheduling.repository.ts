@@ -4,7 +4,14 @@ export class SchedulingRepository {
   static async getTournamentForGeneration(id: string) {
     return prisma.tournament.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        format: true,
+        groupSize: true,
+        proLeague: true,
+        numCourts: true,
+        primaryCourts: true,
         organizer: { select: { id: true } },
         players: { select: { id: true, userId: true, categoryId: true } },
         categories: { select: { id: true, name: true, format: true, maxTeams: true, pointsPerSet: true, groupSize: true, proLeague: true } },
