@@ -45,8 +45,8 @@ export const CATEGORY_TEMPLATES: CategoryTemplate[] = [
     ],
   },
   {
-    id: 'nfa_tour',
-    name: 'NFA Tour (6 categorias)',
+    id: 'nfa',
+    name: 'NFA (6 categorias)',
     description: 'NFA: Master, Open (D1/D2/D3), Coed, Beginners, Women, Stars',
     categories: [
       { name: 'Master', format: 'bracket', gender: 'male', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
@@ -63,19 +63,6 @@ export const CATEGORY_TEMPLATES: CategoryTemplate[] = [
     description: 'Torneio simples com uma única categoria aberta',
     categories: [
       { name: 'Principal', format: 'bracket', gender: 'mixed', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-    ],
-  },
-  {
-    id: 'nfa_kotb',
-    name: 'NFA KotB (6 categorias)',
-    description: 'NFA King of the Beach: Master, Open (D1/D2/D3), Coed, Beginners, Women, Stars',
-    categories: [
-      { name: 'Master', format: 'king_of_the_beach', gender: 'male', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Open', format: 'king_of_the_beach', gender: 'male', skillLevel: 'pro', maxTeams: 96, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
-      { name: 'Coed', format: 'king_of_the_beach', gender: 'mixed', skillLevel: 'advanced', maxTeams: 32, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Beginners', format: 'king_of_the_beach', gender: 'mixed', skillLevel: 'beginner', maxTeams: 32, pointsPerSet: 15, numSets: 1, groupSize: 4, proLeague: false },
-      { name: "Women's", format: 'king_of_the_beach', gender: 'female', skillLevel: 'advanced', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: false },
-      { name: 'Stars', format: 'king_of_the_beach', gender: 'mixed', skillLevel: 'pro', maxTeams: 16, pointsPerSet: 18, numSets: 1, groupSize: 4, proLeague: true },
     ],
   },
   {
