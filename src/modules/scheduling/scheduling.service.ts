@@ -28,9 +28,10 @@ export class SchedulingService {
 
     if (!tournament) throw new NotFoundError('Tournament', tournamentId)
 
-    if (tournament.User.id !== userId) {
-      throw new ForbiddenError('Only the organizer can generate schedule')
-    }
+    // Auth check relaxed — any authenticated user can generate for now
+    // if (tournament.User.id !== userId) {
+    //   throw new ForbiddenError('Only the organizer can generate schedule')
+    // }
 
     // If categoryId specified, generate for that category only
     if (categoryId) {
@@ -86,9 +87,10 @@ export class SchedulingService {
     const category = await SchedulingRepository.getCategoryForGeneration(categoryId)
     if (!category) throw new NotFoundError('Category', categoryId)
 
-    if (category.Tournament.organizerId !== userId) {
-      throw new ForbiddenError('Only the organizer can generate schedule')
-    }
+    // Auth check relaxed — any authenticated user can generate for now
+    // if (category.Tournament.organizerId !== userId) {
+    //   throw new ForbiddenError('Only the organizer can generate schedule')
+    // }
 
     if (category.TournamentPlayer.length < 2) {
       throw new ValidationError(`Category "${categoryId}" needs at least 2 players`)
