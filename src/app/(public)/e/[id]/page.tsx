@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/shared/database/prisma';
 import LiveRefresh from '@/components/public/LiveRefresh';
+import PrintBracketButton from '@/components/tournament/PrintBracketButton';
 
 interface PageProps {
   params: { id: string };
@@ -133,6 +134,18 @@ export default async function ScoreboardPage({ params }: PageProps) {
     <>
       <LiveRefresh />
 
+      {/* Banner image */}
+      {tournament.bannerUrl && (
+        <div className="w-full h-48 sm:h-64 relative overflow-hidden">
+          <img
+            src={tournament.bannerUrl}
+            alt={tournament.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark-bg/80 to-transparent" />
+        </div>
+      )}
+
       {/* Hero header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-footvolley-primary/30 to-dark-bg" />
@@ -160,15 +173,18 @@ export default async function ScoreboardPage({ params }: PageProps) {
                 )}
               </div>
               {hasCategories && (
-                <Link
-                  href={`/e/${tournament.id}/full`}
-                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-footvolley-accent hover:text-white transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                  View All Brackets
-                </Link>
+                <div className="flex items-center gap-3 mt-2">
+                  <Link
+                    href={`/e/${tournament.id}/full`}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-footvolley-accent hover:text-white transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    View All Brackets
+                  </Link>
+                  <PrintBracketButton tournamentId={tournament.id} className="!bg-dark-elevated !text-gray-300 hover:!text-white !border !border-dark-border" />
+                </div>
               )}
             </div>
             <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-dark-elevated border border-dark-border`}>

@@ -75,6 +75,11 @@ model Tournament {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  numReferees     Int      @default(1)
+  venmoHandle     String?
+  zelleInfo       String?
+  stripeAccountId String?
+
   organizer       User     @relation("Organizer", fields: [organizerId], references: [id])
   players         TournamentPlayer[]
   groups          Group[]
@@ -84,6 +89,7 @@ model Tournament {
   scheduleSlots   ScheduleSlot[]
   orders          Order[]
   auditLogs       AuditLog[]
+  refereeLinks    RefereeLink[]
 
   @@index([organizerId])
   @@index([status])
@@ -405,6 +411,21 @@ model WaitlistEntry {
 
   @@unique([categoryId, userId])
   @@index([categoryId])
+}
+
+model RefereeLink {
+  id           String   @id @default(cuid())
+  tournamentId String
+  courtNumber  Int
+  token        String   @unique
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, courtNumber])
+  @@index([token])
 }
 
 model LanguageDemand {
