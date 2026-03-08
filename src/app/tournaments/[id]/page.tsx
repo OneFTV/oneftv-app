@@ -342,7 +342,7 @@ export default function TournamentDetailPage() {
           <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-blue-400/20 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-semibold text-slate-300">{t('tournaments.manage_categories')}</span>
-              <span className="text-xs text-slate-500">({tournament.Category.length})</span>
+              <span className="text-xs text-slate-500">({tournament.Category.filter((c) => (c._count?.TournamentPlayer || 0) > 0 || (c._count?.TeamRegistration || 0) > 0).length})</span>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -355,7 +355,7 @@ export default function TournamentDetailPage() {
               >
                 {t('tournaments.all_categories')}
               </button>
-              {tournament.Category.map((cat) => (
+              {tournament.Category.filter((cat) => (cat._count?.TournamentPlayer || 0) > 0 || (cat._count?.TeamRegistration || 0) > 0).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
