@@ -4,8 +4,8 @@ export class RankingRepository {
   static async getAllTournamentPlayers() {
     return prisma.tournamentPlayer.findMany({
       include: {
-        user: { select: { id: true, name: true } },
-        tournament: { select: { format: true } },
+        User: { select: { id: true, name: true } },
+        Tournament: { select: { format: true } },
       },
     })
   }

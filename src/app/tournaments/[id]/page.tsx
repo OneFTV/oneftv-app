@@ -16,7 +16,7 @@ interface CategoryInfo {
   pointsPerSet: number;
   status: string;
   proLeague: boolean;
-  _count: { players: number; teamRegistrations: number };
+  _count: { TournamentPlayer: number; TeamRegistration: number };
 }
 
 interface Tournament {
@@ -41,7 +41,7 @@ interface Tournament {
   organizerId: string;
   organizer: { id: string; name: string; email: string };
   players: { id: string; user: { id: string; name: string; email: string } }[];
-  categories?: CategoryInfo[];
+  Category?: CategoryInfo[];
 }
 
 interface Player {
@@ -334,11 +334,11 @@ export default function TournamentDetailPage() {
         </div>
 
         {/* Category Selector */}
-        {tournament.categories && tournament.categories.length > 0 && (
+        {tournament.Category && tournament.Category.length > 0 && (
           <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-blue-400/20 rounded-xl p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-sm font-semibold text-slate-300">{t('tournaments.manage_categories')}</span>
-              <span className="text-xs text-slate-500">({tournament.categories.length})</span>
+              <span className="text-xs text-slate-500">({tournament.Category.length})</span>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -351,7 +351,7 @@ export default function TournamentDetailPage() {
               >
                 {t('tournaments.all_categories')}
               </button>
-              {tournament.categories.map((cat) => (
+              {tournament.Category.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
@@ -363,7 +363,7 @@ export default function TournamentDetailPage() {
                 >
                   {cat.name}
                   <span className="ml-1 text-xs opacity-70">
-                    ({cat._count?.players || 0})
+                    ({cat._count?.TournamentPlayer || 0})
                   </span>
                 </button>
               ))}

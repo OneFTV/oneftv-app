@@ -12,7 +12,7 @@ interface CategoryInfo {
   format: string;
   maxTeams: number;
   status: string;
-  _count: { players: number; teamRegistrations: number };
+  _count: { TournamentPlayer: number; TeamRegistration: number };
 }
 
 interface Tournament {
@@ -24,7 +24,7 @@ interface Tournament {
   organizerId: string;
   pointsPerSet: number | null;
   proLeague: boolean;
-  categories?: CategoryInfo[];
+  Category?: CategoryInfo[];
 }
 
 interface Game {
@@ -583,7 +583,7 @@ export default function ManageTournamentPage() {
         </div>
 
         {/* Category Selector */}
-        {tournament.categories && tournament.categories.length > 0 && (
+        {tournament.Category && tournament.Category.length > 0 && (
           <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-4">Categorias</h2>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -593,13 +593,13 @@ export default function ManageTournamentPage() {
                 }`}>
                 Todas
               </button>
-              {tournament.categories.map(cat => (
+              {tournament.Category.map(cat => (
                 <button key={cat.id} onClick={() => setSelectedCategoryId(cat.id)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${
                     selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30'
                   }`}>
                   {cat.name}
-                  <span className="ml-1 text-xs opacity-70">({cat._count?.players || 0}/{cat.maxTeams})</span>
+                  <span className="ml-1 text-xs opacity-70">({cat._count?.TournamentPlayer || 0}/{cat.maxTeams})</span>
                 </button>
               ))}
             </div>
@@ -607,7 +607,7 @@ export default function ManageTournamentPage() {
               <div className="border-t border-slate-700/30 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-slate-300 mb-3">Gerar Schedule por Categoria</h3>
                 <div className="flex flex-wrap gap-2">
-                  {tournament.categories.map(cat => (
+                  {tournament.Category.map(cat => (
                     <button key={cat.id} onClick={() => handleGenerateSchedule(cat.id)}
                       disabled={generating || generatingCategoryId === cat.id}
                       className="px-3 py-1.5 text-xs font-medium bg-green-900/30 text-green-300 border border-green-400/30 rounded-lg hover:bg-green-100 transition disabled:opacity-50">

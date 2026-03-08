@@ -9,7 +9,7 @@ const organizerSelect = {
 
 const playersInclude = {
   include: {
-    user: { select: { id: true, name: true, email: true } },
+    User: { select: { id: true, name: true, email: true } },
   },
 } as const
 
@@ -18,22 +18,22 @@ export class TournamentRepository {
     return prisma.tournament.findUnique({
       where: { id },
       include: {
-        organizer: { select: organizerSelect },
-        players: playersInclude,
-        groups: { include: { players: true } },
-        games: {
+        User: { select: organizerSelect },
+        TournamentPlayer: playersInclude,
+        Group: { include: { TournamentPlayer: true } },
+        Game: {
           include: {
-            player1Home: { select: { id: true, name: true } },
-            player2Home: { select: { id: true, name: true } },
-            player1Away: { select: { id: true, name: true } },
-            player2Away: { select: { id: true, name: true } },
+            User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+            User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+            User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+            User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
           },
         },
-        rounds: { include: { games: true } },
-        categories: {
+        Round: { include: { Game: true } },
+        Category: {
           orderBy: { sortOrder: 'asc' as const },
           include: {
-            _count: { select: { players: true, teamRegistrations: true } },
+            _count: { select: { TournamentPlayer: true } },
           },
         },
       },
@@ -61,9 +61,9 @@ export class TournamentRepository {
       prisma.tournament.findMany({
         where,
         include: {
-          organizer: { select: organizerSelect },
-          players: { select: { id: true } },
-          _count: { select: { categories: true } },
+          User: { select: organizerSelect },
+          TournamentPlayer: { select: { id: true } },
+          _count: { select: { Category: true } },
         },
         orderBy: { date: 'desc' },
         skip: (page - 1) * limit,
@@ -84,11 +84,11 @@ export class TournamentRepository {
       format: t.format,
       status: t.status,
       maxPlayers: t.maxPlayers,
-      registeredPlayers: t.players.length,
+      registeredPlayers: t.TournamentPlayer.length,
       courts: t.numCourts,
       organizerId: t.organizerId,
-      organizerName: t.organizer.name,
-      categoryCount: t._count.categories,
+      organizerName: t.User.name,
+      categoryCount: t._count.Category,
     }))
 
     return { data, total }
@@ -98,7 +98,7 @@ export class TournamentRepository {
     return prisma.tournament.create({
       data: data as Parameters<typeof prisma.tournament.create>[0]['data'],
       include: {
-        organizer: { select: organizerSelect },
+        User: { select: organizerSelect },
       },
     })
   }
@@ -108,9 +108,9 @@ export class TournamentRepository {
       where: { id },
       data: data as Parameters<typeof prisma.tournament.update>[0]['data'],
       include: {
-        organizer: { select: organizerSelect },
-        players: playersInclude,
-        categories: {
+        User: { select: organizerSelect },
+        TournamentPlayer: playersInclude,
+        Category: {
           orderBy: { sortOrder: 'asc' as const },
         },
       },

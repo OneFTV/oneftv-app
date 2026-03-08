@@ -12,9 +12,9 @@ export class SchedulingRepository {
         proLeague: true,
         numCourts: true,
         primaryCourts: true,
-        organizer: { select: { id: true } },
-        players: { select: { id: true, userId: true, categoryId: true } },
-        categories: { select: { id: true, name: true, format: true, maxTeams: true, pointsPerSet: true, groupSize: true, proLeague: true } },
+        User: { select: { id: true } },
+        TournamentPlayer: { select: { id: true, userId: true, categoryId: true } },
+        Category: { select: { id: true, name: true, format: true, maxTeams: true, pointsPerSet: true, groupSize: true, proLeague: true } },
       },
     })
   }
@@ -23,10 +23,10 @@ export class SchedulingRepository {
     return prisma.category.findUnique({
       where: { id: categoryId },
       include: {
-        tournament: {
+        Tournament: {
           select: { id: true, organizerId: true, numCourts: true },
         },
-        players: { select: { id: true, userId: true } },
+        TournamentPlayer: { select: { id: true, userId: true } },
       },
     })
   }
@@ -151,19 +151,19 @@ export class SchedulingRepository {
     return prisma.tournament.findUnique({
       where: { id },
       include: {
-        groups: true,
-        games: {
+        Group: true,
+        Game: {
           include: {
-            player1Home: { select: { id: true, name: true } },
-            player2Home: { select: { id: true, name: true } },
-            player1Away: { select: { id: true, name: true } },
-            player2Away: { select: { id: true, name: true } },
+            User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+            User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+            User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+            User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
           },
         },
-        rounds: {
-          include: { games: true },
+        Round: {
+          include: { Game: true },
         },
-        categories: {
+        Category: {
           orderBy: { sortOrder: 'asc' as const },
         },
       },

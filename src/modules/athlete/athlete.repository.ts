@@ -24,9 +24,9 @@ export class AthleteRepository {
       prisma.user.findMany({
         where,
         include: {
-          tournamentPlayers: {
+          TournamentPlayer: {
             include: {
-              tournament: { select: tournamentSelect },
+              Tournament: { select: tournamentSelect },
             },
           },
         },
@@ -52,12 +52,12 @@ export class AthleteRepository {
     return prisma.user.findUnique({
       where: { id },
       include: {
-        tournamentPlayers: {
+        TournamentPlayer: {
           include: {
-            tournament: { select: tournamentSelectFull },
-            category: { select: { id: true, name: true, format: true } },
+            Tournament: { select: tournamentSelectFull },
+            Category: { select: { id: true, name: true, format: true } },
           },
-          orderBy: { tournament: { date: 'desc' } },
+          orderBy: { Tournament: { date: 'desc' } },
         },
       },
     })

@@ -64,7 +64,7 @@ export class AuthService {
 
       if ((tp.points || 0) > bestTournamentPoints) {
         bestTournamentPoints = tp.points || 0
-        bestTournament = tp.tournament.name
+        bestTournament = tp.Tournament.name
       }
     }
 
@@ -78,7 +78,7 @@ export class AuthService {
     const tournaments = await AuthRepository.getOrganizerTournaments(userId)
 
     const totalPlayers = tournaments.reduce(
-      (sum, t) => sum + (t._count?.players || 0),
+      (sum, t) => sum + (t._count?.TournamentPlayer || 0),
       0
     )
 
@@ -90,7 +90,7 @@ export class AuthService {
         name: t.name,
         status: t.status,
         date: t.date.toISOString(),
-        playerCount: t._count?.players || 0,
+        playerCount: t._count?.TournamentPlayer || 0,
       })),
     }
   }

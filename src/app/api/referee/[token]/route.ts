@@ -9,7 +9,7 @@ export async function GET(
     const link = await prisma.refereeLink.findUnique({
       where: { token: params.token },
       include: {
-        tournament: {
+        Tournament: {
           select: { id: true, name: true, location: true, status: true },
         },
       },
@@ -32,12 +32,12 @@ export async function GET(
         { matchNumber: 'asc' },
       ],
       include: {
-        player1Home: { select: { id: true, name: true } },
-        player2Home: { select: { id: true, name: true } },
-        player1Away: { select: { id: true, name: true } },
-        player2Away: { select: { id: true, name: true } },
-        round: { select: { name: true, roundNumber: true } },
-        category: { select: { id: true, name: true } },
+        User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+        User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
+        Round: { select: { name: true, roundNumber: true } },
+        Category: { select: { id: true, name: true } },
       },
     })
 
@@ -55,17 +55,17 @@ export async function GET(
       ],
       take: 5,
       include: {
-        player1Home: { select: { id: true, name: true } },
-        player2Home: { select: { id: true, name: true } },
-        player1Away: { select: { id: true, name: true } },
-        player2Away: { select: { id: true, name: true } },
-        category: { select: { name: true } },
+        User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+        User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
+        Category: { select: { name: true } },
       },
     })
 
     return NextResponse.json({
       data: {
-        tournament: link.tournament,
+        tournament: link.Tournament,
         courtNumber: link.courtNumber,
         currentGame,
         upcomingGames,

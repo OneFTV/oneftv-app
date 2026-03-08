@@ -8,7 +8,7 @@ datasource db {
 }
 
 model AuditLog {
-  id           String      @id
+  id           String      @id @default(cuid())
   tournamentId String?
   userId       String?
   action       String      @db.VarChar(50)
@@ -26,7 +26,7 @@ model AuditLog {
 }
 
 model Category {
-  id                                                      String             @id
+  id                                                      String             @id @default(cuid())
   tournamentId                                            String
   name                                                    String
   format                                                  String             @db.VarChar(30)
@@ -42,7 +42,7 @@ model Category {
   qualifyTargetId                                         String?
   requiresReview                                          Boolean            @default(false)
   createdAt                                               DateTime           @default(now())
-  updatedAt                                               DateTime
+  updatedAt                                               DateTime @updatedAt
   bracketType                                             String?            @db.VarChar(30)
   divisionLabel                                           String?            @db.VarChar(10)
   seedingFromCategoryId                                   String?
@@ -67,7 +67,7 @@ model Category {
 }
 
 model CheckIn {
-  id           String    @id
+  id           String    @id @default(cuid())
   userId       String
   categoryId   String?
   tournamentId String?
@@ -82,7 +82,7 @@ model CheckIn {
 }
 
 model Game {
-  id                                     String     @id
+  id                                     String     @id @default(cuid())
   tournamentId                           String
   groupId                                String?
   roundId                                String?
@@ -101,7 +101,7 @@ model Game {
   status                                 String     @default("scheduled") @db.VarChar(20)
   winningSide                            String?    @db.VarChar(10)
   createdAt                              DateTime   @default(now())
-  updatedAt                              DateTime
+  updatedAt                              DateTime @updatedAt
   categoryId                             String?
   bracketSide                            String?    @db.VarChar(20)
   loserNextGameId                        String?
@@ -138,7 +138,7 @@ model Game {
 }
 
 model Group {
-  id               String             @id
+  id               String             @id @default(cuid())
   name             String
   tournamentId     String
   categoryId       String?
@@ -152,7 +152,7 @@ model Group {
 }
 
 model LanguageDemand {
-  id             String   @id
+  id             String   @id @default(cuid())
   browserLocale  String   @db.VarChar(20)
   normalizedLang String   @db.VarChar(10)
   pageUrl        String?  @db.VarChar(500)
@@ -164,7 +164,7 @@ model LanguageDemand {
 }
 
 model Order {
-  id                 String               @id
+  id                 String               @id @default(cuid())
   userId             String
   tournamentId       String
   totalAmount        Float
@@ -173,7 +173,7 @@ model Order {
   paymentMethod      String?              @db.VarChar(30)
   metadata           String?              @db.Text
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   Tournament         Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   User               User                 @relation(fields: [userId], references: [id])
   PaymentTransaction PaymentTransaction[]
@@ -184,7 +184,7 @@ model Order {
 }
 
 model PaymentTransaction {
-  id              String   @id
+  id              String   @id @default(cuid())
   orderId         String
   externalId      String?
   provider        String?  @db.VarChar(30)
@@ -200,7 +200,7 @@ model PaymentTransaction {
 }
 
 model PricingLot {
-  id         String   @id
+  id         String   @id @default(cuid())
   categoryId String
   name       String
   price      Float
@@ -211,20 +211,20 @@ model PricingLot {
   isActive   Boolean  @default(true)
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   Category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
 }
 
 model RefereeLink {
-  id           String     @id
+  id           String     @id @default(cuid())
   tournamentId String
   courtNumber  Int
   token        String     @unique
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   Tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, courtNumber])
@@ -232,7 +232,7 @@ model RefereeLink {
 }
 
 model Round {
-  id           String     @id
+  id           String     @id @default(cuid())
   name         String
   roundNumber  Int
   tournamentId String
@@ -249,7 +249,7 @@ model Round {
 }
 
 model ScheduleSlot {
-  id           String     @id
+  id           String     @id @default(cuid())
   tournamentId String
   categoryId   String?
   courtNumber  Int
@@ -266,7 +266,7 @@ model ScheduleSlot {
 }
 
 model TeamRegistration {
-  id                                    String             @id
+  id                                    String             @id @default(cuid())
   categoryId                            String
   player1Id                             String
   player2Id                             String
@@ -274,7 +274,7 @@ model TeamRegistration {
   seed                                  Int?
   status                                String             @default("pending") @db.VarChar(20)
   createdAt                             DateTime           @default(now())
-  updatedAt                             DateTime
+  updatedAt                             DateTime @updatedAt
   Category                              Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   User_TeamRegistration_player1IdToUser User               @relation("TeamRegistration_player1IdToUser", fields: [player1Id], references: [id])
   User_TeamRegistration_player2IdToUser User               @relation("TeamRegistration_player2IdToUser", fields: [player2Id], references: [id])
@@ -287,7 +287,7 @@ model TeamRegistration {
 }
 
 model Tournament {
-  id                     String             @id
+  id                     String             @id @default(cuid())
   name                   String
   description            String?            @db.Text
   date                   DateTime
@@ -308,7 +308,7 @@ model Tournament {
   groupSize              Int                @default(4)
   organizerId            String
   createdAt              DateTime           @default(now())
-  updatedAt              DateTime
+  updatedAt              DateTime @updatedAt
   proLeague              Boolean            @default(false)
   allowMultiCategory     Boolean            @default(false)
   bannerUrl              String?            @db.Text
@@ -343,7 +343,7 @@ model Tournament {
 }
 
 model TournamentPlayer {
-  id                 String            @id
+  id                 String            @id @default(cuid())
   tournamentId       String
   userId             String
   seed               Int?
@@ -370,7 +370,7 @@ model TournamentPlayer {
 }
 
 model User {
-  id                                                String             @id
+  id                                                String             @id @default(cuid())
   name                                              String
   email                                             String             @unique
   password                                          String
@@ -385,7 +385,7 @@ model User {
   level                                             String?            @db.VarChar(20)
   avatar                                            String?            @db.Text
   createdAt                                         DateTime           @default(now())
-  updatedAt                                         DateTime
+  updatedAt                                         DateTime @updatedAt
   cpf                                               String?            @db.VarChar(14)
   dateOfBirth                                       DateTime?
   documentNumber                                    String?            @db.VarChar(30)
@@ -405,13 +405,13 @@ model User {
 }
 
 model WaitlistEntry {
-  id         String   @id
+  id         String   @id @default(cuid())
   categoryId String
   userId     String
   position   Int
   status     String   @default("waiting") @db.VarChar(20)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   Category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([categoryId, userId])

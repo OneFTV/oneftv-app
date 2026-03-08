@@ -3,7 +3,7 @@ import type { CategoryListItem } from './category.types'
 
 const playerInclude = {
   include: {
-    user: { select: { id: true, name: true, email: true } },
+    User: { select: { id: true, name: true, email: true } },
   },
 } as const
 
@@ -12,11 +12,11 @@ export class CategoryRepository {
     return prisma.category.findUnique({
       where: { id },
       include: {
-        players: playerInclude,
-        pricingLots: { orderBy: { sortOrder: 'asc' as const } },
-        qualifyTarget: { select: { id: true, name: true } },
+        TournamentPlayer: playerInclude,
+        PricingLot: { orderBy: { sortOrder: 'asc' as const } },
+        Category_Category_qualifyTargetIdToCategory: { select: { id: true, name: true } },
         _count: {
-          select: { players: true, teamRegistrations: true },
+          select: { TournamentPlayer: true, TeamRegistration: true },
         },
       },
     })
@@ -26,9 +26,9 @@ export class CategoryRepository {
     const categories = await prisma.category.findMany({
       where: { tournamentId },
       include: {
-        qualifyTarget: { select: { id: true, name: true } },
+        Category_Category_qualifyTargetIdToCategory: { select: { id: true, name: true } },
         _count: {
-          select: { players: true, teamRegistrations: true },
+          select: { TournamentPlayer: true, TeamRegistration: true },
         },
       },
       orderBy: { sortOrder: 'asc' },
@@ -47,9 +47,9 @@ export class CategoryRepository {
       proLeague: c.proLeague,
       sortOrder: c.sortOrder,
       status: c.status,
-      registeredTeams: c._count.teamRegistrations || c._count.players,
+      registeredTeams: c._count.TeamRegistration || c._count.TournamentPlayer,
       qualifyTargetId: c.qualifyTargetId,
-      qualifyTargetName: c.qualifyTarget?.name || null,
+      qualifyTargetName: c.Category_Category_qualifyTargetIdToCategory?.name || null,
     }))
   }
 
@@ -60,9 +60,9 @@ export class CategoryRepository {
         tournamentId,
       } as Parameters<typeof prisma.category.create>[0]['data'],
       include: {
-        qualifyTarget: { select: { id: true, name: true } },
+        Category_Category_qualifyTargetIdToCategory: { select: { id: true, name: true } },
         _count: {
-          select: { players: true, teamRegistrations: true },
+          select: { TournamentPlayer: true, TeamRegistration: true },
         },
       },
     })
@@ -73,9 +73,9 @@ export class CategoryRepository {
       where: { id },
       data: data as Parameters<typeof prisma.category.update>[0]['data'],
       include: {
-        qualifyTarget: { select: { id: true, name: true } },
+        Category_Category_qualifyTargetIdToCategory: { select: { id: true, name: true } },
         _count: {
-          select: { players: true, teamRegistrations: true },
+          select: { TournamentPlayer: true, TeamRegistration: true },
         },
       },
     })

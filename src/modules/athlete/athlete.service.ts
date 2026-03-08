@@ -8,7 +8,7 @@ export class AthleteService {
     const search = searchParams.get('search')
 
     const where: Record<string, unknown> = {
-      tournamentPlayers: { some: {} },
+      TournamentPlayer: { some: {} },
     }
 
     if (search) {
@@ -21,7 +21,7 @@ export class AthleteService {
     const { total, users } = await AthleteRepository.findMany(where, page, limit)
 
     const athletes = users.map((user) => {
-      const allTPs = user.tournamentPlayers
+      const allTPs = user.TournamentPlayer
       const totalWins = allTPs.reduce((sum, tp) => sum + (tp.wins || 0), 0)
       const totalLosses = allTPs.reduce((sum, tp) => sum + (tp.losses || 0), 0)
       const totalPoints = allTPs.reduce((sum, tp) => sum + (tp.points || 0), 0)
@@ -52,10 +52,10 @@ export class AthleteService {
           winRate: gamesPlayed > 0 ? (totalWins / gamesPlayed) * 100 : 0,
         },
         tournaments: allTPs.map((tp) => ({
-          id: tp.tournament.id,
-          name: tp.tournament.name,
-          format: tp.tournament.format,
-          date: tp.tournament.date,
+          id: tp.Tournament.id,
+          name: tp.Tournament.name,
+          format: tp.Tournament.format,
+          date: tp.Tournament.date,
           wins: tp.wins,
           losses: tp.losses,
           points: tp.points,
@@ -73,12 +73,12 @@ export class AthleteService {
     const user = await AthleteRepository.findById(id)
     if (!user) throw new NotFoundError('Athlete', id)
 
-    const totalWins = user.tournamentPlayers.reduce((sum, tp) => sum + (tp.wins || 0), 0)
-    const totalLosses = user.tournamentPlayers.reduce((sum, tp) => sum + (tp.losses || 0), 0)
-    const totalPoints = user.tournamentPlayers.reduce((sum, tp) => sum + (tp.points || 0), 0)
-    const totalPointDiff = user.tournamentPlayers.reduce((sum, tp) => sum + (tp.pointDiff || 0), 0)
-    const tournamentsPlayed = user.tournamentPlayers.length
-    const tournamentsWon = user.tournamentPlayers.filter((tp) => {
+    const totalWins = user.TournamentPlayer.reduce((sum, tp) => sum + (tp.wins || 0), 0)
+    const totalLosses = user.TournamentPlayer.reduce((sum, tp) => sum + (tp.losses || 0), 0)
+    const totalPoints = user.TournamentPlayer.reduce((sum, tp) => sum + (tp.points || 0), 0)
+    const totalPointDiff = user.TournamentPlayer.reduce((sum, tp) => sum + (tp.pointDiff || 0), 0)
+    const tournamentsPlayed = user.TournamentPlayer.length
+    const tournamentsWon = user.TournamentPlayer.filter((tp) => {
       const winRate = tp.wins && tp.losses ? tp.wins / (tp.wins + tp.losses) : 0
       return winRate > 0.5
     }).length
@@ -88,7 +88,7 @@ export class AthleteService {
 
     // Compute placement per tournament: rank this player among all participants
     const placements = await Promise.all(
-      user.tournamentPlayers.map(async (tp) => {
+      user.TournamentPlayer.map(async (tp) => {
         const allPlayers = await AthleteRepository.getTournamentPlayers(tp.tournamentId, tp.categoryId ?? undefined)
         // Sort by wins desc, then pointDiff desc, then points desc
         const sorted = allPlayers.sort((a, b) => {
@@ -122,16 +122,16 @@ export class AthleteService {
         tournamentsWon,
         bestFinish,
       },
-      tournamentHistory: user.tournamentPlayers.map((tp, idx) => ({
+      tournamentHistory: user.TournamentPlayer.map((tp, idx) => ({
         id: tp.id,
         placement: placements[idx] || null,
         tournament: {
-          id: tp.tournament.id,
-          name: tp.tournament.name,
-          format: tp.tournament.format || (tp.category ? tp.category.format : null) || 'N/A',
-          startDate: tp.tournament.date,
-          endDate: tp.tournament.endDate,
-          location: tp.tournament.location,
+          id: tp.Tournament.id,
+          name: tp.Tournament.name,
+          format: tp.Tournament.format || (tp.Category ? tp.Category.format : null) || 'N/A',
+          startDate: tp.Tournament.date,
+          endDate: tp.Tournament.endDate,
+          location: tp.Tournament.location,
         },
         stats: {
           wins: tp.wins,

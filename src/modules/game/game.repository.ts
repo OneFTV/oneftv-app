@@ -8,12 +8,12 @@ export class GameRepository {
     return prisma.game.findUnique({
       where: { id },
       include: {
-        player1Home: { select: playerSelectFull },
-        player2Home: { select: playerSelectFull },
-        player1Away: { select: playerSelectFull },
-        player2Away: { select: playerSelectFull },
-        round: true,
-        tournament: {
+        User_Game_player1HomeIdToUser: { select: playerSelectFull },
+        User_Game_player2HomeIdToUser: { select: playerSelectFull },
+        User_Game_player1AwayIdToUser: { select: playerSelectFull },
+        User_Game_player2AwayIdToUser: { select: playerSelectFull },
+        Round: true,
+        Tournament: {
           select: { id: true, name: true, pointsPerSet: true, proLeague: true },
         },
       },
@@ -24,10 +24,10 @@ export class GameRepository {
     return prisma.game.findUnique({
       where: { id },
       include: {
-        tournament: {
+        Tournament: {
           select: { organizerId: true, pointsPerSet: true, proLeague: true },
         },
-        round: {
+        Round: {
           select: { bestOf3: true },
         },
       },
@@ -64,15 +64,15 @@ export class GameRepository {
     return prisma.game.findMany({
       where,
       include: {
-        player1Home: { select: playerSelect },
-        player2Home: { select: playerSelect },
-        player1Away: { select: playerSelect },
-        player2Away: { select: playerSelect },
-        round: { select: { name: true, roundNumber: true, type: true, bestOf3: true, bracketSide: true } },
-        group: { select: { name: true } },
+        User_Game_player1HomeIdToUser: { select: playerSelect },
+        User_Game_player2HomeIdToUser: { select: playerSelect },
+        User_Game_player1AwayIdToUser: { select: playerSelect },
+        User_Game_player2AwayIdToUser: { select: playerSelect },
+        Round: { select: { name: true, roundNumber: true, type: true, bestOf3: true, bracketSide: true } },
+        Group: { select: { name: true } },
       },
       orderBy: [
-        { round: { roundNumber: 'asc' } },
+        { Round: { roundNumber: 'asc' } },
         { matchNumber: 'asc' },
         { courtNumber: 'asc' },
       ],
@@ -93,11 +93,11 @@ export class GameRepository {
       where: { id },
       data,
       include: {
-        player1Home: { select: playerSelect },
-        player2Home: { select: playerSelect },
-        player1Away: { select: playerSelect },
-        player2Away: { select: playerSelect },
-        round: { select: { bestOf3: true, name: true } },
+        User_Game_player1HomeIdToUser: { select: playerSelect },
+        User_Game_player2HomeIdToUser: { select: playerSelect },
+        User_Game_player1AwayIdToUser: { select: playerSelect },
+        User_Game_player2AwayIdToUser: { select: playerSelect },
+        Round: { select: { bestOf3: true, name: true } },
       },
     })
   }

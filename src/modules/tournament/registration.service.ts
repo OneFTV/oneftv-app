@@ -5,7 +5,7 @@ export class RegistrationService {
   static async register(tournamentId: string, userId: string, categoryId?: string) {
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
-      include: { players: { select: { userId: true, categoryId: true } } },
+      include: { TournamentPlayer: { select: { userId: true, categoryId: true } } },
     })
 
     if (!tournament) throw new NotFoundError('Tournament', tournamentId)
@@ -18,7 +18,7 @@ export class RegistrationService {
     if (categoryId) {
       const category = await prisma.category.findUnique({
         where: { id: categoryId },
-        include: { players: { select: { userId: true } } },
+        include: { TournamentPlayer: { select: { userId: true } } },
       })
 
       if (!category || category.tournamentId !== tournamentId) {
@@ -26,19 +26,19 @@ export class RegistrationService {
       }
 
       // Check if already registered in this category
-      const alreadyInCategory = category.players.some((p) => p.userId === userId)
+      const alreadyInCategory = category.TournamentPlayer.some((p) => p.userId === userId)
       if (alreadyInCategory) {
         throw new ConflictError('Already registered in this category')
       }
 
       // Check category capacity
-      if (category.players.length >= category.maxTeams) {
+      if (category.TournamentPlayer.length >= category.maxTeams) {
         throw new ValidationError('Category is full')
       }
 
       // Check multi-category policy
       if (!tournament.allowMultiCategory) {
-        const existingInOtherCategory = tournament.players.some(
+        const existingInOtherCategory = tournament.TournamentPlayer.some(
           (p) => p.userId === userId && p.categoryId && p.categoryId !== categoryId
         )
         if (existingInOtherCategory) {
@@ -47,11 +47,11 @@ export class RegistrationService {
       }
     } else {
       // Legacy: no category
-      if (tournament.maxPlayers && tournament.players.length >= tournament.maxPlayers) {
+      if (tournament.maxPlayers && tournament.TournamentPlayer.length >= tournament.maxPlayers) {
         throw new ValidationError('Tournament is full')
       }
 
-      const alreadyRegistered = tournament.players.some((p) => p.userId === userId)
+      const alreadyRegistered = tournament.TournamentPlayer.some((p) => p.userId === userId)
       if (alreadyRegistered) {
         throw new ConflictError('Already registered for this tournament')
       }
@@ -64,7 +64,7 @@ export class RegistrationService {
         categoryId: categoryId ?? null,
       },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        User: { select: { id: true, name: true, email: true } },
       },
     })
   }
@@ -83,11 +83,11 @@ export class RegistrationService {
     const players = await prisma.tournamentPlayer.findMany({
       where,
       include: {
-        user: {
+        User: {
           select: { id: true, name: true, email: true, nationality: true, level: true },
         },
-        group: { select: { name: true } },
-        category: { select: { id: true, name: true } },
+        Group: { select: { name: true } },
+        Category: { select: { id: true, name: true } },
       },
       orderBy: { seed: 'asc' },
     })
@@ -95,19 +95,19 @@ export class RegistrationService {
     return players.map((tp) => ({
       id: tp.id,
       userId: tp.userId,
-      name: tp.user.name,
-      email: tp.user.email,
-      nationality: tp.user.nationality,
-      level: tp.user.level,
+      name: tp.User.name,
+      email: tp.User.email,
+      nationality: tp.User.nationality,
+      level: tp.User.level,
       seed: tp.seed,
-      group: tp.group?.name || null,
+      group: tp.Group?.name || null,
       points: tp.points,
       wins: tp.wins,
       losses: tp.losses,
       pointDiff: tp.pointDiff,
       status: tp.status,
       categoryId: tp.categoryId,
-      categoryName: tp.category?.name || null,
+      categoryName: tp.Category?.name || null,
     }))
   }
 }

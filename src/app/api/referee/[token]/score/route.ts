@@ -55,11 +55,11 @@ export async function PUT(
       where: { id: gameId },
       data: updateData,
       include: {
-        player1Home: { select: { id: true, name: true } },
-        player2Home: { select: { id: true, name: true } },
-        player1Away: { select: { id: true, name: true } },
-        player2Away: { select: { id: true, name: true } },
-        category: { select: { name: true } },
+        User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+        User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+        User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
+        Category: { select: { name: true } },
       },
     })
 

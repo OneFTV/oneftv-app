@@ -60,7 +60,7 @@ export class AuthRepository {
     return prisma.tournamentPlayer.findMany({
       where: { userId },
       include: {
-        tournament: { select: { name: true, status: true } },
+        Tournament: { select: { name: true, status: true } },
       },
     })
   }
@@ -73,7 +73,7 @@ export class AuthRepository {
         name: true,
         status: true,
         date: true,
-        _count: { select: { players: true } },
+        _count: { select: { TournamentPlayer: true } },
       },
       orderBy: { date: 'desc' },
     })

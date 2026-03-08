@@ -64,7 +64,7 @@ export default async function FullBracketPage({ params, searchParams }: PageProp
       id: true,
       name: true,
       format: true,
-      _count: { select: { players: true } },
+      _count: { select: { TournamentPlayer: true } },
     },
   });
 
@@ -171,7 +171,7 @@ export default async function FullBracketPage({ params, searchParams }: PageProp
                 {formatLabels[cat.format] || cat.format}
               </span>
               <span className="text-xs text-gray-500">
-                {cat._count.players} teams
+                {cat._count.TournamentPlayer} teams
               </span>
             </div>
 

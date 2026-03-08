@@ -17,9 +17,9 @@ export async function POST(
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
       include: {
-        players: {
+        TournamentPlayer: {
           include: {
-            user: { select: { id: true, name: true, phone: true } },
+            User: { select: { id: true, name: true, phone: true } },
           },
         },
       },
@@ -44,9 +44,9 @@ export async function POST(
       )
     }
 
-    const players = tournament.players.map((tp) => ({
-      name: tp.user.name,
-      phone: tp.user.phone || '',
+    const players = tournament.TournamentPlayer.map((tp) => ({
+      name: tp.User.name,
+      phone: tp.User.phone || '',
     }))
 
     const playerList = players

@@ -50,34 +50,34 @@ export default async function ScoreboardPage({ params }: PageProps) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
     include: {
-      categories: {
+      Category: {
         orderBy: { sortOrder: 'asc' },
         include: {
-          _count: { select: { players: true } },
-          games: {
+          _count: { select: { TournamentPlayer: true } },
+          Game: {
             where: { status: { in: ['in_progress', 'completed'] } },
             include: {
-              player1Home: { select: { name: true } },
-              player2Home: { select: { name: true } },
-              player1Away: { select: { name: true } },
-              player2Away: { select: { name: true } },
-              round: { select: { name: true } },
-              category: { select: { id: true, name: true } },
+              User_Game_player1HomeIdToUser: { select: { name: true } },
+              User_Game_player2HomeIdToUser: { select: { name: true } },
+              User_Game_player1AwayIdToUser: { select: { name: true } },
+              User_Game_player2AwayIdToUser: { select: { name: true } },
+              Round: { select: { name: true } },
+              Category: { select: { id: true, name: true } },
             },
             orderBy: { updatedAt: 'desc' },
             take: 4,
           },
         },
       },
-      games: {
+      Game: {
         where: { status: { in: ['in_progress', 'completed'] } },
         include: {
-          player1Home: { select: { name: true } },
-          player2Home: { select: { name: true } },
-          player1Away: { select: { name: true } },
-          player2Away: { select: { name: true } },
-          round: { select: { name: true } },
-          category: { select: { id: true, name: true } },
+          User_Game_player1HomeIdToUser: { select: { name: true } },
+          User_Game_player2HomeIdToUser: { select: { name: true } },
+          User_Game_player1AwayIdToUser: { select: { name: true } },
+          User_Game_player2AwayIdToUser: { select: { name: true } },
+          Round: { select: { name: true } },
+          Category: { select: { id: true, name: true } },
         },
         orderBy: { updatedAt: 'desc' },
         take: 20,
@@ -87,13 +87,13 @@ export default async function ScoreboardPage({ params }: PageProps) {
 
   if (!tournament) notFound();
 
-  const liveGames = tournament.games.filter((g) => g.status === 'in_progress');
-  const recentGames = tournament.games.filter((g) => g.status === 'completed');
-  const hasCategories = tournament.categories.length > 0;
+  const liveGames = tournament.Game.filter((g) => g.status === 'in_progress');
+  const recentGames = tournament.Game.filter((g) => g.status === 'completed');
+  const hasCategories = tournament.Category.length > 0;
 
   // Group categories by division name (strip trailing number/letter)
-  const categoryGroups = new Map<string, typeof tournament.categories>();
-  for (const cat of tournament.categories) {
+  const categoryGroups = new Map<string, typeof tournament.Category>();
+  for (const cat of tournament.Category) {
     const baseName = cat.name
       .replace(/\s*\d+$/, '')
       .replace(/\s*[A-D]$/, '')
@@ -108,13 +108,13 @@ export default async function ScoreboardPage({ params }: PageProps) {
   const groupedCategoryIds = new Set(
     divisionGroups.flatMap(([, cats]) => cats.map((c) => c.id))
   );
-  const ungroupedCategories = tournament.categories.filter(
+  const ungroupedCategories = tournament.Category.filter(
     (cat) => !groupedCategoryIds.has(cat.id)
   );
 
-  const formatPlayerNames = (g: { player1Home?: { name: string } | null; player2Home?: { name: string } | null; player1Away?: { name: string } | null; player2Away?: { name: string } | null }) => {
-    const home = [g.player1Home?.name, g.player2Home?.name].filter(Boolean).join(' & ') || 'TBD';
-    const away = [g.player1Away?.name, g.player2Away?.name].filter(Boolean).join(' & ') || 'TBD';
+  const formatPlayerNames = (g: { User_Game_player1HomeIdToUser?: { name: string } | null; User_Game_player2HomeIdToUser?: { name: string } | null; User_Game_player1AwayIdToUser?: { name: string } | null; User_Game_player2AwayIdToUser?: { name: string } | null }) => {
+    const home = [g.User_Game_player1HomeIdToUser?.name, g.User_Game_player2HomeIdToUser?.name].filter(Boolean).join(' & ') || 'TBD';
+    const away = [g.User_Game_player1AwayIdToUser?.name, g.User_Game_player2AwayIdToUser?.name].filter(Boolean).join(' & ') || 'TBD';
     return { home, away };
   };
 
@@ -215,7 +215,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                     className="flex-shrink-0 w-[280px] rounded-lg border border-red-500/30 bg-dark-surface overflow-hidden ring-1 ring-red-500/20"
                   >
                     <div className="flex items-center justify-between px-3 py-2 border-b border-dark-border">
-                      <span className="text-xs text-gray-500 truncate">{game.category?.name || game.round?.name || ''}</span>
+                      <span className="text-xs text-gray-500 truncate">{game.Category?.name || game.Round?.name || ''}</span>
                       <span className="flex items-center gap-1 text-[10px] font-bold text-red-400">
                         <span className="flex h-1.5 w-1.5 relative">
                           <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-red-400 opacity-75" />
@@ -253,7 +253,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
             {divisionGroups.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                 {divisionGroups.map(([groupName, cats]) => {
-                  const totalTeams = cats.reduce((sum, c) => sum + c._count.players, 0);
+                  const totalTeams = cats.reduce((sum, c) => sum + c._count.TournamentPlayer, 0);
                   return (
                     <Link
                       key={groupName}
@@ -288,8 +288,8 @@ export default async function ScoreboardPage({ params }: PageProps) {
 
             {/* Individual category cards (ungrouped + grouped shown individually) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tournament.categories.map((cat) => {
-                const catGames = cat.games;
+              {tournament.Category.map((cat) => {
+                const catGames = cat.Game;
                 return (
                   <div key={cat.id} className="rounded-xl border border-dark-border bg-dark-surface overflow-hidden hover:border-dark-divider transition-colors">
                     {/* Category header */}
@@ -306,7 +306,7 @@ export default async function ScoreboardPage({ params }: PageProps) {
                         </span>
                       </div>
                       <span className="text-xs text-gray-500 flex-shrink-0">
-                        {cat._count.players} teams
+                        {cat._count.TournamentPlayer} teams
                       </span>
                     </div>
 

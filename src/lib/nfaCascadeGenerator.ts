@@ -84,8 +84,8 @@ export async function generateNFACascade(
   const openCategory = await prisma.category.findUnique({
     where: { id: openCategoryId },
     include: {
-      tournament: { select: { id: true, organizerId: true, numCourts: true } },
-      teamRegistrations: {
+      Tournament: { select: { id: true, organizerId: true, numCourts: true } },
+      TeamRegistration: {
         where: { status: { in: ['confirmed', 'seeded'] } },
         orderBy: { seed: 'asc' },
         select: { id: true, seed: true },
@@ -97,11 +97,11 @@ export async function generateNFACascade(
     throw new Error(`Category ${openCategoryId} not found`)
   }
 
-  if (openCategory.tournament.id !== tournamentId) {
+  if (openCategory.Tournament.id !== tournamentId) {
     throw new Error('Category does not belong to this tournament')
   }
 
-  const actualTeamCount = teamCount || openCategory.teamRegistrations.length
+  const actualTeamCount = teamCount || openCategory.TeamRegistration.length
 
   if (actualTeamCount < 4) {
     throw new Error('Need at least 4 teams for double elimination. No cascade needed.')
@@ -253,8 +253,8 @@ export async function getCascadeStatus(tournamentId: string) {
       maxTeams: true,
       _count: {
         select: {
-          games: true,
-          teamRegistrations: true,
+          Game: true,
+          TeamRegistration: true,
         },
       },
     },
@@ -270,7 +270,7 @@ export async function getCascadeStatus(tournamentId: string) {
     seedingFromCategoryId: cat.seedingFromCategoryId,
     status: cat.status,
     maxTeams: cat.maxTeams,
-    gamesCount: cat._count.games,
-    teamsCount: cat._count.teamRegistrations,
+    gamesCount: cat._count.Game,
+    teamsCount: cat._count.TeamRegistration,
   }))
 }

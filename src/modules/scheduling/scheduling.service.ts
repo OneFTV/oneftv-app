@@ -28,7 +28,7 @@ export class SchedulingService {
 
     if (!tournament) throw new NotFoundError('Tournament', tournamentId)
 
-    if (tournament.organizer.id !== userId) {
+    if (tournament.User.id !== userId) {
       throw new ForbiddenError('Only the organizer can generate schedule')
     }
 
@@ -38,8 +38,8 @@ export class SchedulingService {
     }
 
     // If tournament has categories, generate for each
-    if (tournament.categories.length > 0) {
-      for (const cat of tournament.categories) {
+    if (tournament.Category.length > 0) {
+      for (const cat of tournament.Category) {
         await this.generateForCategoryInternal(
           tournamentId,
           cat.id,
@@ -50,11 +50,11 @@ export class SchedulingService {
       }
     } else {
       // Legacy: single-format tournament without categories
-      if (tournament.players.length < 2) {
+      if (tournament.TournamentPlayer.length < 2) {
         throw new ValidationError('Minimum 2 players required')
       }
 
-      const playerIds = tournament.players.map((p) => p.userId)
+      const playerIds = tournament.TournamentPlayer.map((p) => p.userId)
       await SchedulingRepository.clearSchedule(tournamentId)
 
       const format = tournament.format
@@ -86,16 +86,16 @@ export class SchedulingService {
     const category = await SchedulingRepository.getCategoryForGeneration(categoryId)
     if (!category) throw new NotFoundError('Category', categoryId)
 
-    if (category.tournament.organizerId !== userId) {
+    if (category.Tournament.organizerId !== userId) {
       throw new ForbiddenError('Only the organizer can generate schedule')
     }
 
-    if (category.players.length < 2) {
+    if (category.TournamentPlayer.length < 2) {
       throw new ValidationError(`Category "${categoryId}" needs at least 2 players`)
     }
 
     await this.generateForCategoryInternal(
-      category.tournament.id,
+      category.Tournament.id,
       categoryId,
       category.format,
       category.groupSize,
@@ -104,8 +104,8 @@ export class SchedulingService {
 
     // Assign courts for this category's games
     await this.assignCourts(
-      category.tournament.id,
-      category.tournament.numCourts,
+      category.Tournament.id,
+      category.Tournament.numCourts,
       null, // primaryCourts not on category query; fetch from tournament
       categoryId
     )
@@ -113,7 +113,7 @@ export class SchedulingService {
     // Update category status
     await SchedulingRepository.updateCategoryStatus(categoryId, 'in_progress')
 
-    return SchedulingRepository.getTournamentWithSchedule(category.tournament.id)
+    return SchedulingRepository.getTournamentWithSchedule(category.Tournament.id)
   }
 
   /**
@@ -128,9 +128,9 @@ export class SchedulingService {
   ) {
     // Get players for this category
     const category = await SchedulingRepository.getCategoryForGeneration(categoryId)
-    if (!category || category.players.length < 2) return
+    if (!category || category.TournamentPlayer.length < 2) return
 
-    const playerIds = category.players.map((p) => p.userId)
+    const playerIds = category.TournamentPlayer.map((p) => p.userId)
 
     // Clear existing schedule for this category only
     await SchedulingRepository.clearSchedule(tournamentId, categoryId)
@@ -491,10 +491,10 @@ export class SchedulingService {
     const games = await prisma.game.findMany({
       where: whereClause,
       include: {
-        round: { select: { name: true, type: true, roundNumber: true } },
+        Round: { select: { name: true, type: true, roundNumber: true } },
       },
       orderBy: [
-        { round: { roundNumber: 'asc' } },
+        { Round: { roundNumber: 'asc' } },
         { matchNumber: 'asc' },
       ],
     })
@@ -507,8 +507,8 @@ export class SchedulingService {
 
     type GamePriority = { id: string; priority: number }
     const gamePriorities: GamePriority[] = games.map((game) => {
-      const roundName = (game.round?.name ?? '').toLowerCase()
-      const roundType = game.round?.type ?? 'group'
+      const roundName = (game.Round?.name ?? '').toLowerCase()
+      const roundType = game.Round?.type ?? 'group'
 
       // Priority: lower = more important = center court
       let priority = 100
@@ -521,7 +521,7 @@ export class SchedulingService {
         priority = 3
       } else if (roundType === 'knockout') {
         // Later knockout rounds = higher priority (higher roundNumber = later)
-        priority = 10 - Math.min(game.round?.roundNumber ?? 0, 9)
+        priority = 10 - Math.min(game.Round?.roundNumber ?? 0, 9)
       } else {
         // Pool/group play — use matchNumber as tiebreaker (lower match = higher seed games)
         priority = 50 + (game.matchNumber ?? 999)
@@ -577,7 +577,7 @@ export class SchedulingService {
   static async generateCascade(tournamentId: string, categoryId: string, userId: string) {
     const tournament = await SchedulingRepository.getTournamentForGeneration(tournamentId)
     if (!tournament) throw new NotFoundError('Tournament', tournamentId)
-    if (tournament.organizer.id !== userId) {
+    if (tournament.User.id !== userId) {
       throw new ForbiddenError('Only the organizer can generate cascade divisions')
     }
 

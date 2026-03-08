@@ -6,7 +6,7 @@ export class RankingService {
 
     let filtered = tournamentPlayers
     if (format === 'KOTB' || format === 'BRACKET') {
-      filtered = tournamentPlayers.filter((tp) => tp.tournament.format === format)
+      filtered = tournamentPlayers.filter((tp) => tp.Tournament.format === format)
     }
 
     const userStats = new Map<
@@ -27,7 +27,7 @@ export class RankingService {
       const key = tp.userId
       const existing = userStats.get(key) || {
         userId: tp.userId,
-        userName: tp.user.name,
+        userName: tp.User.name,
         totalWins: 0,
         totalLosses: 0,
         totalPoints: 0,

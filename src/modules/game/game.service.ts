@@ -16,18 +16,18 @@ export class GameService {
     const games = await GameRepository.findByTournament(tournamentId, categoryId)
 
     return games.map((game) => {
-      const homePlayers = [game.player1Home?.name, game.player2Home?.name]
+      const homePlayers = [game.User_Game_player1HomeIdToUser?.name, game.User_Game_player2HomeIdToUser?.name]
         .filter(Boolean)
         .join(' & ')
-      const awayPlayers = [game.player1Away?.name, game.player2Away?.name]
+      const awayPlayers = [game.User_Game_player1AwayIdToUser?.name, game.User_Game_player2AwayIdToUser?.name]
         .filter(Boolean)
         .join(' & ')
 
       return {
         id: game.id,
-        roundName: game.round?.name || 'Unassigned',
-        roundNumber: game.round?.roundNumber ?? null,
-        roundType: game.round?.type ?? null,
+        roundName: game.Round?.name || 'Unassigned',
+        roundNumber: game.Round?.roundNumber ?? null,
+        roundType: game.Round?.type ?? null,
         court: game.courtNumber,
         scheduledTime: game.scheduledTime?.toISOString() || null,
         player1: homePlayers || 'TBD',
@@ -42,13 +42,13 @@ export class GameService {
         set2Away: game.set2Away,
         set3Home: game.set3Home,
         set3Away: game.set3Away,
-        bestOf3: game.round?.bestOf3 ?? false,
+        bestOf3: game.Round?.bestOf3 ?? false,
         status: game.status,
         winningSide: game.winningSide ?? null,
-        groupName: game.group?.name || null,
+        groupName: game.Group?.name || null,
         categoryId: game.categoryId ?? null,
         matchNumber: game.matchNumber ?? null,
-        bracketSide: game.bracketSide ?? game.round?.bracketSide ?? null,
+        bracketSide: game.bracketSide ?? game.Round?.bracketSide ?? null,
         winnerNextGameId: game.winnerNextGameId ?? null,
         loserNextGameId: game.loserNextGameId ?? null,
         seedTarget: game.seedTarget ?? null,
@@ -60,12 +60,12 @@ export class GameService {
     const game = await GameRepository.findByIdForUpdate(id)
     if (!game) throw new NotFoundError('Game', id)
 
-    if (game.tournament.organizerId !== userId) {
+    if (game.Tournament.organizerId !== userId) {
       throw new ForbiddenError('Only the tournament organizer can update game scores')
     }
 
-    const isBestOf3 = game.round?.bestOf3 ?? false
-    const pointsPerSet = game.tournament.pointsPerSet || 18
+    const isBestOf3 = game.Round?.bestOf3 ?? false
+    const pointsPerSet = game.Tournament.pointsPerSet || 18
 
     const { winningSide } = validateGameScores(input, isBestOf3, pointsPerSet)
 
@@ -101,13 +101,13 @@ export class GameService {
           continue
         }
 
-        if (game.tournament.organizerId !== userId) {
+        if (game.Tournament.organizerId !== userId) {
           results.push({ gameId: entry.gameId, success: false, error: 'Not authorized' })
           continue
         }
 
-        const isBestOf3 = game.round?.bestOf3 ?? false
-        const pointsPerSet = game.tournament.pointsPerSet || 18
+        const isBestOf3 = game.Round?.bestOf3 ?? false
+        const pointsPerSet = game.Tournament.pointsPerSet || 18
 
         const { winningSide } = validateGameScores(entry, isBestOf3, pointsPerSet)
 

@@ -70,12 +70,12 @@ export async function detectConflicts(tournamentId: string): Promise<Conflict[]>
       ],
     },
     include: {
-      category: { select: { id: true, name: true } },
-      round: { select: { roundNumber: true } },
-      player1Home: { select: { id: true, name: true } },
-      player2Home: { select: { id: true, name: true } },
-      player1Away: { select: { id: true, name: true } },
-      player2Away: { select: { id: true, name: true } },
+      Category: { select: { id: true, name: true } },
+      Round: { select: { roundNumber: true } },
+      User_Game_player1HomeIdToUser: { select: { id: true, name: true } },
+      User_Game_player2HomeIdToUser: { select: { id: true, name: true } },
+      User_Game_player1AwayIdToUser: { select: { id: true, name: true } },
+      User_Game_player2AwayIdToUser: { select: { id: true, name: true } },
     },
   })
 
@@ -120,7 +120,8 @@ export async function detectConflicts(tournamentId: string): Promise<Conflict[]>
           seen.add(key)
 
           const playerName =
-            [g1.player1Home, g1.player2Home, g1.player1Away, g1.player2Away].find(
+            [g1.User_Game_player1HomeIdToUser, g1.User_Game_player2HomeIdToUser, g1.User_Game_player1AwayIdToUser, g1.User_Game_player2AwayIdToUser].find(
+
               (p) => p?.id === playerId
             )?.name ?? 'Unknown'
 
@@ -130,18 +131,18 @@ export async function detectConflicts(tournamentId: string): Promise<Conflict[]>
             game1: {
               id: g1.id,
               categoryId: g1.categoryId,
-              categoryName: g1.category?.name ?? 'N/A',
+              categoryName: g1.Category?.name ?? 'N/A',
               courtNumber: g1.courtNumber,
               time: g1.scheduledTime!,
-              roundNumber: g1.round?.roundNumber ?? null,
+              roundNumber: g1.Round?.roundNumber ?? null,
             },
             game2: {
               id: g2.id,
               categoryId: g2.categoryId,
-              categoryName: g2.category?.name ?? 'N/A',
+              categoryName: g2.Category?.name ?? 'N/A',
               courtNumber: g2.courtNumber,
               time: g2.scheduledTime!,
-              roundNumber: g2.round?.roundNumber ?? null,
+              roundNumber: g2.Round?.roundNumber ?? null,
             },
           })
         }

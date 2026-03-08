@@ -18,36 +18,36 @@ export default async function PrintPage({ params }: PageProps) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
     include: {
-      categories: {
+      Category: {
         orderBy: { sortOrder: 'asc' },
         include: {
-          groups: {
+          Group: {
             include: {
-              players: {
+              TournamentPlayer: {
                 include: {
-                  user: { select: { name: true } },
-                  teamRegistration: {
+                  User: { select: { name: true } },
+                  TeamRegistration: {
                     include: {
-                      player1: { select: { name: true } },
-                      player2: { select: { name: true } },
+                      User_TeamRegistration_player1IdToUser: { select: { name: true } },
+                      User_TeamRegistration_player2IdToUser: { select: { name: true } },
                     },
                   },
                 },
               },
             },
           },
-          games: {
+          Game: {
             orderBy: [{ scheduledTime: 'asc' }, { matchNumber: 'asc' }],
             include: {
-              player1Home: { select: { name: true } },
-              player2Home: { select: { name: true } },
-              player1Away: { select: { name: true } },
-              player2Away: { select: { name: true } },
-              round: { select: { name: true, roundNumber: true, type: true } },
-              group: { select: { name: true } },
+              User_Game_player1HomeIdToUser: { select: { name: true } },
+              User_Game_player2HomeIdToUser: { select: { name: true } },
+              User_Game_player1AwayIdToUser: { select: { name: true } },
+              User_Game_player2AwayIdToUser: { select: { name: true } },
+              Round: { select: { name: true, roundNumber: true, type: true } },
+              Group: { select: { name: true } },
             },
           },
-          rounds: {
+          Round: {
             orderBy: { roundNumber: 'asc' },
           },
         },
@@ -63,11 +63,11 @@ export default async function PrintPage({ params }: PageProps) {
     gameNumber: number;
     categoryName: string;
     categoryId: string;
-    game: (typeof tournament.categories)[0]['games'][0];
+    game: (typeof tournament.Category)[0]['Game'][0];
   }> = [];
 
-  for (const category of tournament.categories) {
-    for (const game of category.games) {
+  for (const category of tournament.Category) {
+    for (const game of category.Game) {
       gamesWithNumbers.push({
         gameNumber: game.matchNumber ?? gameNumber,
         categoryName: category.name,
@@ -88,18 +88,18 @@ export default async function PrintPage({ params }: PageProps) {
     city: tournament.city,
     state: tournament.state,
     numCourts: tournament.numCourts,
-    categories: tournament.categories.map((cat) => ({
+    categories: tournament.Category.map((cat) => ({
       id: cat.id,
       name: cat.name,
       format: cat.format,
       maxTeams: cat.maxTeams,
-      groups: cat.groups.map((g) => ({
+      groups: cat.Group.map((g) => ({
         id: g.id,
         name: g.name,
-        players: g.players.map((p) => {
-          const teamName = p.teamRegistration
-            ? `${p.teamRegistration.player1.name} & ${p.teamRegistration.player2.name}`
-            : p.user.name;
+        players: g.TournamentPlayer.map((p) => {
+          const teamName = p.TeamRegistration
+            ? `${p.TeamRegistration.User_TeamRegistration_player1IdToUser.name} & ${p.TeamRegistration.User_TeamRegistration_player2IdToUser.name}`
+            : p.User.name;
           return {
             id: p.id,
             name: teamName,
@@ -110,9 +110,9 @@ export default async function PrintPage({ params }: PageProps) {
           };
         }),
       })),
-      games: cat.games.map((g) => {
-        const home = [g.player1Home?.name, g.player2Home?.name].filter(Boolean).join(' & ') || 'TBD';
-        const away = [g.player1Away?.name, g.player2Away?.name].filter(Boolean).join(' & ') || 'TBD';
+      games: cat.Game.map((g) => {
+        const home = [g.User_Game_player1HomeIdToUser?.name, g.User_Game_player2HomeIdToUser?.name].filter(Boolean).join(' & ') || 'TBD';
+        const away = [g.User_Game_player1AwayIdToUser?.name, g.User_Game_player2AwayIdToUser?.name].filter(Boolean).join(' & ') || 'TBD';
         return {
           id: g.id,
           matchNumber: g.matchNumber,
@@ -124,16 +124,16 @@ export default async function PrintPage({ params }: PageProps) {
           scoreAway: g.scoreAway,
           status: g.status,
           winningSide: g.winningSide,
-          roundName: g.round?.name || null,
-          roundNumber: g.round?.roundNumber || null,
-          roundType: g.round?.type || null,
-          groupName: g.group?.name || null,
+          roundName: g.Round?.name || null,
+          roundNumber: g.Round?.roundNumber || null,
+          roundType: g.Round?.type || null,
+          groupName: g.Group?.name || null,
           bracketSide: g.bracketSide,
           winnerNextGameId: g.winnerNextGameId,
           loserNextGameId: g.loserNextGameId,
         };
       }),
-      rounds: cat.rounds.map((r) => ({
+      rounds: cat.Round.map((r) => ({
         id: r.id,
         name: r.name,
         roundNumber: r.roundNumber,
