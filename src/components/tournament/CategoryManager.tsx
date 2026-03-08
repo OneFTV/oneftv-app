@@ -95,8 +95,8 @@ export default function CategoryManager({ categories, onChange, maxCapacity, tem
 
   return (
     <div className="space-y-4">
-      {/* Allocation bar */}
-      <div className="bg-slate-800/60 border border-slate-600/30 rounded-lg p-4">
+      {/* Allocation bar — only show when capacity is known */}
+      {maxCapacity > 0 && <div className="bg-slate-800/60 border border-slate-600/30 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-slate-300">Team Slots Allocated</span>
           <span className={`text-sm font-bold ${isOverCapacity ? 'text-red-400' : 'text-cyan-400'}`}>
@@ -117,7 +117,7 @@ export default function CategoryManager({ categories, onChange, maxCapacity, tem
             <span>Total teams exceed capacity! Reduce teams or go back and add more infrastructure.</span>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Quick suggestions */}
       {showSuggestions && (

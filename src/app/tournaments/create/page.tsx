@@ -355,7 +355,7 @@ export default function CreateTournamentPage() {
               <CategoryManager
                 categories={categories}
                 onChange={setCategories}
-                maxCapacity={capacity.maxTeams}
+                maxCapacity={0}
                 template={activeTemplate}
               />
               {errors.categories && <p className="text-red-400 text-sm">{errors.categories}</p>}
