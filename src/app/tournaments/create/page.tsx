@@ -21,6 +21,7 @@ interface FormData {
   // Step 2 — Infrastructure
   numCourts: number;
   numReferees: number;
+  primaryCourts: number[];
   numDays: number;
   hoursPerDay: number;
   avgGameMinutes: number;
@@ -80,6 +81,7 @@ export default function CreateTournamentPage() {
     endDate: '',
     numCourts: 4,
     numReferees: 4,
+    primaryCourts: [1],
     numDays: 1,
     hoursPerDay: 9,
     avgGameMinutes: 20,
@@ -151,6 +153,7 @@ export default function CreateTournamentPage() {
       ...prev,
       numCourts: 6,
       numReferees: 6,
+      primaryCourts: [1],
       numDays: 2,
       hoursPerDay: 9,
       avgGameMinutes: 20,
@@ -236,6 +239,7 @@ export default function CreateTournamentPage() {
         hoursPerDay: formData.hoursPerDay,
         avgGameDuration: formData.avgGameMinutes,
         numReferees: formData.numReferees,
+        primaryCourts: JSON.stringify(formData.primaryCourts),
         allowMultiCategory: categories.length > 1 || formData.allowMultiCategory,
         venmoHandle: formData.venmoHandle || undefined,
         zelleInfo: formData.zelleInfo || undefined,
@@ -478,6 +482,40 @@ export default function CreateTournamentPage() {
                 </div>
               </div>
 
+              {/* Center Courts */}
+              {formData.numCourts > 1 && (
+                <div className={cardClass}>
+                  <h3 className="text-lg font-semibold text-white mb-2">Center Courts</h3>
+                  <p className="text-xs text-slate-400 mb-4">Select courts for finals, top-ranked players, and streaming. These get priority scheduling.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from({ length: formData.numCourts }, (_, i) => i + 1).map((courtNum) => {
+                      const isCenter = formData.primaryCourts.includes(courtNum);
+                      return (
+                        <button key={courtNum} type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            primaryCourts: isCenter
+                              ? prev.primaryCourts.filter(c => c !== courtNum)
+                              : [...prev.primaryCourts, courtNum],
+                          }))}
+                          className={`w-12 h-12 rounded-lg border-2 text-sm font-bold transition ${
+                            isCenter
+                              ? 'border-amber-400 bg-amber-500/20 text-amber-300 shadow-lg shadow-amber-500/20'
+                              : 'border-slate-600/50 bg-slate-800/30 text-slate-400 hover:border-slate-500'
+                          }`}>
+                          {courtNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {formData.primaryCourts.length > 0 && (
+                    <p className="text-xs text-amber-300/80 mt-2">
+                      🏟️ Court{formData.primaryCourts.length > 1 ? 's' : ''} {formData.primaryCourts.sort((a,b) => a-b).join(', ')} — finals & top-ranked priority
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className={cardClass}>
                 <h3 className="text-lg font-semibold text-white mb-4">Schedule</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -674,6 +712,7 @@ export default function CreateTournamentPage() {
                   <p><strong>Location:</strong> {[formData.location, formData.city, formData.state, formData.country].filter(Boolean).join(', ') || '—'}</p>
                   <p><strong>Dates:</strong> {formData.startDate || '—'} → {formData.endDate || '—'}</p>
                   <p><strong>Infrastructure:</strong> {formData.numCourts} courts, {formData.numReferees} referees, {formData.numDays} day{formData.numDays !== 1 ? 's' : ''}, {formData.hoursPerDay}h/day</p>
+                  {formData.primaryCourts.length > 0 && <p><strong>🏟️ Center Court{formData.primaryCourts.length > 1 ? 's' : ''}:</strong> {formData.primaryCourts.sort((a,b) => a-b).join(', ')}</p>}
                   <p><strong>Capacity:</strong> {capacity.total} games, ~{capacity.maxTeams} max teams</p>
                   <p><strong>Categories:</strong> {categories.length}</p>
                   {categories.map((cat, i) => (

@@ -64,6 +64,7 @@ export interface CreateTournamentInput {
   contactEmail?: string
   contactPhone?: string
   numReferees?: number
+  primaryCourts?: string
   // Inline categories
   categories?: {
     name: string

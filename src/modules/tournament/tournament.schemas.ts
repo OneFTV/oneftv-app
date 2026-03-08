@@ -44,6 +44,7 @@ export const createTournamentSchema = z.object({
   ),
   contactPhone: z.string().optional(),
   numReferees: z.number().int().min(1).max(50).optional(),
+  primaryCourts: z.string().optional(),
   // Inline categories (created with tournament)
   categories: z.array(categoryInlineSchema).optional(),
 })

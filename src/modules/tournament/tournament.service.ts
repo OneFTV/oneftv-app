@@ -36,6 +36,7 @@ export class TournamentService {
       groupSize: input.groupSize ?? 4,
       proLeague: input.proLeague ?? false,
       numReferees: input.numReferees ?? 1,
+      primaryCourts: input.primaryCourts ?? null,
       organizerId,
       status: 'registration',
       // Multi-category fields
