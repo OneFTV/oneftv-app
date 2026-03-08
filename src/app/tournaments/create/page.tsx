@@ -45,10 +45,10 @@ const COUNTRIES = [
 ];
 
 const WIZARD_STEPS = [
+  { title: 'Template & Categories', description: 'Choose a template and add categories' },
   { title: 'Basics', description: 'Tournament name, location, and dates' },
   { title: 'Infrastructure', description: 'Courts, referees, and schedule' },
   { title: 'Capacity', description: 'Review your tournament capacity' },
-  { title: 'Categories', description: 'Define competition categories' },
   { title: 'Payment & Confirm', description: 'Payment setup and review' },
 ];
 
@@ -149,6 +149,13 @@ export default function CreateTournamentPage() {
     const newErrors: FormErrors = {};
 
     if (step === 0) {
+      if (categories.length === 0) newErrors.categories = 'Add at least one category';
+      categories.forEach((cat, i) => {
+        if (!cat.name.trim()) newErrors[`cat_${i}_name`] = `Category ${i + 1} needs a name`;
+      });
+    }
+
+    if (step === 1) {
       if (!formData.name.trim()) newErrors.name = 'Tournament name is required';
       if (!formData.city.trim()) newErrors.city = 'City is required';
       if (!formData.startDate) newErrors.startDate = 'Start date is required';
@@ -158,19 +165,12 @@ export default function CreateTournamentPage() {
       }
     }
 
-    if (step === 1) {
+    if (step === 2) {
       if (formData.numCourts < 1) newErrors.numCourts = 'At least 1 court required';
       if (formData.numReferees < 1) newErrors.numReferees = 'At least 1 referee required';
       if (formData.numDays < 1) newErrors.numDays = 'At least 1 day required';
       if (formData.hoursPerDay < 1) newErrors.hoursPerDay = 'At least 1 hour per day';
       if (formData.avgGameMinutes < 5) newErrors.avgGameMinutes = 'Min 5 minutes per game';
-    }
-
-    if (step === 3) {
-      if (categories.length === 0) newErrors.categories = 'Add at least one category';
-      categories.forEach((cat, i) => {
-        if (!cat.name.trim()) newErrors[`cat_${i}_name`] = `Category ${i + 1} needs a name`;
-      });
     }
 
     setErrors(newErrors);
@@ -310,8 +310,56 @@ export default function CreateTournamentPage() {
         )}
 
         <StepWizard steps={WIZARD_STEPS} currentStep={currentStep} onStepClick={goToStep}>
-          {/* ─── STEP 1: Basics ─── */}
+          {/* ─── STEP 1: Template & Categories ─── */}
           {currentStep === 0 && (
+            <div className="space-y-6">
+              {/* Template Selection */}
+              <div className={cardClass}>
+                <h3 className="text-lg font-semibold text-white mb-4">Choose a Template</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button type="button" onClick={() => { applyNFATemplate(); }}
+                    className={`p-4 rounded-xl border-2 text-left transition ${activeTemplate === 'nfa' ? 'border-amber-400 bg-amber-500/10' : 'border-slate-600/50 bg-slate-800/30 hover:border-slate-500'}`}>
+                    <p className="text-sm font-semibold text-amber-300">🏐 NFA Tournament</p>
+                    <p className="text-xs text-slate-400 mt-1">Pre-configured: 6 courts, 6 refs, 2 days, 9h/day, 20min games</p>
+                  </button>
+                  <button type="button" onClick={() => setActiveTemplate('custom')}
+                    className={`p-4 rounded-xl border-2 text-left transition ${activeTemplate === 'custom' ? 'border-cyan-400 bg-cyan-500/10' : 'border-slate-600/50 bg-slate-800/30 hover:border-slate-500'}`}>
+                    <p className="text-sm font-semibold text-cyan-300">⚙️ Custom Tournament</p>
+                    <p className="text-xs text-slate-400 mt-1">Configure everything from scratch</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <CategoryManager
+                categories={categories}
+                onChange={setCategories}
+                maxCapacity={capacity.maxTeams}
+                template={activeTemplate}
+              />
+              {errors.categories && <p className="text-red-400 text-sm">{errors.categories}</p>}
+
+              {/* Multi-category toggle */}
+              {categories.length > 1 && (
+                <div className={cardClass}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-slate-300">Allow Multi-Category Registration</span>
+                      <p className="text-xs text-slate-500 mt-0.5">Players can register in multiple categories</p>
+                    </div>
+                    <button type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, allowMultiCategory: !prev.allowMultiCategory }))}
+                      className={`relative w-11 h-6 rounded-full transition ${formData.allowMultiCategory ? 'bg-blue-600' : 'bg-slate-600'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-slate-200 rounded-full shadow transition-transform ${formData.allowMultiCategory ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── STEP 2: Basics ─── */}
+          {currentStep === 1 && (
             <div className="space-y-6">
               <div className={cardClass}>
                 <h3 className="text-lg font-semibold text-white mb-4">Tournament Info</h3>
@@ -377,25 +425,11 @@ export default function CreateTournamentPage() {
                   </div>
                 </div>
               </div>
-
-              {/* NFA Template */}
-              <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-amber-300">🏐 NFA Template</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Pre-fill with NFA tournament defaults (6 courts, 6 refs, 2 days)</p>
-                  </div>
-                  <button type="button" onClick={applyNFATemplate}
-                    className="px-4 py-1.5 text-sm bg-amber-600/20 border border-amber-400/30 text-amber-300 rounded-lg hover:bg-amber-600/30 transition">
-                    Apply
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
-          {/* ─── STEP 2: Infrastructure ─── */}
-          {currentStep === 1 && (
+          {/* ─── STEP 3: Infrastructure ─── */}
+          {currentStep === 2 && (
             <div className="space-y-6">
               <div className={cardClass}>
                 <h3 className="text-lg font-semibold text-white mb-4">Courts & Referees</h3>
@@ -456,8 +490,8 @@ export default function CreateTournamentPage() {
             </div>
           )}
 
-          {/* ─── STEP 3: Capacity Calculator ─── */}
-          {currentStep === 2 && (
+          {/* ─── STEP 4: Capacity Calculator ─── */}
+          {currentStep === 3 && (
             <div className="space-y-6">
               <CapacityCalculator
                 courts={formData.numCourts}
@@ -468,40 +502,10 @@ export default function CreateTournamentPage() {
               />
               <div className="bg-slate-800/40 border border-slate-600/30 rounded-lg p-4 text-center">
                 <p className="text-sm text-slate-400">
-                  Need to adjust? Go back to <button type="button" onClick={() => setCurrentStep(1)}
+                  Need to adjust? Go back to <button type="button" onClick={() => setCurrentStep(2)}
                     className="text-blue-400 underline hover:text-blue-300">Infrastructure</button> to change values.
                 </p>
               </div>
-            </div>
-          )}
-
-          {/* ─── STEP 4: Categories ─── */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <CategoryManager
-                categories={categories}
-                onChange={setCategories}
-                maxCapacity={capacity.maxTeams}
-                template={activeTemplate}
-              />
-              {errors.categories && <p className="text-red-400 text-sm">{errors.categories}</p>}
-
-              {/* Multi-category toggle */}
-              {categories.length > 1 && (
-                <div className={cardClass}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-slate-300">Allow Multi-Category Registration</span>
-                      <p className="text-xs text-slate-500 mt-0.5">Players can register in multiple categories</p>
-                    </div>
-                    <button type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, allowMultiCategory: !prev.allowMultiCategory }))}
-                      className={`relative w-11 h-6 rounded-full transition ${formData.allowMultiCategory ? 'bg-blue-600' : 'bg-slate-600'}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-slate-200 rounded-full shadow transition-transform ${formData.allowMultiCategory ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
