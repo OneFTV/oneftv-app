@@ -181,52 +181,43 @@ export default function RefereePage() {
           {/* Teams */}
           <div className="grid grid-cols-3 gap-2 items-center mb-4">
             <div className="text-center">
-              <p className="font-semibold text-sm text-cyan-300">HOME</p>
-              <p className="text-sm">{homeName}</p>
+              <p className="text-sm font-medium text-cyan-300">{homeName}</p>
             </div>
             <div className="text-center text-2xl font-bold text-cyan-400">VS</div>
             <div className="text-center">
-              <p className="font-semibold text-sm text-orange-300">AWAY</p>
-              <p className="text-sm">{awayName}</p>
+              <p className="text-sm font-medium text-orange-300">{awayName}</p>
             </div>
           </div>
 
-          {/* Score inputs */}
-          {(['set1', 'set2', 'set3'] as const).map((set, i) => {
-            const homeKey = `${set}Home` as keyof typeof scores
-            const awayKey = `${set}Away` as keyof typeof scores
-            return (
-              <div key={set} className="mb-3">
-                <p className="text-xs text-slate-400 text-center mb-1">Set {i + 1}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Home */}
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => updateScore(homeKey, -1)}
-                      className="w-11 h-11 rounded-lg bg-slate-700 text-xl font-bold active:bg-slate-600 select-none"
-                    >−</button>
-                    <span className="w-10 text-center text-2xl font-mono font-bold">{scores[homeKey]}</span>
-                    <button
-                      onClick={() => updateScore(homeKey, 1)}
-                      className="w-11 h-11 rounded-lg bg-cyan-700 text-xl font-bold active:bg-cyan-600 select-none"
-                    >+</button>
-                  </div>
-                  {/* Away */}
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => updateScore(awayKey, -1)}
-                      className="w-11 h-11 rounded-lg bg-slate-700 text-xl font-bold active:bg-slate-600 select-none"
-                    >−</button>
-                    <span className="w-10 text-center text-2xl font-mono font-bold">{scores[awayKey]}</span>
-                    <button
-                      onClick={() => updateScore(awayKey, 1)}
-                      className="w-11 h-11 rounded-lg bg-orange-700 text-xl font-bold active:bg-orange-600 select-none"
-                    >+</button>
-                  </div>
-                </div>
+          {/* Score input — single set */}
+          <div className="mb-3">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Team 1 */}
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => updateScore('set1Home', -1)}
+                  className="w-11 h-11 rounded-lg bg-slate-700 text-xl font-bold active:bg-slate-600 select-none"
+                >−</button>
+                <span className="w-10 text-center text-2xl font-mono font-bold">{scores.set1Home}</span>
+                <button
+                  onClick={() => updateScore('set1Home', 1)}
+                  className="w-11 h-11 rounded-lg bg-cyan-700 text-xl font-bold active:bg-cyan-600 select-none"
+                >+</button>
               </div>
-            )
-          })}
+              {/* Team 2 */}
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => updateScore('set1Away', -1)}
+                  className="w-11 h-11 rounded-lg bg-slate-700 text-xl font-bold active:bg-slate-600 select-none"
+                >−</button>
+                <span className="w-10 text-center text-2xl font-mono font-bold">{scores.set1Away}</span>
+                <button
+                  onClick={() => updateScore('set1Away', 1)}
+                  className="w-11 h-11 rounded-lg bg-orange-700 text-xl font-bold active:bg-orange-600 select-none"
+                >+</button>
+              </div>
+            </div>
+          </div>
 
           {/* Action buttons */}
           <div className="flex gap-3 mt-4">
