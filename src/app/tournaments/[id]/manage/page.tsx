@@ -537,11 +537,19 @@ export default function ManageTournamentPage() {
               <h1 className="text-2xl font-bold text-white mb-2">Manage: {tournament.name}</h1>
               <p className="text-slate-400">Status: {statusLabels[tournament.status]}</p>
             </div>
-            {tournament.proLeague && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
-                Professional League
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {tournament.proLeague && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1a2744] text-[#c4a35a]">
+                  Professional League
+                </span>
+              )}
+              <Link
+                href={`/tournaments/${tournamentId}/simulate`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/80 text-white rounded-lg font-medium hover:bg-purple-700 transition text-sm"
+              >
+                🧪 Simulate
+              </Link>
+            </div>
           </div>
         </div>
 
