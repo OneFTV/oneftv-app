@@ -47,6 +47,9 @@ model Category {
   divisionLabel                                           String?            @db.VarChar(10)
   seedingFromCategoryId                                   String?
   seedingSource                                           String?            @db.VarChar(30)
+  scheduledDay                                            Int?               @default(1)
+  dayStartTime                                            String?            @db.VarChar(5)
+  dayEndTime                                              String?            @db.VarChar(5)
   Category_Category_qualifyTargetIdToCategory             Category?          @relation("Category_qualifyTargetIdToCategory", fields: [qualifyTargetId], references: [id])
   other_Category_Category_qualifyTargetIdToCategory       Category[]         @relation("Category_qualifyTargetIdToCategory")
   Category_Category_seedingFromCategoryIdToCategory       Category?          @relation("Category_seedingFromCategoryIdToCategory", fields: [seedingFromCategoryId], references: [id])

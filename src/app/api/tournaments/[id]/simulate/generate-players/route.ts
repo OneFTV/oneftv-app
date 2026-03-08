@@ -178,6 +178,53 @@ export async function POST(
       // Don't fail the whole request if schedule generation has issues
     }
 
+    // Update game scheduled times based on day assignments
+    const categoriesWithDays = await prisma.category.findMany({
+      where: { tournamentId: params.id },
+      select: { id: true, scheduledDay: true, dayStartTime: true, dayEndTime: true },
+    })
+
+    for (const cat of categoriesWithDays) {
+      if (cat.scheduledDay && cat.dayStartTime) {
+        const dayNum = cat.scheduledDay
+        const startTime = cat.dayStartTime || '09:00'
+        const endTime = cat.dayEndTime || '18:00'
+
+        // Parse hours/minutes
+        const [startH, startM] = startTime.split(':').map(Number)
+        const [endH, endM] = endTime.split(':').map(Number)
+        const startMinutes = startH * 60 + startM
+        const endMinutes = endH * 60 + endM
+
+        // Get games for this category, update their scheduledTime
+        const games = await prisma.game.findMany({
+          where: { tournamentId: params.id, categoryId: cat.id },
+          orderBy: { scheduledTime: 'asc' },
+        })
+
+        if (games.length > 0) {
+          const slotDuration = games.length > 1
+            ? Math.floor((endMinutes - startMinutes) / games.length)
+            : endMinutes - startMinutes
+
+          // Base date: tournament date + (dayNum - 1) days
+          const baseDate = new Date(tournament.date)
+          baseDate.setDate(baseDate.getDate() + dayNum - 1)
+
+          for (let i = 0; i < games.length; i++) {
+            const gameMinutes = startMinutes + i * slotDuration
+            const gameDate = new Date(baseDate)
+            gameDate.setHours(Math.floor(gameMinutes / 60), gameMinutes % 60, 0, 0)
+
+            await prisma.game.update({
+              where: { id: games[i].id },
+              data: { scheduledTime: gameDate },
+            })
+          }
+        }
+      }
+    }
+
     // Detect conflicts (requires scheduled games with time slots)
     const conflicts = await detectConflicts(params.id)
 

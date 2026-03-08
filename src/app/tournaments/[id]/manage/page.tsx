@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import DayAssignment from '@/components/tournament/DayAssignment';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 interface CategoryInfo {
@@ -619,6 +620,9 @@ export default function ManageTournamentPage() {
             )}
           </div>
         )}
+
+        {/* Multi-Day Assignment */}
+        <DayAssignment tournamentId={tournamentId} />
 
         {/* Generate Schedule */}
         {(tournament.status === 'registration' || tournament.status === 'draft') && (
