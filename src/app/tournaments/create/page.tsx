@@ -512,7 +512,17 @@ export default function CreateTournamentPage() {
           )}
 
           {/* ─── STEP 4: Capacity Calculator ─── */}
-          {currentStep === 3 && (
+          {currentStep === 3 && (() => {
+            const maxTeams = capacity.maxTeams;
+            const allocated = categories.reduce((s, c) => s + c.maxTeams, 0);
+            const over = allocated > maxTeams;
+            // Calculate recommended max per category (proportional to current allocation)
+            const recCategories = categories.map(c => {
+              const ratio = allocated > 0 ? c.maxTeams / allocated : 1 / categories.length;
+              const rec = Math.max(2, Math.floor(ratio * maxTeams));
+              return { ...c, recommended: rec };
+            });
+            return (
             <div className="space-y-6">
               <CapacityCalculator
                 courts={formData.numCourts}
@@ -521,14 +531,87 @@ export default function CreateTournamentPage() {
                 hoursPerDay={formData.hoursPerDay}
                 avgGameMinutes={formData.avgGameMinutes}
               />
-              <div className="bg-slate-800/40 border border-slate-600/30 rounded-lg p-4 text-center">
-                <p className="text-sm text-slate-400">
-                  Need to adjust? Go back to <button type="button" onClick={() => setCurrentStep(2)}
-                    className="text-blue-400 underline hover:text-blue-300">Infrastructure</button> to change values.
-                </p>
+
+              {/* Category allocation with inline editing */}
+              <div className={over ? 'bg-red-500/10 border border-red-400/30 rounded-xl p-6' : `${cardClass}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`text-lg font-semibold ${over ? 'text-red-300' : 'text-white'}`}>
+                    {over ? '⚠️ Over Capacity — Adjust Teams' : '✅ Category Allocation'}
+                  </h3>
+                  <span className={`text-sm font-bold ${over ? 'text-red-400' : 'text-cyan-400'}`}>
+                    {allocated} / {maxTeams} teams
+                  </span>
+                </div>
+
+                {over && (
+                  <p className="text-sm text-red-300/80 mb-4">
+                    You have <strong>{allocated - maxTeams} more teams</strong> than your infrastructure supports. Adjust below or go back to add more courts/days.
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  {recCategories.map((cat, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-800/50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{cat.name}</p>
+                        <p className="text-xs text-slate-500">{cat.format}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {over && cat.maxTeams > cat.recommended && (
+                          <button type="button"
+                            onClick={() => {
+                              const updated = [...categories];
+                              updated[i] = { ...updated[i], maxTeams: cat.recommended };
+                              setCategories(updated);
+                            }}
+                            className="px-2 py-1 text-xs bg-cyan-600/20 border border-cyan-400/30 text-cyan-300 rounded hover:bg-cyan-600/30 transition whitespace-nowrap">
+                            → {cat.recommended}
+                          </button>
+                        )}
+                        <input
+                          type="number"
+                          value={cat.maxTeams}
+                          onChange={(e) => {
+                            const updated = [...categories];
+                            updated[i] = { ...updated[i], maxTeams: Math.max(2, parseInt(e.target.value) || 2) };
+                            setCategories(updated);
+                          }}
+                          min={2} max={256}
+                          className="w-16 px-2 py-1 text-sm text-center bg-slate-700/50 border border-slate-600/50 rounded text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {over && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button"
+                      onClick={() => {
+                        setCategories(recCategories.map((c, i) => ({ ...categories[i], maxTeams: c.recommended })));
+                      }}
+                      className="px-4 py-2 text-sm bg-cyan-600/20 border border-cyan-400/30 text-cyan-300 rounded-lg hover:bg-cyan-600/30 transition">
+                      ✨ Apply All Recommendations
+                    </button>
+                    <button type="button" onClick={() => setCurrentStep(2)}
+                      className="px-4 py-2 text-sm bg-slate-700/50 border border-slate-600/50 text-slate-300 rounded-lg hover:bg-slate-700 transition">
+                      ← Adjust Infrastructure
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {!over && (
+                <div className="bg-slate-800/40 border border-slate-600/30 rounded-lg p-4 text-center">
+                  <p className="text-sm text-slate-400">
+                    Need to adjust? Go back to <button type="button" onClick={() => setCurrentStep(2)}
+                      className="text-blue-400 underline hover:text-blue-300">Infrastructure</button> to change values.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+            );
+          })()}
 
           {/* ─── STEP 5: Payment & Confirmation ─── */}
           {currentStep === 4 && (
