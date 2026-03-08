@@ -45,6 +45,8 @@ export const createTournamentSchema = z.object({
   contactPhone: z.string().optional(),
   numReferees: z.number().int().min(1).max(50).optional(),
   primaryCourts: z.string().optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   // Inline categories (created with tournament)
   categories: z.array(categoryInlineSchema).optional(),
 })
@@ -61,6 +63,8 @@ export const updateTournamentSchema = z.object({
   bannerUrl: z.string().optional(),
   contactEmail: z.string().email().optional(),
   contactPhone: z.string().optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
 })
 
 export type CreateTournamentData = z.infer<typeof createTournamentSchema>

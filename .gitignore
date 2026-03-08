@@ -39,3 +39,4 @@ prisma/dev.db-journal
 *.swp
 *.swo
 *~
+migrate-nfa-austin.ts

@@ -25,6 +25,8 @@ interface FormData {
   numDays: number;
   hoursPerDay: number;
   avgGameMinutes: number;
+  startTime: string;
+  endTime: string;
   // Step 4 — Categories
   allowMultiCategory: boolean;
   // Step 5 — Payment & Contact
@@ -85,6 +87,8 @@ export default function CreateTournamentPage() {
     numDays: 1,
     hoursPerDay: 9,
     avgGameMinutes: 20,
+    startTime: '09:00',
+    endTime: '18:00',
     allowMultiCategory: false,
     stripeConnect: false,
     venmoHandle: '',
@@ -157,6 +161,8 @@ export default function CreateTournamentPage() {
       numDays: 2,
       hoursPerDay: 9,
       avgGameMinutes: 20,
+      startTime: '09:00',
+      endTime: '18:00',
     }));
     setActiveTemplate('nfa');
   };
@@ -240,6 +246,8 @@ export default function CreateTournamentPage() {
         avgGameDuration: formData.avgGameMinutes,
         numReferees: formData.numReferees,
         primaryCourts: JSON.stringify(formData.primaryCourts),
+        startTime: formData.startTime,
+        endTime: formData.endTime,
         allowMultiCategory: categories.length > 1 || formData.allowMultiCategory,
         venmoHandle: formData.venmoHandle || undefined,
         zelleInfo: formData.zelleInfo || undefined,
@@ -538,6 +546,18 @@ export default function CreateTournamentPage() {
                     {errors.avgGameMinutes && <p className="text-red-400 text-sm mt-1">{errors.avgGameMinutes}</p>}
                   </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className={labelClass}>Start Time</label>
+                    <input type="time" name="startTime" value={formData.startTime} onChange={handleChange}
+                      className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>End Time (last game must finish by)</label>
+                    <input type="time" name="endTime" value={formData.endTime} onChange={handleChange}
+                      className={inputClass} />
+                  </div>
+                </div>
               </div>
 
               {/* Mini preview */}
@@ -712,6 +732,7 @@ export default function CreateTournamentPage() {
                   <p><strong>Location:</strong> {[formData.location, formData.city, formData.state, formData.country].filter(Boolean).join(', ') || '—'}</p>
                   <p><strong>Dates:</strong> {formData.startDate || '—'} → {formData.endDate || '—'}</p>
                   <p><strong>Infrastructure:</strong> {formData.numCourts} courts, {formData.numReferees} referees, {formData.numDays} day{formData.numDays !== 1 ? 's' : ''}, {formData.hoursPerDay}h/day</p>
+                  <p><strong>Schedule:</strong> {formData.startTime} — {formData.endTime}</p>
                   {formData.primaryCourts.length > 0 && <p><strong>🏟️ Center Court{formData.primaryCourts.length > 1 ? 's' : ''}:</strong> {formData.primaryCourts.sort((a,b) => a-b).join(', ')}</p>}
                   <p><strong>Capacity:</strong> {capacity.total} games, ~{capacity.maxTeams} max teams</p>
                   <p><strong>Categories:</strong> {categories.length}</p>

@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/shared/database/prisma'
 import { allocateTimeSlots } from '@/lib/timeSlotAllocator'
-import { detectConflicts, resolveConflicts } from '@/lib/multiCategoryScheduler'
 
 export async function POST(
   _req: NextRequest,
@@ -25,26 +24,13 @@ export async function POST(
     }
 
     if (tournament.organizerId !== session.user.id) {
-      return NextResponse.json({ error: 'Only the organizer can optimize the schedule' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the organizer can allocate time slots' }, { status: 403 })
     }
 
-    // 1. Allocate time slots
     const slots = await allocateTimeSlots(params.id)
-
-    // 2. Detect conflicts
-    const conflicts = await detectConflicts(params.id)
-
-    // 3. Resolve conflicts
-    const result = await resolveConflicts(params.id)
-
-    return NextResponse.json({
-      slots,
-      conflicts,
-      resolved: result.resolved,
-      unresolved: result.unresolved.length,
-    })
+    return NextResponse.json({ slots })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to optimize schedule'
+    const message = error instanceof Error ? error.message : 'Failed to allocate time slots'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

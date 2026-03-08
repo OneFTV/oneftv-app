@@ -72,6 +72,8 @@ model Tournament {
   bannerUrl          String? @db.Text
   contactEmail       String?
   contactPhone       String?
+  startTime          String?  @db.VarChar(5) // e.g. "09:00"
+  endTime            String?  @db.VarChar(5) // e.g. "18:00"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

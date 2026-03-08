@@ -45,6 +45,8 @@ export class TournamentService {
       bannerUrl: input.bannerUrl,
       contactEmail: input.contactEmail,
       contactPhone: input.contactPhone,
+      startTime: input.startTime,
+      endTime: input.endTime,
     }
 
     const tournament = await TournamentRepository.create(data)

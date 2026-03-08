@@ -65,6 +65,8 @@ export interface CreateTournamentInput {
   contactPhone?: string
   numReferees?: number
   primaryCourts?: string
+  startTime?: string
+  endTime?: string
   // Inline categories
   categories?: {
     name: string
@@ -94,4 +96,6 @@ export interface UpdateTournamentInput {
   bannerUrl?: string
   contactEmail?: string
   contactPhone?: string
+  startTime?: string
+  endTime?: string
 }

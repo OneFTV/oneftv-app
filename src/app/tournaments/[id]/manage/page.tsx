@@ -620,6 +620,13 @@ export default function ManageTournamentPage() {
               className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50">
               {generating ? 'Generating...' : 'Generate Schedule (All Categories)'}
             </button>
+            {games.length > 0 && (
+              <Link href={`/tournaments/${tournamentId}/conflicts`}
+                className="ml-4 inline-flex items-center gap-2 px-5 py-3 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition">
+                <AlertCircle size={16} />
+                Review Conflicts
+              </Link>
+            )}
           </div>
         )}
 
