@@ -97,13 +97,44 @@ export class SchedulingService {
     }
 
     // Check if this category is eligible for NFA cascade divisions (Open + DE + enough teams)
-    const teamCount = category.TournamentPlayer.length
+    const teamCount = Math.floor(category.TournamentPlayer.length / 2) // teams = players / 2
     if (this.isCascadeEligible(category.name || '', category.format, teamCount)) {
       // Generate cascade divisions (D1/D2/D3) — creates child categories
       try {
-        await this.generateCascadeInternal(category.Tournament.id, categoryId, teamCount)
+        const cascadeResult = await this.generateCascadeInternal(category.Tournament.id, categoryId, teamCount)
+
+        // Generate D1 bracket (the main Open category)
+        await this.generateForCategoryInternal(
+          category.Tournament.id,
+          categoryId,
+          category.format,
+          category.groupSize,
+          category.proLeague
+        )
+        await this.assignCourts(category.Tournament.id, category.Tournament.numCourts, null, categoryId)
+        await SchedulingRepository.updateCategoryStatus(categoryId, 'in_progress')
+
+        // Generate D3 bracket (empty — teams come from D1 losers)
+        if (cascadeResult.d3CategoryId) {
+          const d3Cat = await SchedulingRepository.getCategoryForGeneration(cascadeResult.d3CategoryId)
+          if (d3Cat) {
+            await this.generateEmptyDivisionBracket(category.Tournament.id, cascadeResult.d3CategoryId, cascadeResult.d3Games > 16 ? 32 : 16, 'D3')
+            await SchedulingRepository.updateCategoryStatus(cascadeResult.d3CategoryId, 'draft')
+          }
+        }
+
+        // Generate D2 bracket (empty — teams come from D1 losers)
+        if (cascadeResult.d2CategoryId) {
+          const d2Cat = await SchedulingRepository.getCategoryForGeneration(cascadeResult.d2CategoryId)
+          if (d2Cat) {
+            await this.generateEmptyDivisionBracket(category.Tournament.id, cascadeResult.d2CategoryId, 8, 'D2')
+            await SchedulingRepository.updateCategoryStatus(cascadeResult.d2CategoryId, 'draft')
+          }
+        }
+
+        return SchedulingRepository.getTournamentWithSchedule(category.Tournament.id)
       } catch (e) {
-        console.warn('Cascade generation skipped:', e)
+        console.warn('Cascade generation skipped, falling back to regular DE:', e)
       }
     }
 
@@ -119,7 +150,7 @@ export class SchedulingService {
     await this.assignCourts(
       category.Tournament.id,
       category.Tournament.numCourts,
-      null, // primaryCourts not on category query; fetch from tournament
+      null,
       categoryId
     )
 
@@ -331,21 +362,51 @@ export class SchedulingService {
     category: NonNullable<Awaited<ReturnType<typeof SchedulingRepository.getCategoryForGeneration>>>
   ) {
     // Get team registrations for this category, ordered by seed
-    const teamRegs = await SchedulingRepository.getTeamRegistrations(categoryId)
+    let teamRegs = await SchedulingRepository.getTeamRegistrations(categoryId)
+
+    // Fallback: if no TeamRegistration, create synthetic teams from TournamentPlayer
+    if (teamRegs.length === 0 && category.TournamentPlayer.length >= 2) {
+      const players = [...category.TournamentPlayer].sort(() => Math.random() - 0.5)
+      const syntheticTeams: typeof teamRegs = []
+      for (let i = 0; i < players.length; i += 2) {
+        const p1 = players[i]
+        const p2 = players[i + 1]
+        if (!p2) break // odd player out — skip
+        syntheticTeams.push({
+          id: `syn-${categoryId}-${Math.floor(i / 2)}`,
+          player1Id: p1.userId,
+          player2Id: p2.userId,
+          seed: Math.floor(i / 2) + 1,
+          teamName: null,
+          status: 'confirmed',
+        })
+      }
+      teamRegs = syntheticTeams
+    }
+
     const teamIds = teamRegs.map((t) => t.id)
 
     let templates: DEGameTemplate[]
 
     // Determine bracket type based on team count and category metadata
-    if (teamIds.length === 32) {
+    // Allow flexible team counts by rounding up to nearest bracket size
+    const teamCount = teamIds.length
+    if (teamCount >= 17 && teamCount <= 32) {
+      // Pad to 32 with byes
+      while (teamIds.length < 32) teamIds.push(`bye-${teamIds.length}`)
       templates = generateD1Bracket(teamIds)
-    } else if (teamIds.length === 16) {
+    } else if (teamCount >= 9 && teamCount <= 16) {
+      while (teamIds.length < 16) teamIds.push(`bye-${teamIds.length}`)
       templates = generateD3Bracket(teamIds)
-    } else if (teamIds.length === 8) {
+    } else if (teamCount >= 4 && teamCount <= 8) {
+      while (teamIds.length < 8) teamIds.push(`bye-${teamIds.length}`)
       templates = generateD2Bracket(teamIds)
+    } else if (teamCount === 0) {
+      // Empty bracket (for D2/D3 that start with no teams)
+      return
     } else {
       throw new ValidationError(
-        `Double elimination requires 8, 16, or 32 teams. Got ${teamIds.length}.`
+        `Double elimination requires at least 4 teams. Got ${teamCount}.`
       )
     }
 
@@ -604,6 +665,92 @@ export class SchedulingService {
       openCategoryId: categoryId,
       teamCount: teamRegs.length,
     })
+  }
+
+  /**
+   * Generate an empty division bracket (D2/D3) — structure only, no players assigned.
+   * Teams will be populated as D1 losers cascade down.
+   */
+  private static async generateEmptyDivisionBracket(
+    tournamentId: string,
+    categoryId: string,
+    teamSlots: number,
+    division: 'D2' | 'D3'
+  ) {
+    const emptyTeamIds = Array.from({ length: teamSlots }, (_, i) => `empty-${division}-${i}`)
+    let templates: DEGameTemplate[]
+
+    if (division === 'D3') {
+      templates = generateD3Bracket(emptyTeamIds)
+    } else {
+      templates = generateD2Bracket(emptyTeamIds)
+    }
+
+    const roundDefs = collectRounds(templates)
+    const roundIdMap = new Map<string, string>()
+
+    for (const rd of roundDefs) {
+      const round = await SchedulingRepository.createRound({
+        name: rd.roundLabel,
+        roundNumber: rd.roundNumber,
+        tournamentId,
+        type: 'knockout',
+        categoryId,
+        bracketSide: rd.bracketSide,
+      })
+      roundIdMap.set(rd.roundLabel, round.id)
+    }
+
+    const matchToGameId = new Map<number, string>()
+
+    for (const t of templates) {
+      const roundId = roundIdMap.get(t.roundLabel)!
+      const game = await SchedulingRepository.createGameDE({
+        tournamentId,
+        roundId,
+        courtNumber: 1,
+        player1HomeId: null,
+        player2HomeId: null,
+        player1AwayId: null,
+        player2AwayId: null,
+        status: 'scheduled',
+        categoryId,
+        matchNumber: t.matchNumber,
+        bracketSide: t.bracketSide,
+        seedTarget: t.seedTarget,
+      })
+      matchToGameId.set(t.matchNumber, game.id)
+    }
+
+    // Wire up routing
+    for (const t of templates) {
+      const gameId = matchToGameId.get(t.matchNumber)!
+      const routingData: {
+        winnerNextGameId?: string
+        winnerSlot?: string
+        loserNextGameId?: string
+        loserSlot?: string
+      } = {}
+
+      if (t.winnerGoesTo) {
+        const nextId = matchToGameId.get(t.winnerGoesTo)
+        if (nextId) {
+          routingData.winnerNextGameId = nextId
+          routingData.winnerSlot = t.winnerSlot
+        }
+      }
+      if (t.loserGoesTo) {
+        const nextId = matchToGameId.get(t.loserGoesTo)
+        if (nextId) {
+          routingData.loserNextGameId = nextId
+          routingData.loserSlot = t.loserSlot
+        }
+      }
+
+      if (Object.keys(routingData).length > 0) {
+        await SchedulingRepository.updateGameRouting(gameId, routingData)
+      }
+    }
   }
 
   /**
