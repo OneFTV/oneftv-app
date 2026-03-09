@@ -3,24 +3,24 @@
  *
  * In NFA tournaments, the "Open" category uses a cascade elimination system:
  * - ALL teams start in Division 1 (double elimination)
- * - Teams eliminated EARLY from D1 losers bracket → fall to Division 3 (single elimination)
- * - Teams eliminated LATER from D1 losers bracket → fall to Division 2 (double elimination)
+ * - Teams eliminated EARLY from D1 losers bracket → fall to lower divisions
  * - Teams surviving D1 play through to D1 Finals
  *
- * Based on NFA Orlando reference data (32 teams):
- * - D1: 32 teams, 62 games (double elimination)
- * - D3: 16 teams from L1/L2 losers, 16 games (single elimination)
- * - D2: 8 teams from L3/L4 losers, 14 games (double elimination)
- * - Total: 92 games
+ * Supports 1-4 division configurations:
+ *
+ * 4-division (32 teams): D1(32 DE) → D4(8 SE from L1) + D3(8 SE from L2) + D2(8 DE from L3+L4)
+ * 3-division (32 teams): D1(32 DE) → D3(16 SE from L1+L2) + D2(8 DE from L3+L4) [default]
+ * 2-division (32 teams): D1(32 DE) → D2(8 DE from L3+L4)
+ * 1-division (32 teams): D1(32 DE) only — no cascade
  */
 
 import { prisma } from '@/shared/database/prisma'
-import { SchedulingService } from '@/modules/scheduling/scheduling.service'
 
 export interface CascadeConfig {
   tournamentId: string
-  openCategoryId: string  // The main Open category (will become D1)
-  teamCount: number       // Total teams in Open
+  openCategoryId: string    // The main Open category (will become D1)
+  teamCount: number         // Total teams in Open
+  openDivisionCount?: number // Number of open divisions (1-4, default: 3)
 }
 
 export interface CascadeDivisionConfig {
@@ -28,7 +28,7 @@ export interface CascadeDivisionConfig {
   d3MinTeams: number
   /** Min teams to create D2 */
   d2MinTeams: number
-  /** For a given team count, how many teams cascade to D3 */
+  /** For a given team count, how many teams cascade to D3 (3-div mode) */
   d3TeamCount: (totalTeams: number) => number
   /** For a given team count, how many teams cascade to D2 */
   d2TeamCount: (totalTeams: number) => number
@@ -55,10 +55,13 @@ export interface CascadeResult {
   d1CategoryId: string
   d2CategoryId: string | null
   d3CategoryId: string | null
+  d4CategoryId: string | null
   d1Games: number
   d2Games: number
   d3Games: number
+  d4Games: number
   totalGames: number
+  openDivisionCount: number
 }
 
 /**
@@ -66,12 +69,12 @@ export interface CascadeResult {
  *
  * This will:
  * 1. Rename the Open category to "Open Division 1" and set division metadata
- * 2. Create "Open Division 3" category (if applicable) for early losers
- * 3. Create "Open Division 2" category (if applicable) for later losers
- * 4. Generate brackets for all divisions
+ * 2. Optionally create "Open Division 4" category (4-div only, L1 losers)
+ * 3. Create "Open Division 3" category (if applicable) for early losers
+ * 4. Create "Open Division 2" category (if applicable) for later losers
  * 5. Wire up cross-division loser routing via seedTarget on D1 games
  *
- * Note: D2/D3 brackets are created with placeholder (empty) team slots.
+ * Note: D2/D3/D4 brackets are created with placeholder (empty) team slots.
  * Teams get populated as D1 games complete and losers cascade down.
  */
 export async function generateNFACascade(
@@ -79,6 +82,8 @@ export async function generateNFACascade(
   divisionConfig: CascadeDivisionConfig = DEFAULT_CASCADE_CONFIG
 ): Promise<CascadeResult> {
   const { tournamentId, openCategoryId, teamCount } = config
+  // Clamp openDivisionCount to valid range 1-4
+  const divisionCount = Math.max(1, Math.min(4, config.openDivisionCount ?? 3))
 
   // Validate the source category exists
   const openCategory = await prisma.category.findUnique({
@@ -107,16 +112,65 @@ export async function generateNFACascade(
     throw new Error('Need at least 4 teams for double elimination. No cascade needed.')
   }
 
-  // Determine what divisions to create
-  const d3Teams = divisionConfig.d3TeamCount(actualTeamCount)
-  const d2Teams = divisionConfig.d2TeamCount(actualTeamCount)
-  const createD3 = d3Teams > 0 && actualTeamCount >= divisionConfig.d3MinTeams
-  const createD2 = d2Teams > 0 && actualTeamCount >= divisionConfig.d2MinTeams
+  // Determine what divisions to create based on divisionCount
+  let d2Teams = 0
+  let d3Teams = 0
+  let d4Teams = 0
 
-  // If no cascade needed, just do regular double elimination
-  if (!createD3 && !createD2) {
+  if (divisionCount === 4) {
+    // 4-div: L1→D4(8 SE), L2→D3(8 SE), L3+L4→D2(8 DE)
+    d4Teams = 8
+    d3Teams = 8
+    d2Teams = divisionConfig.d2TeamCount(actualTeamCount)
+  } else if (divisionCount === 3) {
+    // 3-div: L1+L2→D3(16 SE), L3+L4→D2(8 DE)
+    d3Teams = divisionConfig.d3TeamCount(actualTeamCount)
+    d2Teams = divisionConfig.d2TeamCount(actualTeamCount)
+  } else if (divisionCount === 2) {
+    // 2-div: L3+L4→D2(8 DE) only
+    d2Teams = divisionConfig.d2TeamCount(actualTeamCount)
+  }
+  // divisionCount === 1: no cascade divisions
+
+  const createD4 = divisionCount === 4 && d4Teams > 0
+  const createD3 = divisionCount >= 3 && d3Teams > 0 && actualTeamCount >= divisionConfig.d3MinTeams
+  const createD2 = divisionCount >= 2 && d2Teams > 0 && actualTeamCount >= divisionConfig.d2MinTeams
+
+  // For divisionCount === 1: just set D1 metadata, no cascade
+  if (divisionCount === 1) {
+    await prisma.category.update({
+      where: { id: openCategoryId },
+      data: {
+        name: `${openCategory.name} - Division 1`,
+        format: 'double_elimination',
+        bracketType: 'double_elimination',
+        divisionLabel: 'D1',
+        seedingSource: 'main_entry',
+      },
+    })
+    await prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { openDivisionCount: divisionCount },
+    })
+    const d1Games = calculateDEGames(actualTeamCount)
+    return {
+      d1CategoryId: openCategoryId,
+      d2CategoryId: null,
+      d3CategoryId: null,
+      d4CategoryId: null,
+      d1Games,
+      d2Games: 0,
+      d3Games: 0,
+      d4Games: 0,
+      totalGames: d1Games,
+      openDivisionCount: divisionCount,
+    }
+  }
+
+  // For divisionCount >= 2, we need at least D2
+  if (!createD2 && !createD3 && !createD4) {
     throw new Error(
-      `Team count (${actualTeamCount}) too small for cascade. Use regular double elimination.`
+      `Team count (${actualTeamCount}) too small for ${divisionCount}-division cascade. Use regular double elimination.`
     )
   }
 
@@ -132,6 +186,12 @@ export async function generateNFACascade(
     },
   })
 
+  // Update tournament openDivisionCount
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { openDivisionCount: divisionCount },
+  })
+
   // Step 2: Get the max sortOrder for categories in this tournament
   const maxSort = await prisma.category.aggregate({
     where: { tournamentId },
@@ -139,9 +199,34 @@ export async function generateNFACascade(
   })
   let nextSort = (maxSort._max.sortOrder ?? 0) + 1
 
-  // Step 3: Create D3 category (early losers — single elimination)
+  // Step 3: Create D4 category (4-div only — L1 losers, 8-team single elimination)
+  let d4CategoryId: string | null = null
+  if (createD4) {
+    const d4 = await prisma.category.create({
+      data: {
+        tournamentId,
+        name: `${openCategory.name} - Division 4`,
+        format: 'double_elimination',
+        gender: openCategory.gender,
+        skillLevel: openCategory.skillLevel,
+        maxTeams: d4Teams,
+        pointsPerSet: openCategory.pointsPerSet,
+        numSets: openCategory.numSets,
+        sortOrder: nextSort++,
+        status: 'draft',
+        bracketType: 'single_elimination',
+        divisionLabel: 'D4',
+        seedingSource: 'D1_L1',
+        seedingFromCategoryId: openCategoryId,
+      },
+    })
+    d4CategoryId = d4.id
+  }
+
+  // Step 4: Create D3 category (early losers — single elimination)
   let d3CategoryId: string | null = null
   if (createD3) {
+    const seedingSource = divisionCount === 4 ? 'D1_L2' : 'D1_L1_L2'
     const d3 = await prisma.category.create({
       data: {
         tournamentId,
@@ -156,14 +241,14 @@ export async function generateNFACascade(
         status: 'draft',
         bracketType: 'single_elimination',
         divisionLabel: 'D3',
-        seedingSource: 'D1_L1_L2',
+        seedingSource,
         seedingFromCategoryId: openCategoryId,
       },
     })
     d3CategoryId = d3.id
   }
 
-  // Step 4: Create D2 category (later losers — double elimination)
+  // Step 5: Create D2 category (later losers — double elimination)
   let d2CategoryId: string | null = null
   if (createD2) {
     const d2 = await prisma.category.create({
@@ -187,15 +272,9 @@ export async function generateNFACascade(
     d2CategoryId = d2.id
   }
 
-  // Step 5: Generate D1 bracket (this uses the existing scheduling service)
-  // The D1 bracket generation already sets seedTarget on loser exits
-  // (e.g., "D3-S1", "D2-S5") via the double-elimination.ts generator
-  // We just need to make sure the category has the right format
-  // The actual bracket generation happens via SchedulingService.generateSchedule
-
   // Calculate expected game counts
-  // D1 (32 teams): 62 games, D3 (16 teams SE): 16 games, D2 (8 teams DE): 14 games
   const d1Games = calculateDEGames(actualTeamCount)
+  const d4Games = createD4 ? calculateSEGames(d4Teams) : 0
   const d3Games = createD3 ? calculateSEGames(d3Teams) : 0
   const d2Games = createD2 ? calculateDEGames(d2Teams) : 0
 
@@ -203,16 +282,18 @@ export async function generateNFACascade(
     d1CategoryId: openCategoryId,
     d2CategoryId,
     d3CategoryId,
+    d4CategoryId,
     d1Games,
     d2Games,
     d3Games,
-    totalGames: d1Games + d2Games + d3Games,
+    d4Games,
+    totalGames: d1Games + d2Games + d3Games + d4Games,
+    openDivisionCount: divisionCount,
   }
 }
 
 /**
  * Calculate number of games in a double elimination bracket.
- * Formula: 2N - 2 (minimum) to 2N - 1 (with grand final reset)
  * For NFA we use the fixed structure from the visual references.
  */
 function calculateDEGames(teamCount: number): number {
@@ -220,7 +301,6 @@ function calculateDEGames(teamCount: number): number {
   if (teamCount === 16) return 30
   if (teamCount === 8) return 14
   if (teamCount === 4) return 6
-  // Generic formula: approximately 2n - 1
   return teamCount * 2 - 1
 }
 
@@ -229,7 +309,6 @@ function calculateDEGames(teamCount: number): number {
  * Formula: N - 1 games + 1 bronze = N
  */
 function calculateSEGames(teamCount: number): number {
-  // N-1 games + bronze match
   return teamCount
 }
 

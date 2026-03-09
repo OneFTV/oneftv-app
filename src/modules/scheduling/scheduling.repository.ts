@@ -12,6 +12,7 @@ export class SchedulingRepository {
         proLeague: true,
         numCourts: true,
         primaryCourts: true,
+        openDivisionCount: true,
         User: { select: { id: true } },
         TournamentPlayer: { select: { id: true, userId: true, categoryId: true } },
         Category: { select: { id: true, name: true, format: true, maxTeams: true, pointsPerSet: true, groupSize: true, proLeague: true } },
@@ -24,7 +25,7 @@ export class SchedulingRepository {
       where: { id: categoryId },
       include: {
         Tournament: {
-          select: { id: true, organizerId: true, numCourts: true },
+          select: { id: true, organizerId: true, numCourts: true, openDivisionCount: true },
         },
         TournamentPlayer: {
           where: { categoryId },

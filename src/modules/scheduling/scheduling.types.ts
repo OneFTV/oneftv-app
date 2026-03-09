@@ -61,7 +61,7 @@ export interface DEGameTemplate {
 
 export interface DEBracketStructure {
   games: DEGameTemplate[]
-  division: 'D1' | 'D2' | 'D3'
+  division: 'D1' | 'D2' | 'D3' | 'D4'
   bracketType: 'double_elimination' | 'single_elimination'
   matchOffset: number      // starting matchNumber for this division
 }

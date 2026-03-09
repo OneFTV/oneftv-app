@@ -111,6 +111,7 @@ model Game {
   loserSlot                              String?    @db.VarChar(10)
   matchNumber                            Int?
   seedTarget                             String?    @db.VarChar(10)
+  displayMatchNumber                     Int?
   winnerNextGameId                       String?
   winnerSlot                             String?    @db.VarChar(10)
   Category                               Category?  @relation(fields: [categoryId], references: [id])
@@ -323,6 +324,7 @@ model Tournament {
   venmoHandle            String?
   zelleInfo              String?
   primaryCourts          String?            @db.Text
+  openDivisionCount      Int                @default(3)
   endTime                String?            @db.VarChar(5)
   startTime              String?            @db.VarChar(5)
   acceptedPaymentMethods String?            @db.Text

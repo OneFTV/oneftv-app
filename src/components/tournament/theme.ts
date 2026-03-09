@@ -77,6 +77,19 @@ export interface TournamentTheme {
   sectionHeaderFinals: string;
   sectionDivider: string;
   matchNumberBadge: string;
+
+  // NFA bracket
+  nfaCascadeBadgeBg: string;
+  nfaCascadeBadgeText: string;
+  nfaCrossBadgeBg: string;
+  nfaCrossBadgeText: string;
+  nfaDivisionD1: string;
+  nfaDivisionD2: string;
+  nfaDivisionD3: string;
+  nfaDivisionD4: string;
+  nfaScheduleCardBg: string;
+  nfaTabActiveBg: string;
+  nfaTabInactiveBg: string;
 }
 
 export const lightTheme: TournamentTheme = {
@@ -158,6 +171,19 @@ export const lightTheme: TournamentTheme = {
   sectionHeaderFinals: 'bg-amber-500 text-white',
   sectionDivider: 'border-slate-600/50',
   matchNumberBadge: 'bg-slate-700/30 text-slate-400',
+
+  // NFA bracket
+  nfaCascadeBadgeBg: 'bg-slate-700/50',
+  nfaCascadeBadgeText: 'text-slate-300',
+  nfaCrossBadgeBg: 'bg-amber-500/20',
+  nfaCrossBadgeText: 'text-amber-400',
+  nfaDivisionD1: 'bg-blue-500',
+  nfaDivisionD2: 'bg-purple-500',
+  nfaDivisionD3: 'bg-emerald-500',
+  nfaDivisionD4: 'bg-rose-500',
+  nfaScheduleCardBg: 'bg-slate-800/30',
+  nfaTabActiveBg: 'bg-footvolley-primary text-white',
+  nfaTabInactiveBg: 'bg-slate-700/30 text-slate-400 hover:bg-slate-600/30',
 };
 
 export const darkTheme: TournamentTheme = {
@@ -239,4 +265,17 @@ export const darkTheme: TournamentTheme = {
   sectionHeaderFinals: 'bg-amber-600 text-white',
   sectionDivider: 'border-dark-border',
   matchNumberBadge: 'bg-dark-elevated text-gray-500',
+
+  // NFA bracket
+  nfaCascadeBadgeBg: 'bg-dark-elevated',
+  nfaCascadeBadgeText: 'text-gray-400',
+  nfaCrossBadgeBg: 'bg-amber-600/20',
+  nfaCrossBadgeText: 'text-amber-400',
+  nfaDivisionD1: 'bg-blue-600',
+  nfaDivisionD2: 'bg-purple-600',
+  nfaDivisionD3: 'bg-emerald-600',
+  nfaDivisionD4: 'bg-rose-600',
+  nfaScheduleCardBg: 'bg-dark-surface',
+  nfaTabActiveBg: 'bg-footvolley-primary text-white',
+  nfaTabInactiveBg: 'bg-dark-elevated text-gray-400 hover:bg-dark-divider',
 };

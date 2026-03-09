@@ -51,9 +51,10 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { categoryId, teamCount, config } = body as {
+    const { categoryId, teamCount, config, openDivisionCount } = body as {
       categoryId: string
       teamCount?: number
+      openDivisionCount?: number
       config?: { d3MinTeams?: number; d2MinTeams?: number }
     }
 
@@ -92,6 +93,7 @@ export async function POST(
         tournamentId: params.id,
         openCategoryId: categoryId,
         teamCount: teamCount ?? 0,
+        openDivisionCount: openDivisionCount ?? 3,
       },
       divisionConfig
     )

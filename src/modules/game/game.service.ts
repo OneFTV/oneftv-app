@@ -5,6 +5,16 @@ import { prisma } from '@/shared/database/prisma'
 import type { UpdateGameScoreInput, GameListItem } from './game.types'
 import type { BatchUpdateScoresData } from './game.schemas'
 
+// NFA seeding pairs for bracket placement (must match double-elimination.ts)
+const SEEDING_PAIRS_16: [number, number][] = [
+  [1, 16], [8, 9], [4, 13], [5, 12],
+  [2, 15], [7, 10], [3, 14], [6, 11],
+]
+
+const SEEDING_PAIRS_8: [number, number][] = [
+  [1, 8], [4, 5], [2, 7], [3, 6],
+]
+
 export class GameService {
   static async getById(id: string) {
     const game = await GameRepository.findById(id)
@@ -203,7 +213,8 @@ export class GameService {
 
   /**
    * Seed a losing team into another division (D2 or D3).
-   * Creates a TeamRegistration with status='seeded' in the target category.
+   * Creates a TeamRegistration with status='seeded' in the target category,
+   * then places the players into the correct first-round bracket game slot.
    */
   private static async handleCrossDivisionSeed(
     tournamentId: string,
@@ -264,5 +275,100 @@ export class GameService {
         })
       }
     }
+
+    // --- Place the team into the actual bracket game slot ---
+    await this.placeSeedInBracketGame(
+      targetCategory.id,
+      seedNumber,
+      player1Id,
+      player2Id
+    )
+  }
+
+  /**
+   * Given a seed number and target category, find the correct first-round
+   * bracket game and slot (home/away) using NFA seeding pairs, then update
+   * the game with the player IDs.
+   */
+  private static async placeSeedInBracketGame(
+    categoryId: string,
+    seedNumber: number,
+    player1Id: string,
+    player2Id: string
+  ) {
+    // Find all first-round winners-bracket games for the target category,
+    // ordered by matchNumber so index aligns with seeding pair index.
+    const firstRoundGames = await prisma.game.findMany({
+      where: {
+        categoryId,
+        bracketSide: 'winners',
+        Round: { roundNumber: 1 },
+      },
+      orderBy: { matchNumber: 'asc' },
+      select: { id: true, matchNumber: true },
+    })
+
+    if (firstRoundGames.length === 0) return
+
+    // Determine which seeding pair array to use based on bracket size
+    const bracketSize = firstRoundGames.length // number of first-round games
+    let seedingPairs: [number, number][]
+    if (bracketSize === 8) {
+      seedingPairs = SEEDING_PAIRS_16  // 16-team bracket has 8 first-round games
+    } else if (bracketSize === 4) {
+      seedingPairs = SEEDING_PAIRS_8   // 8-team bracket has 4 first-round games
+    } else {
+      console.warn(`[placeSeedInBracketGame] Unexpected bracket size: ${bracketSize} first-round games`)
+      return
+    }
+
+    // Find which game index and slot this seed maps to
+    let targetGameIndex: number | null = null
+    let targetSlot: 'home' | 'away' | null = null
+
+    for (let i = 0; i < seedingPairs.length; i++) {
+      const [homeSeed, awaySeed] = seedingPairs[i]
+      if (seedNumber === homeSeed) {
+        targetGameIndex = i
+        targetSlot = 'home'
+        break
+      }
+      if (seedNumber === awaySeed) {
+        targetGameIndex = i
+        targetSlot = 'away'
+        break
+      }
+    }
+
+    if (targetGameIndex === null || targetSlot === null) {
+      console.warn(`[placeSeedInBracketGame] Seed ${seedNumber} not found in seeding pairs`)
+      return
+    }
+
+    if (targetGameIndex >= firstRoundGames.length) {
+      console.warn(`[placeSeedInBracketGame] Game index ${targetGameIndex} exceeds available games (${firstRoundGames.length})`)
+      return
+    }
+
+    const targetGame = firstRoundGames[targetGameIndex]
+
+    // Update the target game with the player IDs in the correct slot
+    const updateData: Record<string, string> = {}
+    if (targetSlot === 'home') {
+      updateData.player1HomeId = player1Id
+      updateData.player2HomeId = player2Id
+    } else {
+      updateData.player1AwayId = player1Id
+      updateData.player2AwayId = player2Id
+    }
+
+    await prisma.game.update({
+      where: { id: targetGame.id },
+      data: updateData,
+    })
+
+    console.log(
+      `[placeSeedInBracketGame] Placed seed ${seedNumber} into game ${targetGame.matchNumber} (${targetSlot} slot)`
+    )
   }
 }
