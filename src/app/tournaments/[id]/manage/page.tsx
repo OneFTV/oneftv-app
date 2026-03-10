@@ -13,6 +13,7 @@ interface CategoryInfo {
   format: string;
   maxTeams: number;
   status: string;
+  divisionLabel?: string | null;
   _count: { TournamentPlayer: number; TeamRegistration: number };
 }
 
@@ -111,6 +112,7 @@ export default function ManageTournamentPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [generatingCategoryId, setGeneratingCategoryId] = useState<string | null>(null);
   const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
+  const [generatingCascade, setGeneratingCascade] = useState<string | null>(null);
 
   const originalScores = useRef<Record<string, SetScores>>({});
 
@@ -357,6 +359,36 @@ export default function ManageTournamentPage() {
     } finally {
       setGenerating(false);
       setGeneratingCategoryId(null);
+    }
+  };
+
+  const handleGenerateCascade = async (categoryId: string) => {
+    try {
+      setGeneratingCascade(categoryId);
+      setError(null);
+      const res = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-cascade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess('NFA Cascade generated! D1/D2/D3 divisions created.');
+        // Refresh tournament to pick up new categories
+        const tr = await fetch(`/api/tournaments/${tournamentId}`);
+        if (tr.ok) {
+          const tj = await tr.json();
+          setTournament(tj.data || tj);
+        }
+        await fetchGames();
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.error || 'Failed to generate NFA cascade');
+      }
+    } catch {
+      setError('Failed to generate NFA cascade');
+    } finally {
+      setGeneratingCascade(null);
     }
   };
 
@@ -627,6 +659,32 @@ export default function ManageTournamentPage() {
           numDays={tournament.startDate && tournament.endDate ? Math.max(1, Math.round((new Date(tournament.endDate).getTime() - new Date(tournament.startDate).getTime()) / 86400000) + 1) : 1}
           startDate={tournament.startDate || tournament.endDate}
         />
+
+        {/* NFA Cascade Generation */}
+        {tournament.Category && tournament.Category.some(cat =>
+          cat.format === 'double_elimination' &&
+          !cat.divisionLabel &&
+          ((cat._count?.TournamentPlayer || 0) > 0 || (cat._count?.TeamRegistration || 0) > 0)
+        ) && (
+          <div className="bg-slate-800/50 border border-purple-400/20 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-1">NFA Cascade Bracket</h2>
+            <p className="text-sm text-slate-400 mb-4">Generate D1/D2/D3 division structure for Open categories. This converts the Open bracket into a multi-division cascade system.</p>
+            <div className="flex flex-wrap gap-3">
+              {tournament.Category.filter(cat =>
+                cat.format === 'double_elimination' &&
+                !cat.divisionLabel &&
+                ((cat._count?.TournamentPlayer || 0) > 0 || (cat._count?.TeamRegistration || 0) > 0)
+              ).map(cat => (
+                <button key={cat.id}
+                  onClick={() => handleGenerateCascade(cat.id)}
+                  disabled={!!generatingCascade}
+                  className="px-4 py-2 text-sm font-semibold bg-purple-700/40 text-purple-200 border border-purple-400/40 rounded-lg hover:bg-purple-600/50 transition disabled:opacity-50">
+                  {generatingCascade === cat.id ? '⏳ Generating...' : `⚡ Generate NFA Cascade — ${cat.name}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Generate Schedule */}
         {(tournament.status === 'registration' || tournament.status === 'draft') && (
