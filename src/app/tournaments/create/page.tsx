@@ -231,7 +231,7 @@ export default function CreateTournamentPage() {
     const numericFields = ['numCourts', 'numReferees', 'numDays', 'hoursPerDay', 'avgGameMinutes'];
     setFormData((prev) => ({
       ...prev,
-      [name]: numericFields.includes(name) ? (parseInt(value, 10) || 0) : value,
+      [name]: numericFields.includes(name) ? (parseInt(value, 10) >= 0 ? parseInt(value, 10) : 0) : value,
     }));
     if (errors[name]) {
       setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
@@ -554,19 +554,19 @@ export default function CreateTournamentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className={labelClass}>Number of Days</label>
-                    <input type="number" name="numDays" value={formData.numDays} onChange={handleChange}
+                    <input type="number" name="numDays" value={formData.numDays || ''} onChange={handleChange}
                       min={1} max={14} className={inputClass} />
                     {errors.numDays && <p className="text-red-400 text-sm mt-1">{errors.numDays}</p>}
                   </div>
                   <div>
                     <label className={labelClass}>Hours per Day</label>
-                    <input type="number" name="hoursPerDay" value={formData.hoursPerDay} onChange={handleChange}
+                    <input type="number" name="hoursPerDay" value={formData.hoursPerDay || ''} onChange={handleChange}
                       min={1} max={16} className={inputClass} />
                     {errors.hoursPerDay && <p className="text-red-400 text-sm mt-1">{errors.hoursPerDay}</p>}
                   </div>
                   <div>
                     <label className={labelClass}>Avg Game Duration (min)</label>
-                    <input type="number" name="avgGameMinutes" value={formData.avgGameMinutes} onChange={handleChange}
+                    <input type="number" name="avgGameMinutes" value={formData.avgGameMinutes || ''} onChange={handleChange}
                       min={5} max={120} className={inputClass} />
                     {errors.avgGameMinutes && <p className="text-red-400 text-sm mt-1">{errors.avgGameMinutes}</p>}
                   </div>
@@ -711,8 +711,15 @@ export default function CreateTournamentPage() {
                 <div className="space-y-4">
                   <div>
                     <label className={labelClass}>Fee (USD)</label>
-                    <input type="number" name="registrationFee" value={formData.registrationFee} min={0} step={0.01}
-                      onChange={(e) => setFormData(prev => ({ ...prev, registrationFee: parseFloat(e.target.value) || 0 }))}
+                    <input type="number" name="registrationFee" value={formData.registrationFee || ''} min={0} step={0.01}
+                      onChange={(e) => {
+                        const num = parseFloat(e.target.value);
+                        setFormData(prev => ({ ...prev, registrationFee: isNaN(num) ? 0 : num }));
+                      }}
+                      onBlur={(e) => {
+                        const num = parseFloat(e.target.value);
+                        setFormData(prev => ({ ...prev, registrationFee: isNaN(num) ? 0 : Math.max(0, num) }));
+                      }}
                       className={inputClass} placeholder="0.00" />
                     {errors.registrationFee && <p className="text-red-400 text-sm mt-1">{errors.registrationFee}</p>}
                   </div>
