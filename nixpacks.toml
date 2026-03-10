@@ -1,7 +1,0 @@
-# nixpacks configuration for Railway deployments
-# cacheDirectories is intentionally empty to prevent Next.js .next/cache
-# from being restored between builds, ensuring all source changes are compiled.
-
-[phases.build]
-cmds = ["npm run build"]
-cacheDirectories = []
