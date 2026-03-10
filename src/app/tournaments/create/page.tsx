@@ -653,10 +653,17 @@ export default function CreateTournamentPage() {
                         )}
                         <input
                           type="number"
-                          value={cat.maxTeams}
+                          value={cat.maxTeams || ''}
                           onChange={(e) => {
                             const updated = [...categories];
-                            updated[i] = { ...updated[i], maxTeams: Math.max(2, parseInt(e.target.value) || 2) };
+                            const num = parseInt(e.target.value);
+                            updated[i] = { ...updated[i], maxTeams: isNaN(num) ? 0 : num };
+                            setCategories(updated);
+                          }}
+                          onBlur={(e) => {
+                            const updated = [...categories];
+                            const num = parseInt(e.target.value);
+                            updated[i] = { ...updated[i], maxTeams: Math.max(2, isNaN(num) ? 2 : num) };
                             setCategories(updated);
                           }}
                           min={2} max={256}
