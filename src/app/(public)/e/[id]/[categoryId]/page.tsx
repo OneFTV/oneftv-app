@@ -133,6 +133,7 @@ export default async function BracketPage({ params }: PageProps) {
             categories={nfaDivisionCategories}
             divisionCount={divisionCount}
             tournamentName={tournament.name}
+            initialCategoryId={params.categoryId}
           />
         ) : (
           <TournamentBracketView

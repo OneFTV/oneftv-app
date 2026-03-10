@@ -125,6 +125,20 @@ export class TournamentRepository {
   }
 
   static async delete(id: string) {
+    // Delete in order to avoid FK constraint violations
+    // 1. Null out self-referential game links first
+    await prisma.game.updateMany({
+      where: { tournamentId: id },
+      data: { winnerNextGameId: null },
+    })
+    // 2. Delete games
+    await prisma.game.deleteMany({ where: { tournamentId: id } })
+    // 3. Delete players and registrations
+    await prisma.tournamentPlayer.deleteMany({ where: { tournamentId: id } })
+    await prisma.teamRegistration.deleteMany({
+      where: { Category: { tournamentId: id } },
+    })
+    // 4. Delete tournament (cascades categories, orders, etc.)
     return prisma.tournament.delete({ where: { id } })
   }
 

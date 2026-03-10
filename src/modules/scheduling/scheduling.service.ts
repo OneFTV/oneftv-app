@@ -99,8 +99,9 @@ export class SchedulingService {
     }
 
     // Check if this category is eligible for NFA cascade divisions (Open + DE + enough teams)
+    // Skip cascade check for sub-division categories (D2/D3/D4) — they have a divisionLabel already
     const teamCount = Math.floor(category.TournamentPlayer.length / 2) // teams = players / 2
-    if (this.isCascadeEligible(category.name || '', category.format, teamCount)) {
+    if (!category.divisionLabel && this.isCascadeEligible(category.name || '', category.format, teamCount)) {
       // Read tournament's openDivisionCount from the already-fetched category relationship
       const divisionCount = category.Tournament.openDivisionCount ?? 3
 
@@ -795,6 +796,233 @@ export class SchedulingService {
       teamCount,
       openDivisionCount: divisionCount,
     })
+  }
+
+  /**
+   * Regenerate ALL division brackets (D1 + D4/D3/D2) with correct cascade routing.
+   * - Clears and rebuilds D1 bracket with proper divisionCount seedTargets (D4-S*, D3-S*, D2-S*)
+   * - Clears and builds empty D4/D3/D2 bracket structures
+   * - Wires D1 loserNextGameId → correct D4/D3/D2 first-round game slots
+   * - Backfills already-completed D1 games into their target slots (if any)
+   */
+  static async generateAllDivisionBrackets(tournamentId: string): Promise<{ brackets: string[]; wired: number; backfilled: number }> {
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      select: { openDivisionCount: true },
+    })
+    const divisionCount = tournament?.openDivisionCount ?? 3
+
+    const categories = await prisma.category.findMany({
+      where: { tournamentId, divisionLabel: { not: null } },
+      select: { id: true, divisionLabel: true },
+    })
+
+    const catByDiv = new Map<string, string>()
+    for (const cat of categories) {
+      if (cat.divisionLabel) catByDiv.set(cat.divisionLabel, cat.id)
+    }
+
+    // Step 1: Regenerate D1 bracket with the correct divisionCount
+    // This ensures L1 losers → D4-S*, L2 losers → D3-S*, L3/L4 losers → D2-S*
+    const d1CatId = catByDiv.get('D1')
+    if (d1CatId) {
+      const d1Category = await SchedulingRepository.getCategoryForGeneration(d1CatId)
+      if (d1Category && d1Category.TournamentPlayer.length >= 2) {
+        await this.generateForCategoryInternal(
+          tournamentId,
+          d1CatId,
+          d1Category.format,
+          d1Category.groupSize,
+          d1Category.proLeague,
+          divisionCount
+        )
+      }
+    }
+
+    // Step 2: Clear and generate empty D4/D3/D2 brackets
+    const generated: string[] = []
+
+    if (catByDiv.get('D4')) {
+      await SchedulingRepository.clearSchedule(tournamentId, catByDiv.get('D4')!)
+      await this.generateEmptyDivisionBracket(tournamentId, catByDiv.get('D4')!, 8, 'D4')
+      generated.push('D4')
+    }
+    if (catByDiv.get('D3')) {
+      const d3Slots = divisionCount === 4 ? 8 : 16
+      await SchedulingRepository.clearSchedule(tournamentId, catByDiv.get('D3')!)
+      await this.generateEmptyDivisionBracket(tournamentId, catByDiv.get('D3')!, d3Slots, 'D3')
+      generated.push('D3')
+    }
+    if (catByDiv.get('D2')) {
+      await SchedulingRepository.clearSchedule(tournamentId, catByDiv.get('D2')!)
+      await this.generateEmptyDivisionBracket(tournamentId, catByDiv.get('D2')!, 8, 'D2')
+      generated.push('D2')
+    }
+
+    // Step 3: Wire D1 seedTargets → D4/D3/D2 first-round game slots
+    const wired = await this.wireSeedTargets(tournamentId, divisionCount)
+
+    // Step 4: Backfill already-completed D1 games (e.g. if D1 was already simulated)
+    const backfilled = await this.backfillCascadeLoserSlots(tournamentId)
+
+    return { brackets: generated, wired, backfilled }
+  }
+
+  /**
+   * For completed D1 games that have loserNextGameId set, copy the loser team's
+   * player IDs into the target D4/D3/D2 game slot.
+   * This handles the case where D1 was simulated before D4/D3/D2 brackets existed.
+   */
+  private static async backfillCascadeLoserSlots(tournamentId: string): Promise<number> {
+    const d1Cat = await prisma.category.findFirst({
+      where: { tournamentId, divisionLabel: 'D1' },
+      select: { id: true },
+    })
+    if (!d1Cat) return 0
+
+    const completedGames = await prisma.game.findMany({
+      where: {
+        tournamentId,
+        categoryId: d1Cat.id,
+        status: 'completed',
+        loserNextGameId: { not: null },
+      },
+      select: {
+        id: true,
+        player1HomeId: true,
+        player2HomeId: true,
+        player1AwayId: true,
+        player2AwayId: true,
+        winningSide: true,
+        loserNextGameId: true,
+        loserSlot: true,
+      },
+    })
+
+    let count = 0
+    for (const game of completedGames) {
+      if (!game.loserNextGameId || !game.winningSide) continue
+
+      const loserIds = game.winningSide === 'home'
+        ? { p1: game.player1AwayId, p2: game.player2AwayId }
+        : { p1: game.player1HomeId, p2: game.player2HomeId }
+
+      const slot = game.loserSlot || 'home'
+      const updateData = slot === 'away'
+        ? { player1AwayId: loserIds.p1, player2AwayId: loserIds.p2 }
+        : { player1HomeId: loserIds.p1, player2HomeId: loserIds.p2 }
+
+      await prisma.game.update({
+        where: { id: game.loserNextGameId },
+        data: updateData,
+      })
+      count++
+    }
+    return count
+  }
+
+  /**
+   * Wire D1 game seedTargets to actual loserNextGameId in D4/D3/D2 bracket games.
+   * Parses "D4-S1", "D3-S9", "D2-S5" etc. and sets loserNextGameId + loserSlot on D1 games.
+   * @param divisionCount Pass explicitly to avoid wrong D3 size detection (4=small/8-team, 3=large/16-team)
+   */
+  static async wireSeedTargets(tournamentId: string, divisionCount?: number): Promise<number> {
+    if (!divisionCount) {
+      const t = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { openDivisionCount: true } })
+      divisionCount = t?.openDivisionCount ?? 3
+    }
+    const categories = await prisma.category.findMany({
+      where: { tournamentId, divisionLabel: { not: null } },
+      select: { id: true, divisionLabel: true },
+    })
+
+    const catByDiv = new Map<string, string>()
+    for (const cat of categories) {
+      if (cat.divisionLabel) catByDiv.set(cat.divisionLabel, cat.id)
+    }
+
+    const d1CatId = catByDiv.get('D1')
+    if (!d1CatId) return 0
+
+    const d1Games = await prisma.game.findMany({
+      where: { categoryId: d1CatId, seedTarget: { not: null } },
+      select: { id: true, seedTarget: true },
+    })
+    if (d1Games.length === 0) return 0
+
+    // Build seed string → { gameId, slot } map
+    const seedMap = new Map<string, { gameId: string; slot: 'home' | 'away' }>()
+
+    const build8TeamMap = (games: Array<{ id: string; matchNumber: number | null }>, prefix: string) => {
+      const pairs: [number, number][] = [[1, 8], [4, 5], [2, 7], [3, 6]]
+      const sorted = [...games].sort((a, b) => (a.matchNumber ?? 0) - (b.matchNumber ?? 0)).slice(0, 4)
+      for (let i = 0; i < sorted.length && i < pairs.length; i++) {
+        const [s1, s2] = pairs[i]
+        seedMap.set(`${prefix}-S${s1}`, { gameId: sorted[i].id, slot: 'home' })
+        seedMap.set(`${prefix}-S${s2}`, { gameId: sorted[i].id, slot: 'away' })
+      }
+    }
+
+    const build16TeamMap = (games: Array<{ id: string; matchNumber: number | null }>) => {
+      const pairs: [number, number][] = [[1, 16], [8, 9], [4, 13], [5, 12], [2, 15], [7, 10], [3, 14], [6, 11]]
+      const sorted = [...games].sort((a, b) => (a.matchNumber ?? 0) - (b.matchNumber ?? 0)).slice(0, 8)
+      for (let i = 0; i < sorted.length && i < pairs.length; i++) {
+        const [s1, s2] = pairs[i]
+        seedMap.set(`D3-S${s1}`, { gameId: sorted[i].id, slot: 'home' })
+        seedMap.set(`D3-S${s2}`, { gameId: sorted[i].id, slot: 'away' })
+      }
+    }
+
+    const d4CatId = catByDiv.get('D4')
+    if (d4CatId) {
+      const d4Games = await prisma.game.findMany({
+        where: { categoryId: d4CatId, matchNumber: { gte: 93, lte: 96 } },
+        select: { id: true, matchNumber: true },
+      })
+      build8TeamMap(d4Games, 'D4')
+    }
+
+    const d3CatId = catByDiv.get('D3')
+    if (d3CatId) {
+      if (divisionCount === 4) {
+        // D3-small (4-div mode): 8-team SE, first round M63-M66 (4 QF games)
+        const d3QfGames = await prisma.game.findMany({
+          where: { categoryId: d3CatId, matchNumber: { gte: 63, lte: 66 } },
+          select: { id: true, matchNumber: true },
+        })
+        build8TeamMap(d3QfGames, 'D3')
+      } else {
+        // D3-large (3-div mode): 16-team SE, first round M63-M70 (8 R1 games)
+        const d3FirstRound = await prisma.game.findMany({
+          where: { categoryId: d3CatId, matchNumber: { gte: 63, lte: 70 } },
+          select: { id: true, matchNumber: true },
+        })
+        build16TeamMap(d3FirstRound)
+      }
+    }
+
+    const d2CatId = catByDiv.get('D2')
+    if (d2CatId) {
+      const d2Games = await prisma.game.findMany({
+        where: { categoryId: d2CatId, matchNumber: { gte: 79, lte: 82 } },
+        select: { id: true, matchNumber: true },
+      })
+      build8TeamMap(d2Games, 'D2')
+    }
+
+    let wiredCount = 0
+    for (const d1Game of d1Games) {
+      const target = seedMap.get(d1Game.seedTarget!)
+      if (target) {
+        await prisma.game.update({
+          where: { id: d1Game.id },
+          data: { loserNextGameId: target.gameId, loserSlot: target.slot },
+        })
+        wiredCount++
+      }
+    }
+
+    return wiredCount
   }
 
   /**

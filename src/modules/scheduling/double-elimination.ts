@@ -200,10 +200,10 @@ function getRoundInfo(matchNumber: number): { roundLabel: string; roundNumber: n
   if (matchNumber >= 51 && matchNumber <= 54) return { roundLabel: 'L4', roundNumber: 4, bracketSide: 'losers' }
   if (matchNumber >= 55 && matchNumber <= 56) return { roundLabel: 'L5', roundNumber: 5, bracketSide: 'losers' }
   if (matchNumber >= 57 && matchNumber <= 58) return { roundLabel: 'L6', roundNumber: 6, bracketSide: 'losers' }
-  if (matchNumber === 59) return { roundLabel: 'Semi-Final 1', roundNumber: 1, bracketSide: 'finals' }
-  if (matchNumber === 60) return { roundLabel: 'Semi-Final 2', roundNumber: 1, bracketSide: 'finals' }
-  if (matchNumber === 61) return { roundLabel: 'Bronze', roundNumber: 2, bracketSide: 'finals' }
-  if (matchNumber === 62) return { roundLabel: 'Final', roundNumber: 3, bracketSide: 'finals' }
+  if (matchNumber === 59) return { roundLabel: 'Semi-Final 1', roundNumber: 7, bracketSide: 'finals' }
+  if (matchNumber === 60) return { roundLabel: 'Semi-Final 2', roundNumber: 7, bracketSide: 'finals' }
+  if (matchNumber === 61) return { roundLabel: 'Bronze', roundNumber: 8, bracketSide: 'finals' }
+  if (matchNumber === 62) return { roundLabel: 'Final', roundNumber: 9, bracketSide: 'finals' }
   return { roundLabel: `M${matchNumber}`, roundNumber: 0, bracketSide: 'winners' }
 }
 

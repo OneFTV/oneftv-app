@@ -27,6 +27,8 @@ interface NfaBracketViewProps {
   tournamentName?: string;
   /** Number of courts (for schedule grid) */
   numCourts?: number;
+  /** Category ID from the URL — pre-selects the matching division tab */
+  initialCategoryId?: string;
 }
 
 interface CategoryInfo {
@@ -788,10 +790,23 @@ export default function NfaBracketView({
   divisionCount,
   tournamentName,
   numCourts = 4,
+  initialCategoryId,
 }: NfaBracketViewProps) {
   const theme = darkTheme;
   const divisions = getDivisionKeys(divisionCount);
-  const [activeTab, setActiveTab] = useState(divisions[0]);
+
+  // Derive the initial tab from the URL's categoryId
+  const initialTab = useMemo(() => {
+    if (initialCategoryId) {
+      const cat = categories.find((c) => c.id === initialCategoryId);
+      if (cat?.divisionLabel && divisions.includes(cat.divisionLabel)) {
+        return cat.divisionLabel;
+      }
+    }
+    return divisions[0];
+  }, [initialCategoryId, categories, divisions]);
+
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Build enriched NfaGame array with division/section/round
   const nfaGames = useMemo(() => {

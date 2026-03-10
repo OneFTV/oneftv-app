@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { Loader, AlertCircle, CheckCircle, ArrowLeft, Save, ChevronDown, ChevronRight, RefreshCw, Trash2 } from 'lucide-react';
 import DayAssignment from '@/components/tournament/DayAssignment';
 import { useTranslation } from '@/contexts/TranslationContext';
 
@@ -113,6 +113,7 @@ export default function ManageTournamentPage() {
   const [generatingCategoryId, setGeneratingCategoryId] = useState<string | null>(null);
   const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
   const [generatingCascade, setGeneratingCascade] = useState<string | null>(null);
+  const [generatingDivisions, setGeneratingDivisions] = useState(false);
 
   const originalScores = useRef<Record<string, SetScores>>({});
 
@@ -362,18 +363,38 @@ export default function ManageTournamentPage() {
     }
   };
 
+  const handleDeleteTournament = async () => {
+    if (!confirm(`Delete "${tournament?.name}"? This action cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/tournaments');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to delete tournament');
+      }
+    } catch {
+      setError('Failed to delete tournament');
+    }
+  };
+
   const handleGenerateCascade = async (categoryId: string) => {
     try {
       setGeneratingCascade(categoryId);
       setError(null);
+      // Calculate teamCount from registrations (TeamRegistration preferred, fallback to TournamentPlayer/2)
+      const cat = tournament?.Category?.find(c => c.id === categoryId);
+      const teamRegCount = cat?._count?.TeamRegistration || 0;
+      const playerCount = cat?._count?.TournamentPlayer || 0;
+      const teamCount = teamRegCount > 0 ? teamRegCount : Math.floor(playerCount / 2);
       const res = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-cascade`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId }),
+        body: JSON.stringify({ categoryId, teamCount, openDivisionCount: 4 }),
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess('NFA Cascade generated! D1/D2/D3 divisions created.');
+        setSuccess('NFA Cascade generated! D1/D2/D3/D4 divisions created.');
         // Refresh tournament to pick up new categories
         const tr = await fetch(`/api/tournaments/${tournamentId}`);
         if (tr.ok) {
@@ -389,6 +410,29 @@ export default function ManageTournamentPage() {
       setError('Failed to generate NFA cascade');
     } finally {
       setGeneratingCascade(null);
+    }
+  };
+
+  const handleGenerateDivisions = async () => {
+    try {
+      setGeneratingDivisions(true);
+      setError(null);
+      const res = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-divisions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || 'Division brackets generated and wired!');
+        await fetchGames();
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.error || 'Failed to generate division brackets');
+      }
+    } catch {
+      setError('Failed to generate division brackets');
+    } finally {
+      setGeneratingDivisions(false);
     }
   };
 
@@ -582,6 +626,13 @@ export default function ManageTournamentPage() {
               >
                 🧪 Simulate
               </Link>
+              <button
+                onClick={handleDeleteTournament}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-700/60 text-red-200 border border-red-500/40 rounded-lg font-medium hover:bg-red-600/70 transition text-sm"
+                title="Delete tournament"
+              >
+                <Trash2 size={15} /> Delete
+              </button>
             </div>
           </div>
         </div>
@@ -683,6 +734,20 @@ export default function ManageTournamentPage() {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Wire Division Brackets */}
+        {tournament.Category?.some(cat => cat.divisionLabel === 'D1') && (
+          <div className="bg-slate-800/50 border border-orange-400/20 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-1">Division Brackets</h2>
+            <p className="text-sm text-slate-400 mb-4">Generate empty D4/D3/D2 bracket structures and wire D1 loser routing. Run this after generating the D1 schedule.</p>
+            <button
+              onClick={handleGenerateDivisions}
+              disabled={generatingDivisions}
+              className="px-4 py-2 text-sm font-semibold bg-orange-700/40 text-orange-200 border border-orange-400/40 rounded-lg hover:bg-orange-600/50 transition disabled:opacity-50">
+              {generatingDivisions ? '⏳ Generating...' : '🔗 Generate D4/D3/D2 Brackets & Wire Routing'}
+            </button>
           </div>
         )}
 

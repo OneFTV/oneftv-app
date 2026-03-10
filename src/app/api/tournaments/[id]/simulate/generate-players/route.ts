@@ -16,6 +16,14 @@ const MALE_NAMES = [
   'Tyler Wilson', 'Austin Moore', 'Dylan Taylor', 'Kyle Anderson', 'Josh Martinez',
   'Renato Moreira', 'Julio Campos', 'Fabio Correia', 'Marcos Teixeira', 'Alex Monteiro',
   'Hugo Batista', 'Patrick Lopes', 'Enzo Carvalho', 'Davi Pinto', 'Samuel Araújo',
+  'Leandro Fonseca', 'Ricardo Neves', 'Ivan Pereira', 'Sandro Luz', 'Tiago Braga',
+  'Wesley Cunha', 'Kelvin Mendes', 'Roger Duarte', 'Guilherme Prado', 'Natan Vasconcelos',
+  'Cristian Ramos', 'Jonatan Cruz', 'Edson Matos', 'Rogério Maia', 'Alan Borges',
+  'Cleber Santos', 'Alessandro Reis', 'Evandro Lima', 'Vagner Cardoso', 'Michel Bezerra',
+  'Sean Parker', 'Ethan Brooks', 'Connor Hayes', 'Mason Reed', 'Logan Carter',
+  'Hunter Bell', 'Caleb Ross', 'Gavin Foster', 'Evan Murphy', 'Zane Turner',
+  'Luca Ferrari', 'Mateo García', 'Nicolás López', 'Sebastián Torres', 'Alejandro Díaz',
+  'Mauricio Vega', 'Rodrigo Castillo', 'Hernán Ruiz', 'Maximiliano Soto', 'Emilio Vargas',
 ]
 
 const FEMALE_NAMES = [
@@ -66,7 +74,8 @@ export async function POST(
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
     }
 
-    const categories = tournament.Category
+    // Exclude cascade sub-divisions (D2/D3/D4) — they receive teams from D1 losers, not direct registration
+    const categories = tournament.Category.filter(c => !c.divisionLabel || c.divisionLabel === 'D1')
     const womensCats = categories.filter(c => c.gender === 'female' || c.name.toLowerCase().includes('women'))
     const coedCats = categories.filter(c => c.gender === 'coed' || c.name.toLowerCase().includes('coed') || c.name.toLowerCase().includes('mix'))
     const openCats = categories.filter(c =>
