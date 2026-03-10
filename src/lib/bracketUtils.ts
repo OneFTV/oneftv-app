@@ -27,6 +27,8 @@ export interface BracketGame {
   winnerNextGameId?: string;
   loserNextGameId?: string;
   seedTarget?: string;
+  /** Category this game belongs to — used for NFA division routing */
+  categoryId?: string | null;
 }
 
 export interface RoundGroup {

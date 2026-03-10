@@ -269,7 +269,7 @@ function getD3RoundInfo(matchNumber: number): { roundLabel: string; roundNumber:
   const m = matchNumber
   if (m >= 63 && m <= 70) return { roundLabel: 'D3 R1', roundNumber: 1, bracketSide: 'winners' }
   if (m >= 71 && m <= 74) return { roundLabel: 'D3 R2', roundNumber: 2, bracketSide: 'winners' }
-  if (m >= 75 && m <= 76) return { roundLabel: 'D3 Semi-Final', roundNumber: 3, bracketSide: 'winners' }
+  if (m >= 75 && m <= 76) return { roundLabel: 'D3 Semi-Final', roundNumber: 3, bracketSide: 'finals' }
   if (m === 77) return { roundLabel: 'D3 Bronze', roundNumber: 4, bracketSide: 'finals' }
   if (m === 78) return { roundLabel: 'D3 Final', roundNumber: 5, bracketSide: 'finals' }
   return { roundLabel: `M${m}`, roundNumber: 0, bracketSide: 'winners' }
@@ -376,7 +376,7 @@ export function generateD3Bracket(teamIds: string[]): DEGameTemplate[] {
 function getD3SmallRoundInfo(matchNumber: number): { roundLabel: string; roundNumber: number; bracketSide: 'winners' | 'finals' } {
   const m = matchNumber
   if (m >= 63 && m <= 66) return { roundLabel: 'D3 QF', roundNumber: 1, bracketSide: 'winners' }
-  if (m >= 67 && m <= 68) return { roundLabel: 'D3 Semi-Final', roundNumber: 2, bracketSide: 'winners' }
+  if (m >= 67 && m <= 68) return { roundLabel: 'D3 Semi-Final', roundNumber: 2, bracketSide: 'finals' }
   if (m === 69) return { roundLabel: 'D3 Bronze', roundNumber: 3, bracketSide: 'finals' }
   if (m === 70) return { roundLabel: 'D3 Final', roundNumber: 4, bracketSide: 'finals' }
   return { roundLabel: `M${m}`, roundNumber: 0, bracketSide: 'winners' }
@@ -582,7 +582,7 @@ export function generateD2Bracket(teamIds: string[]): DEGameTemplate[] {
 function getD4RoundInfo(matchNumber: number): { roundLabel: string; roundNumber: number; bracketSide: 'winners' | 'finals' } {
   const m = matchNumber
   if (m >= 93 && m <= 96) return { roundLabel: 'D4 QF', roundNumber: 1, bracketSide: 'winners' }
-  if (m >= 97 && m <= 98) return { roundLabel: 'D4 Semi-Final', roundNumber: 2, bracketSide: 'winners' }
+  if (m >= 97 && m <= 98) return { roundLabel: 'D4 Semi-Final', roundNumber: 2, bracketSide: 'finals' }
   if (m === 99) return { roundLabel: 'D4 Bronze', roundNumber: 3, bracketSide: 'finals' }
   if (m === 100) return { roundLabel: 'D4 Final', roundNumber: 4, bracketSide: 'finals' }
   return { roundLabel: `M${m}`, roundNumber: 0, bracketSide: 'winners' }

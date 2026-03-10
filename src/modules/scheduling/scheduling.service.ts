@@ -973,40 +973,43 @@ export class SchedulingService {
       }
     }
 
+    /** Get first-round games for a division category by finding the round with
+     *  bracketSide='winners' and the lowest roundNumber, then fetching its games. */
+    const getFirstRoundGames = async (catId: string) => {
+      const firstRound = await prisma.round.findFirst({
+        where: { categoryId: catId, bracketSide: 'winners' },
+        orderBy: { roundNumber: 'asc' },
+        select: { id: true },
+      })
+      if (!firstRound) return []
+      return prisma.game.findMany({
+        where: { categoryId: catId, roundId: firstRound.id },
+        select: { id: true, matchNumber: true },
+        orderBy: { matchNumber: 'asc' },
+      })
+    }
+
     const d4CatId = catByDiv.get('D4')
     if (d4CatId) {
-      const d4Games = await prisma.game.findMany({
-        where: { categoryId: d4CatId, matchNumber: { gte: 93, lte: 96 } },
-        select: { id: true, matchNumber: true },
-      })
+      const d4Games = await getFirstRoundGames(d4CatId)
       build8TeamMap(d4Games, 'D4')
     }
 
     const d3CatId = catByDiv.get('D3')
     if (d3CatId) {
+      const d3Games = await getFirstRoundGames(d3CatId)
       if (divisionCount === 4) {
-        // D3-small (4-div mode): 8-team SE, first round M63-M66 (4 QF games)
-        const d3QfGames = await prisma.game.findMany({
-          where: { categoryId: d3CatId, matchNumber: { gte: 63, lte: 66 } },
-          select: { id: true, matchNumber: true },
-        })
-        build8TeamMap(d3QfGames, 'D3')
+        // D3-small (4-div mode): 8-team SE — 4 QF games
+        build8TeamMap(d3Games, 'D3')
       } else {
-        // D3-large (3-div mode): 16-team SE, first round M63-M70 (8 R1 games)
-        const d3FirstRound = await prisma.game.findMany({
-          where: { categoryId: d3CatId, matchNumber: { gte: 63, lte: 70 } },
-          select: { id: true, matchNumber: true },
-        })
-        build16TeamMap(d3FirstRound)
+        // D3-large (3-div mode): 16-team SE — 8 R1 games
+        build16TeamMap(d3Games)
       }
     }
 
     const d2CatId = catByDiv.get('D2')
     if (d2CatId) {
-      const d2Games = await prisma.game.findMany({
-        where: { categoryId: d2CatId, matchNumber: { gte: 79, lte: 82 } },
-        select: { id: true, matchNumber: true },
-      })
+      const d2Games = await getFirstRoundGames(d2CatId)
       build8TeamMap(d2Games, 'D2')
     }
 

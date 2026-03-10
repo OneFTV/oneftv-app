@@ -93,11 +93,17 @@ function deriveRound(game: BracketGame): string {
   return `W${num}`;
 }
 
-/** Derive the NFA section from bracketSide or round. */
+/** Derive the NFA section from bracketSide or round.
+ *  Round code takes precedence for finals rounds because some SE brackets
+ *  (D3, D4) store bracketSide='winners' on Semi-Final games, but the
+ *  column layout expects section='finals' for the SF column.
+ */
 function deriveSection(game: BracketGame, round: string): string {
-  if (game.bracketSide) return game.bracketSide;
+  // Round-derived checks first (most reliable for SE/DE finals rounds)
   if (['SF', 'F', '3P'].includes(round)) return 'finals';
   if (round.startsWith('L')) return 'losers';
+  // Fall back to stored bracketSide for winners-bracket rounds
+  if (game.bracketSide) return game.bracketSide;
   return 'winners';
 }
 
@@ -812,30 +818,15 @@ export default function NfaBracketView({
   const nfaGames = useMemo(() => {
     const catMap = buildCategoryDivisionMap(categories);
 
-    // Also build a map from game's existing division info
     return games.map((g): NfaGame => {
-      // Try to get division from the game's category (via roundName or existing data)
-      // In the DB, games belong to categories which have divisionLabel.
-      // We need the categoryId which is not on BracketGame directly,
-      // so we look at the categories list and match by the game data.
-      // Typically the caller groups games by category already.
-      // We'll use bracketSide as the section, and derive round from roundName.
-
       const round = deriveRound(g);
       const section = deriveSection(g, round);
 
       // Division is typically passed via a wrapper or can be inferred
       // from the game's id matching a category's games.
-      // For now we check if there's a division already set.
-      // We use a plain object view to access extended properties that may
-      // be attached at runtime but not declared on the BracketGame interface.
-      const gAny = g as unknown as Record<string, unknown>;
-      const existingDiv = gAny.division as string | undefined;
-      const divisionFromCat = gAny.categoryId
-        ? catMap.get(gAny.categoryId as string)
-        : undefined;
-
-      const division = existingDiv || divisionFromCat || 'D1';
+      // Derive division from the game's categoryId (now typed on BracketGame)
+      const divisionFromCat = g.categoryId ? catMap.get(g.categoryId) : undefined;
+      const division = divisionFromCat || 'D1';
 
       return {
         ...g,
