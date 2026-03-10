@@ -1,0 +1,6 @@
+# Ignore development artifacts that shouldn't be uploaded to Railway
+.claude/
+public/bracket-test.html
+public/bracket-test4.html
+footvolley-orchestrator/
+*.log
