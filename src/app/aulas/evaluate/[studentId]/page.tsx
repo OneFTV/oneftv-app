@@ -6,46 +6,46 @@ import { useRouter, useParams } from 'next/navigation';
 
 const skillGroups = [
   {
-    name: 'Ataque',
+    name: 'Ataque (Offense)',
     skills: [
-      { key: 'shark', label: 'Tubarão (Shark)' },
-      { key: 'dropKick', label: 'Bate-pronto (Drop Kick)' },
-      { key: 'header', label: 'Cabeceio (Header)' },
-      { key: 'insideKick', label: 'Chapa (Inside Kick)' },
-      { key: 'outsideKick', label: 'Peito de Pé (Outside Kick)' },
+      { key: 'shark', label: 'Tubarão (Shark) — sola do pé por cima da rede' },
+      { key: 'pingo', label: 'Pingo — ataque curto que cai logo após a rede' },
+      { key: 'lobby', label: 'Lobby (Lob) — ataque alto ao fundo da quadra' },
+      { key: 'paralela', label: 'Paralela — ataque reto na linha lateral' },
+      { key: 'meioFundo', label: 'Meio Fundo — ataque ao centro da quadra' },
+      { key: 'diagonalCurta', label: 'Diagonal Curta — cruzado curto' },
+      { key: 'diagonalLonga', label: 'Diagonal Longa — cruzado longo' },
+      { key: 'cabeceio', label: 'Cabeceio — finalização com a cabeça' },
+      { key: 'chapa', label: 'Chapa — precisão com parte interna do pé' },
+      { key: 'peitoDePe', label: 'Peito de Pé — potência com dorso do pé' },
     ],
   },
   {
-    name: 'Levantamento',
+    name: 'Levantamento (Setting)',
     skills: [
-      { key: 'chestSet', label: 'Peito (Chest Set)' },
-      { key: 'headSet', label: 'Cabeça (Head Set)' },
-      { key: 'shoulderSet', label: 'Ombro (Shoulder Set)' },
-      { key: 'footSet', label: 'Pé (Foot Set)' },
+      { key: 'chestSet', label: 'Levantada de Peito (Chest Set)' },
+      { key: 'headSet', label: 'Levantada de Cabeça (Head Set)' },
+      { key: 'shoulderSet', label: 'Levantada de Ombro (Shoulder Set)' },
+      { key: 'footSet', label: 'Levantada de Pé (Foot Set)' },
     ],
   },
   {
-    name: 'Defesa / Recepção',
+    name: 'Defesa e Recepção (Defense & Reception)',
     skills: [
-      { key: 'reception', label: 'Recepção' },
-      { key: 'positioning', label: 'Posicionamento' },
-      { key: 'reading', label: 'Leitura de Jogo' },
+      { key: 'defesaLobby', label: 'Defesa de Lobby — bolas altas no fundo' },
+      { key: 'defesaPingo', label: 'Defesa de Pingo — bolas curtas na rede' },
+      { key: 'defesaParalela', label: 'Defesa Paralela — ataque reto na linha' },
+      { key: 'defesaMeioFundo', label: 'Defesa Meio Fundo — zona central' },
+      { key: 'defesaDiagonal', label: 'Defesa Diagonal — ataques cruzados' },
+      { key: 'recepcao', label: 'Recepção — controle de saque/ataque' },
     ],
   },
   {
-    name: 'Físico',
+    name: 'Saque e Tático',
     skills: [
-      { key: 'agility', label: 'Agilidade' },
-      { key: 'endurance', label: 'Resistência' },
-      { key: 'explosiveness', label: 'Explosão' },
-    ],
-  },
-  {
-    name: 'Mental',
-    skills: [
-      { key: 'consistency', label: 'Regularidade' },
-      { key: 'competitiveness', label: 'Competitividade' },
-      { key: 'composure', label: 'Controle Emocional' },
+      { key: 'saque', label: 'Saque (Serve) — qualidade e variedade' },
+      { key: 'posicionamento', label: 'Posicionamento e Leitura de Jogo' },
+      { key: 'bloqueio', label: 'Bloqueio — defesa na rede' },
     ],
   },
 ];

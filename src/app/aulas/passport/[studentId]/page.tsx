@@ -4,12 +4,19 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 const skillLabels: Record<string, string> = {
-  shark: 'Tubarão', dropKick: 'Bate-pronto', header: 'Cabeceio',
-  insideKick: 'Chapa', outsideKick: 'Peito de Pé',
-  chestSet: 'Peito', headSet: 'Cabeça', shoulderSet: 'Ombro', footSet: 'Pé',
-  reception: 'Recepção', positioning: 'Posicionamento', reading: 'Leitura',
-  agility: 'Agilidade', endurance: 'Resistência', explosiveness: 'Explosão',
-  consistency: 'Regularidade', competitiveness: 'Competitividade', composure: 'Compostura',
+  // Ataque
+  shark: 'Tubarão', pingo: 'Pingo', lobby: 'Lobby',
+  paralela: 'Paralela', meioFundo: 'Meio Fundo',
+  diagonalCurta: 'Diag. Curta', diagonalLonga: 'Diag. Longa',
+  cabeceio: 'Cabeceio', chapa: 'Chapa', peitoDePe: 'Peito de Pé',
+  // Levantamento
+  chestSet: 'Lev. Peito', headSet: 'Lev. Cabeça', shoulderSet: 'Lev. Ombro', footSet: 'Lev. Pé',
+  // Defesa e Recepção
+  defesaLobby: 'Def. Lobby', defesaPingo: 'Def. Pingo',
+  defesaParalela: 'Def. Paralela', defesaMeioFundo: 'Def. M.Fundo',
+  defesaDiagonal: 'Def. Diagonal', recepcao: 'Recepção',
+  // Saque e Tático
+  saque: 'Saque', posicionamento: 'Posicionamento', bloqueio: 'Bloqueio',
 };
 
 function RadarChart({ skills }: { skills: Record<string, number> }) {

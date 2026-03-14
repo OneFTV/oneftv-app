@@ -589,24 +589,38 @@ model StudentEvaluation {
   evaluatedAt     DateTime       @default(now())
   overallLevel    String
   overallNotes    String?        @db.Text
-  shark           Int?
-  dropKick        Int?
-  header          Int?
-  insideKick      Int?
-  outsideKick     Int?
-  chestSet        Int?
-  headSet         Int?
-  shoulderSet     Int?
-  footSet         Int?
-  reception       Int?
-  positioning     Int?
-  reading         Int?
-  agility         Int?
-  endurance       Int?
-  explosiveness   Int?
-  consistency     Int?
-  competitiveness Int?
-  composure       Int?
+  // Ataque (Offense)
+  shark           Int?  // Tubarão — ataque com a sola do pé por cima da rede
+  pingo           Int?  // Ataque curto/sutil que cai logo após a rede
+  lobby           Int?  // Ataque alto ao fundo da quadra, por cima do adversário
+  paralela        Int?  // Ataque reto que segue a linha lateral da quadra
+  meioFundo       Int?  // Ataque ao centro, entre a rede e a linha de fundo
+  diagonalCurta   Int?  // Ataque cruzado curto ao lado oposto
+  diagonalLonga   Int?  // Ataque cruzado longo ao lado oposto
+  cabeceio        Int?  // Finalização com a cabeça
+  chapa           Int?  // Ataque de precisão com a parte interna do pé
+  peitoDePe       Int?  // Ataque de potência com o dorso do pé
+
+  // Levantamento (Setting)
+  chestSet        Int?  // Levantada de peito
+  headSet         Int?  // Levantada de cabeça
+  shoulderSet     Int?  // Levantada de ombro
+  footSet         Int?  // Levantada de pé
+
+  // Defesa e Recepção (Defense & Reception)
+  defesaLobby     Int?  // Recuperação de bolas altas no fundo (giro + leitura)
+  defesaPingo     Int?  // Cobertura de bolas curtas perto da rede
+  defesaParalela  Int?  // Posicionamento para segurar ataque reto na linha
+  defesaMeioFundo Int?  // Cobertura da zona central da quadra
+  defesaDiagonal  Int?  // Cobertura de ataques cruzados
+  recepcao        Int?  // Primeiro toque para controlar saque ou ataque
+
+  // Saque (Serve)
+  saque           Int?  // Qualidade e variedade do saque
+
+  // Tático / Físico
+  posicionamento  Int?  // Posicionamento em quadra e leitura de jogo
+  bloqueio        Int?  // Defesa na rede (peito/cabeça/ombro)
   weaknesses      String?        @db.Text
   strengths       String?        @db.Text
   recommendations String?        @db.Text
