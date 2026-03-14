@@ -40,3 +40,4 @@ prisma/dev.db-journal
 *.swo
 *~
 migrate-nfa-austin.ts
+.claude/worktrees/

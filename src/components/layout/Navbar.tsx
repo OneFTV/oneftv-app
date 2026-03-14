@@ -28,7 +28,10 @@ export default function Navbar() {
   const navLinks = [
     { href: '/tournaments', label: t('common.tournaments') },
     { href: '/rankings', label: t('common.rankings') },
-    { href: '/livefeed', label: t('common.live_feed') },
+    { href: '/aulas/find', label: 'Aulas' },
+    ...(session?.user?.role === 'admin'
+      ? [{ href: '/analytics', label: 'Analytics' }]
+      : []),
   ];
 
   const handleSignOut = async () => {
@@ -100,6 +103,9 @@ export default function Navbar() {
                 <div className="border-l border-slate-700 pl-4 flex items-center space-x-3">
                   <Link href="/dashboard" className="btn-outline btn-sm">
                     {t('common.dashboard')}
+                  </Link>
+                  <Link href="/aulas/dashboard" className="btn-outline btn-sm">
+                    Coach
                   </Link>
                   <button
                     onClick={handleSignOut}

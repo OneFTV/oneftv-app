@@ -76,7 +76,7 @@ if [[ "$root_code" != "200" ]]; then
 else
   emit_pass "Runtime smoke started: local app reachable at $base_url."
 
-  pages=(/ /login /register /tournaments /rankings /athletes /dashboard /profile /livefeed /live-feed /athletes/create /tournaments/create)
+  pages=(/ /login /register /tournaments /rankings /athletes /dashboard /profile /athletes/create /tournaments/create)
   page_fail=0
   for p in "${pages[@]}"; do
     code="$(http_code "$base_url$p")"
@@ -86,7 +86,7 @@ else
     fi
   done
   if [[ "$page_fail" -eq 0 ]]; then
-    emit_pass "Runtime page smoke passed (12/12 expected pages returned 200)."
+    emit_pass "Runtime page smoke passed (10/10 expected pages returned 200)."
   fi
 
   public_apis=(/api/athletes /api/tournaments /api/rankings)

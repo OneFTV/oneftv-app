@@ -396,6 +396,8 @@ model User {
   documentNumber                                    String?            @db.VarChar(30)
   documentType                                      String?            @db.VarChar(20)
   preferredLanguage                                 String?            @db.VarChar(10)
+  coachProfile                                      CoachProfile?
+  studentProfile                                    StudentProfile?
   AuditLog                                          AuditLog[]
   CheckIn                                           CheckIn[]
   Game_Game_player1AwayIdToUser                     Game[]             @relation("Game_player1AwayIdToUser")
@@ -421,4 +423,268 @@ model WaitlistEntry {
 
   @@unique([categoryId, userId])
   @@index([categoryId])
+}
+
+model AnalyticsPageview {
+  id        String   @id @default(cuid())
+  path      String
+  vid       String
+  country   String   @default("unknown")
+  device    String   @default("desktop")
+  referrer  String   @default("direct")
+  isBot     Boolean  @default(false)
+  date      String
+  ts        BigInt
+  createdAt DateTime @default(now())
+
+  @@index([ts])
+  @@index([date])
+  @@index([vid])
+}
+
+model AnalyticsEvent {
+  id    String @id @default(cuid())
+  event String
+  data  String @default("{}")
+  vid   String @default("anon")
+  date  String
+  ts    BigInt
+
+  @@index([ts])
+}
+
+model AnalyticsSession {
+  id       String @id @default(cuid())
+  vid      String
+  duration Int
+  date     String
+  ts       BigInt
+
+  @@index([ts])
+}
+
+// ============================================
+// AULAS MODULE
+// ============================================
+
+model CoachProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  bio            String?  @db.Text
+  experience     String?  @db.Text
+  certifications String?  @db.Text
+  hourlyRate     Decimal? @db.Decimal(10, 2)
+  currency       String   @default("USD")
+  latitude       Decimal? @db.Decimal(10, 7)
+  longitude      Decimal? @db.Decimal(10, 7)
+  city           String?
+  state          String?
+  country        String?
+  locationName   String?
+  maxGroupSize   Int      @default(4)
+  isActive       Boolean  @default(true)
+  isVerified     Boolean  @default(false)
+  photos         String?  @db.Text
+  coverPhoto     String?
+  classes        Class[]
+  students       CoachStudent[]
+  evaluations    StudentEvaluation[]
+  packages       ClassPackage[]
+  reviews        CoachReview[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([latitude, longitude])
+  @@index([city, state, country])
+  @@index([isActive])
+}
+
+model StudentProfile {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id])
+  startedPlaying   DateTime?
+  dominantFoot     String?
+  position         String?
+  currentLevel     String?
+  totalClasses     Int               @default(0)
+  totalCoaches     Int               @default(0)
+  coaches          CoachStudent[]
+  evaluations      StudentEvaluation[]
+  classAttendances ClassAttendance[]
+  payments         AulaPayment[]
+  reviews          CoachReview[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model CoachStudent {
+  id        String         @id @default(cuid())
+  coachId   String
+  coach     CoachProfile   @relation(fields: [coachId], references: [id])
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  status    String         @default("active")
+  startDate DateTime       @default(now())
+  endDate   DateTime?
+  notes     String?        @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([coachId, studentId])
+  @@index([coachId])
+  @@index([studentId])
+}
+
+model Class {
+  id             String            @id @default(cuid())
+  coachId        String
+  coach          CoachProfile      @relation(fields: [coachId], references: [id])
+  title          String
+  description    String?           @db.Text
+  type           String
+  maxStudents    Int               @default(1)
+  scheduledAt    DateTime
+  duration       Int
+  timezone       String            @default("America/New_York")
+  locationName   String?
+  latitude       Decimal?          @db.Decimal(10, 7)
+  longitude      Decimal?          @db.Decimal(10, 7)
+  price          Decimal?          @db.Decimal(10, 2)
+  currency       String            @default("USD")
+  status         String            @default("scheduled")
+  notes          String?           @db.Text
+  isRecurring    Boolean           @default(false)
+  recurrenceRule String?
+  attendances    ClassAttendance[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([coachId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model ClassAttendance {
+  id          String          @id @default(cuid())
+  classId     String
+  class       Class           @relation(fields: [classId], references: [id])
+  studentId   String
+  student     StudentProfile  @relation(fields: [studentId], references: [id])
+  status      String          @default("registered")
+  checkedInAt DateTime?
+  createdAt   DateTime        @default(now())
+
+  @@unique([classId, studentId])
+  @@index([studentId])
+}
+
+model StudentEvaluation {
+  id              String         @id @default(cuid())
+  coachId         String
+  coach           CoachProfile   @relation(fields: [coachId], references: [id])
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id])
+  evaluatedAt     DateTime       @default(now())
+  overallLevel    String
+  overallNotes    String?        @db.Text
+  shark           Int?
+  dropKick        Int?
+  header          Int?
+  insideKick      Int?
+  outsideKick     Int?
+  chestSet        Int?
+  headSet         Int?
+  shoulderSet     Int?
+  footSet         Int?
+  reception       Int?
+  positioning     Int?
+  reading         Int?
+  agility         Int?
+  endurance       Int?
+  explosiveness   Int?
+  consistency     Int?
+  competitiveness Int?
+  composure       Int?
+  weaknesses      String?        @db.Text
+  strengths       String?        @db.Text
+  recommendations String?        @db.Text
+  createdAt       DateTime       @default(now())
+
+  @@index([studentId])
+  @@index([coachId])
+  @@index([evaluatedAt])
+}
+
+model ClassPackage {
+  id          String            @id @default(cuid())
+  coachId     String
+  coach       CoachProfile      @relation(fields: [coachId], references: [id])
+  name        String
+  description String?           @db.Text
+  type        String
+  classCount  Int?
+  price       Decimal           @db.Decimal(10, 2)
+  currency    String            @default("USD")
+  validDays   Int?
+  isActive    Boolean           @default(true)
+  purchases   PackagePurchase[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([coachId])
+}
+
+model PackagePurchase {
+  id          String         @id @default(cuid())
+  packageId   String
+  package     ClassPackage   @relation(fields: [packageId], references: [id])
+  studentId   String
+  classesUsed Int            @default(0)
+  status      String         @default("active")
+  purchasedAt DateTime       @default(now())
+  expiresAt   DateTime?
+  payments    AulaPayment[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([studentId])
+  @@index([packageId])
+}
+
+model AulaPayment {
+  id         String           @id @default(cuid())
+  studentId  String
+  student    StudentProfile   @relation(fields: [studentId], references: [id])
+  amount     Decimal          @db.Decimal(10, 2)
+  currency   String           @default("USD")
+  method     String
+  status     String           @default("confirmed")
+  type       String
+  classId    String?
+  purchaseId String?
+  purchase   PackagePurchase? @relation(fields: [purchaseId], references: [id])
+  notes      String?
+  paidAt     DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+
+  @@index([studentId])
+  @@index([paidAt])
+}
+
+model CoachReview {
+  id        String         @id @default(cuid())
+  coachId   String
+  coach     CoachProfile   @relation(fields: [coachId], references: [id])
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  rating    Int
+  comment   String?        @db.Text
+  isPublic  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([coachId, studentId])
+  @@index([coachId])
 }

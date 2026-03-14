@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 
 const inter = localFont({
   src: [
@@ -64,6 +65,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <AnalyticsTracker />
         </Providers>
       </body>
     </html>

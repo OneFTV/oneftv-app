@@ -37,10 +37,15 @@ API routes catch these and return the matching HTTP status.
 ## Part 2: Key Features & Implementation Details
 
 ### Double-Elimination Brackets (NFA Format)
-- Winners bracket (32->16->8->4->2->1) + Losers bracket (L1-L6)
+- D1: Winners bracket (32->16->8->4->2) + Losers ladder (L1-L6) + Finals — always 62 games (M1–M62)
+- D2: 8-team double-elimination — M79–M92 (14 games), shared across 3-div and 4-div modes
+- D3 (3-div): 16-team single-elimination — M63–M78 (16 games)
+- D3 (4-div): 8-team single-elimination — M63–M70 (8 games)
+- D4 (4-div only): 8-team single-elimination — M93–M100 (8 games)
 - Each game stores `winnerNextGameId`, `loserNextGameId`, `winnerSlot`, `loserSlot` for routing
-- Routing table is hardcoded from NFA PDF specs (`D1_ROUTING_TABLE` with 62 matches)
-- Cross-division seeding: losers from D1 seed into D2/D3 via `seedTarget` field (e.g., "D2-S3")
+- Routing wired in second-pass after game creation using `matchNumber→gameId` map
+- Cross-division seeding: losers from D1 seed into D2/D3/D4 via `seedTarget` field (e.g., "D3-S2")
+- `openDivisionCount` field on Tournament (3 or 4) controls which bracket variant is generated
 
 ### Score Matrix (Batch Score Entry)
 - Spreadsheet-style table grouped by round with collapsible accordion sections
@@ -116,6 +121,40 @@ The Navbar initially only had Dashboard and Logout. Profile was only reachable v
 ### Batch Update Without Re-fetch = Stale UI
 After batch score save, bracket advancement runs async. UI won't show player movements to next round unless you re-fetch games after save.
 
+### Bracket Games Created Without Routing = No Connector SVG
+**Symptom:** Bracket renders correctly but has zero SVG connector lines between matches.
+**Cause:** `winnerNextGameId` / `loserNextGameId` is `null` on all division games. The `ConnectorOverlay` component returns `null` when it finds 0 valid connections. This happens when `generateEmptyDivisionBracket` skips the second-pass routing wire-up, or when games were created by a code path that doesn't call `SchedulingRepository.updateGameRouting()`.
+**Diagnosis:** In browser console: `document.querySelectorAll('svg').length` — if no wide SVG is found, routing is not wired. Confirm with React fiber: check `game.winnerNextGameId` in the fiber props.
+**Fix:** `POST /api/tournaments/[id]/schedule/wire-routing` — safe endpoint that patches routing FK fields on existing games without touching scores, status, or player assignments. Re-deploys bracket generator templates at runtime.
+**Prevention:** Never call `clearSchedule` + regenerate without the routing second pass. The `generateAllDivisionBrackets` method is destructive — use `wire-routing` for surgical fixes.
+
+### ConnectorOverlay Doesn't Render on First Page Load (SSR Hydration Timing)
+**Symptom:** Bracket connector lines only appear after a browser resize event, not on initial page load.
+**Cause:** `useLayoutEffect` in the `ConnectorOverlay` component fires during Next.js SSR hydration — React commits all DOM nodes simultaneously, but card bounding rects may not yet be stable at that exact moment. `draw()` runs, `setBracketRef.current` exists, but `getBoundingClientRect()` returns positions that cause `paths.length === 0`, so the SVG returns `null`. Subsequent `resize` events trigger `draw()` with correct positions and the SVG appears.
+**Fix:** In `useEffect` (not `useLayoutEffect`), add `const raf = requestAnimationFrame(() => draw())` alongside the `resize` listener. This guarantees a post-paint re-draw after hydration settles. Cancel with `cancelAnimationFrame(raf)` in cleanup.
+**Pattern:**
+```typescript
+useEffect(() => {
+  const handler = () => draw();
+  window.addEventListener('resize', handler);
+  const raf = requestAnimationFrame(() => draw()); // post-paint fix
+  return () => { window.removeEventListener('resize', handler); cancelAnimationFrame(raf); };
+}, [draw]);
+```
+
+### `deriveSection` Must Check Round Code Before `bracketSide`
+**Symptom:** Semi-Final games in D3/D4 (which have `bracketSide='winners'` stored in DB from SE bracket generation) appear in the wrong bracket column — they show in the Winners column instead of the Finals column.
+**Cause:** The original `deriveSection` fell back to `game.bracketSide` for all non-loser rounds. SE brackets store `bracketSide='winners'` on SF games (because there are no true "losers" rounds in SE), but the column layout expects `section='finals'` for SF/F/3P games.
+**Fix:** `deriveSection` checks round code FIRST: if round is `'SF'`, `'F'`, or `'3P'` → return `'finals'` unconditionally, regardless of `bracketSide`.
+```typescript
+function deriveSection(game, round) {
+  if (['SF', 'F', '3P'].includes(round)) return 'finals'; // ← check first
+  if (round.startsWith('L')) return 'losers';
+  if (game.bracketSide) return game.bracketSide;
+  return 'winners';
+}
+```
+
 ---
 
 ## Part 4: Reusable Patterns
@@ -143,13 +182,12 @@ const [profileRes, statsRes] = await Promise.all([
 ## Part 5: Coordination & Process (Codex + Claude Code)
 
 ### Coordination must be explicit and automated
-- `LIVEFEED.md` workflow (read first, post STATUS/ERROR/DONE, maintain Active Tasks) improved coordination between Codex and Claude Code.
-- Automated feed checks reduced silent drift between implementation and testing.
+- Explicit coordination between agents improved workflow quality.
 
 ### Lightweight checks were too shallow
 - A fast `tsc`-only pass gave false confidence.
 - Better validation: typecheck + schema validation + route/API audits + runtime smoke checks.
-- Step-by-step logging in `LIVEFEED.md` made test actions auditable.
+- Step-by-step logging made test actions auditable.
 
 ### Build rules are critical
 - **Codex must NOT run `npm run build` or `next build`** — it writes to `.next/` and corrupts the live dev server cache.
@@ -193,12 +231,16 @@ const [profileRes, statsRes] = await Promise.all([
 | File | Purpose |
 |------|---------|
 | `src/modules/game/game.service.ts` | Game updates, validation, batch ops, bracket advancement |
-| `src/modules/scheduling/generators.ts` | Bracket/KOTB/RoundRobin generation |
+| `src/modules/scheduling/double-elimination.ts` | NFA bracket generators (D1/D2/D3/D4) + routing tables |
+| `src/modules/scheduling/scheduling.service.ts` | `generateEmptyDivisionBracket`, `generateAllDivisionBrackets`, routing wire-up |
+| `src/modules/scheduling/scheduling.repository.ts` | `updateGameRouting()` — patches winnerNextGameId/loserNextGameId |
+| `src/components/tournament/NfaBracketView.tsx` | NFA multi-division bracket UI + `ConnectorOverlay` SVG component |
+| `src/lib/nfaBracketLayout.ts` | Column definitions per division/mode (`getColumnDefs`) |
+| `src/app/api/tournaments/[id]/schedule/wire-routing/route.ts` | Safe routing patch endpoint (no data loss) |
+| `src/app/(public)/e/[id]/[categoryId]/page.tsx` | Public bracket page — fetches all NFA division games |
 | `src/modules/game/score.validator.ts` | Score validation (2-point rule, set logic) |
 | `src/app/tournaments/[id]/manage/page.tsx` | Score matrix + batch update UI |
-| `src/app/profile/page.tsx` | Dual profile (player + organizer tabs) |
 | `src/app/api/games/batch/route.ts` | Batch score update endpoint |
 | `prisma/schema.prisma` | Database models (21+ models) |
-| `LIVEFEED.md` | Agent coordination feed |
 | `AGENTS.md` | Agent roles and project overview |
 | `CLAUDE.md` | Claude Code-specific instructions |

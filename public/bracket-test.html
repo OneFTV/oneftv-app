@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFA Bracket Test — 32 Teams, 4 Courts</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --elevated: #334155;
+    --border: #475569;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --winners: #059669;
+    --winners-bg: #064e3b;
+    --losers: #ea580c;
+    --losers-bg: #7c2d12;
+    --finals: #d97706;
+    --finals-bg: #78350f;
+    --d1-badge: #3b82f6;
+    --d3-badge: #10b981;
+    --d2-badge: #a855f7;
+    --cross: #f59e0b;
+    --cascade: #ec4899;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header .info {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  nav {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 56px;
+    z-index: 99;
+  }
+  nav button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-dim);
+    background: transparent;
+  }
+  nav button:hover { background: var(--elevated); color: var(--text); }
+  nav button.active { background: var(--elevated); color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .tab-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    font-weight: 700;
+  }
+  .badge-d1 { background: var(--d1-badge); color: #fff; }
+  .badge-d3 { background: var(--d3-badge); color: #fff; }
+  .badge-d2 { background: var(--d2-badge); color: #fff; }
+
+  .tab-content { display: none; padding: 20px 24px; }
+  .tab-content.active { display: block; }
+
+  /* Horizontal Bracket Layout (NFA PDF style) */
+  .bracket-horizontal {
+    display: flex;
+    overflow-x: auto;
+    gap: 24px;
+    padding: 8px 0 16px 0;
+    align-items: stretch;
+    position: relative;
+  }
+  .connector-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .bracket-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 185px;
+    flex-shrink: 0;
+  }
+  .col-header {
+    padding: 5px 6px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+    white-space: pre-line;
+    border-radius: 4px 4px 0 0;
+    flex-shrink: 0;
+  }
+  .col-header.winners { background: var(--winners); color: #fff; }
+  .col-header.losers { background: var(--losers); color: #fff; }
+  .col-header.finals { background: var(--finals); color: #fff; }
+  .col-games {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding: 4px 0;
+    min-height: 200px;
+  }
+  .col-games.finals-stack {
+    justify-content: space-around; /* SF games align with feeder bracket rows */
+    position: relative;
+    min-height: 700px; /* ensure room for SF + centered F/3P without overlap */
+  }
+  .col-games.finals-pair {
+    position: relative; /* for absolute positioning of F and 3P */
+  }
+  .finals-pair .finals-main {
+    /* Final game: centered between the two SFs */
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    transform: translateY(-50%);
+    z-index: 3;
+  }
+  .finals-pair .finals-third {
+    /* 3rd Place: positioned below center */
+    position: absolute;
+    top: calc(50% + 60px);
+    left: 0; right: 0;
+    z-index: 3;
+  }
+  .finals-center-group {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .finals-center-group .match-card {
+    pointer-events: auto;
+    width: calc(100% - 4px);
+  }
+  .section-divider {
+    width: 3px;
+    background: var(--border);
+    margin: 0 2px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    align-self: stretch;
+  }
+  .division-tag {
+    font-size: 9px;
+    text-align: center;
+    padding: 2px 6px;
+    background: var(--cascade);
+    color: #fff;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .division-tag.d2-tag { background: var(--d2-badge); }
+  .division-tag.d3-tag { background: var(--d3-badge); }
+
+  /* Legacy section layout (for fallback) */
+  .bracket-section { margin-bottom: 24px; }
+  .section-header {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-header.winners { background: var(--winners); color: #fff; }
+  .section-header.losers { background: var(--losers); color: #fff; }
+  .section-header.finals { background: var(--finals); color: #fff; }
+  .rounds-container {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+  .round-column {
+    min-width: 240px;
+    flex-shrink: 0;
+  }
+  .round-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    background: var(--elevated);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .match-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin: 2px 0;
+    overflow: hidden;
+    font-size: 12px;
+    position: relative;
+    z-index: 2;
+  }
+  .match-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: var(--elevated);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .match-num {
+    font-weight: 700;
+    color: var(--text);
+  }
+  .match-court { color: var(--text-muted); }
+  .match-time { color: var(--text-muted); }
+  .team-slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    border-bottom: 1px solid rgba(71,85,105,0.3);
+  }
+  .team-slot:last-child { border-bottom: none; }
+  .team-slot .label { font-weight: 500; }
+  .team-slot .slot-pos {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 4px;
+  }
+  .cascade-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--cascade);
+    color: #fff;
+    font-weight: 600;
+  }
+  .cross-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--cross);
+    color: #000;
+    font-weight: 700;
+  }
+  .match-footer {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    background: rgba(30,41,59,0.5);
+    text-align: center;
+  }
+
+  /* Schedule table */
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .schedule-table th {
+    background: var(--elevated);
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    position: sticky;
+    top: 104px;
+    z-index: 10;
+  }
+  .schedule-table td {
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+    vertical-align: top;
+    min-width: 180px;
+  }
+  .schedule-table tr:nth-child(even) td { background: rgba(30,41,59,0.3); }
+  .time-cell {
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    background: var(--surface) !important;
+    min-width: 80px;
+  }
+  .sched-card {
+    background: var(--surface);
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: 2px 0;
+    border-left: 3px solid var(--d1-badge);
+    font-size: 12px;
+  }
+  .sched-card.d3 { border-left-color: var(--d3-badge); }
+  .sched-card.d2 { border-left-color: var(--d2-badge); }
+  .sched-card .sched-match {
+    font-weight: 700;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .sched-card .sched-div {
+    font-size: 10px;
+    padding: 0 4px;
+    border-radius: 3px;
+    color: #fff;
+    font-weight: 600;
+  }
+  .sched-card .sched-div.d1 { background: var(--d1-badge); }
+  .sched-card .sched-div.d3 { background: var(--d3-badge); }
+  .sched-card .sched-div.d2 { background: var(--d2-badge); }
+  .sched-card .sched-teams {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .summary-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .summary-stat {
+    text-align: center;
+  }
+  .summary-stat .num {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .summary-stat .lbl {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NFA Bracket Test — Open Division (32 Teams)</h1>
+  <div class="info">4 Courts · 9:00 AM – 6:00 PM · 20 min games · 92 total games</div>
+</header>
+
+<nav id="tabs">
+  <button class="active" onclick="showTab('d1')">Division 1 <span class="tab-badge badge-d1">62</span></button>
+  <button onclick="showTab('d2')">Division 2 <span class="tab-badge badge-d2">14</span></button>
+  <button onclick="showTab('d3')">Division 3 <span class="tab-badge badge-d3">16</span></button>
+  <button onclick="showTab('schedule')">Schedule <span class="tab-badge" style="background:var(--text-muted);color:#fff">92</span></button>
+</nav>
+
+<div id="tab-d1" class="tab-content active"></div>
+<div id="tab-d2" class="tab-content"></div>
+<div id="tab-d3" class="tab-content"></div>
+<div id="tab-schedule" class="tab-content"></div>
+
+<script>
+// ─── GAME DATA (all 92 games per TDD) ───────────────────────────
+
+const games = [];
+
+// Helper to add a game
+function G(id, div, section, round, roundName, teamA, teamB, opts = {}) {
+  games.push({
+    id, division: div, section, round, roundName, teamA, teamB,
+    winnerNext: opts.wn || null, winnerSlot: opts.ws || null,
+    loserNext: opts.ln || null, loserSlot: opts.ls || null,
+    seedTarget: opts.st || null, cross: opts.cross || false,
+    note: opts.note || null,
+    court: 0, time: ''
+  });
+}
+
+// ═══ D1 WINNERS BRACKET ═══
+
+// W1 (Round 1): 16 games — M1-M16
+G('M1',  'D1','winners','W1','1st Round W1','Team 1','Team 32',  {wn:'M17',ws:'top', ln:'M31',ls:'top'});
+G('M2',  'D1','winners','W1','1st Round W1','Team 16','Team 17', {wn:'M17',ws:'bottom', ln:'M31',ls:'bottom'});
+G('M3',  'D1','winners','W1','1st Round W1','Team 8','Team 25',  {wn:'M18',ws:'top', ln:'M32',ls:'top'});
+G('M4',  'D1','winners','W1','1st Round W1','Team 9','Team 24',  {wn:'M18',ws:'bottom', ln:'M32',ls:'bottom'});
+G('M5',  'D1','winners','W1','1st Round W1','Team 4','Team 29',  {wn:'M19',ws:'top', ln:'M33',ls:'top'});
+G('M6',  'D1','winners','W1','1st Round W1','Team 13','Team 20', {wn:'M19',ws:'bottom', ln:'M33',ls:'bottom'});
+G('M7',  'D1','winners','W1','1st Round W1','Team 5','Team 28',  {wn:'M20',ws:'top', ln:'M34',ls:'top'});
+G('M8',  'D1','winners','W1','1st Round W1','Team 12','Team 21', {wn:'M20',ws:'bottom', ln:'M34',ls:'bottom'});
+G('M9',  'D1','winners','W1','1st Round W1','Team 2','Team 31',  {wn:'M21',ws:'top', ln:'M35',ls:'top'});
+G('M10', 'D1','winners','W1','1st Round W1','Team 15','Team 18', {wn:'M21',ws:'bottom', ln:'M35',ls:'bottom'});
+G('M11', 'D1','winners','W1','1st Round W1','Team 7','Team 26',  {wn:'M22',ws:'top', ln:'M36',ls:'top'});
+G('M12', 'D1','winners','W1','1st Round W1','Team 10','Team 23', {wn:'M22',ws:'bottom', ln:'M36',ls:'bottom'});
+G('M13', 'D1','winners','W1','1st Round W1','Team 3','Team 30',  {wn:'M23',ws:'top', ln:'M37',ls:'top'});
+G('M14', 'D1','winners','W1','1st Round W1','Team 14','Team 19', {wn:'M23',ws:'bottom', ln:'M37',ls:'bottom'});
+G('M15', 'D1','winners','W1','1st Round W1','Team 6','Team 27',  {wn:'M24',ws:'top', ln:'M38',ls:'top'});
+G('M16', 'D1','winners','W1','1st Round W1','Team 11','Team 22', {wn:'M24',ws:'bottom', ln:'M38',ls:'bottom'});
+
+// W2 (Round 3): 8 games — M17-M24
+G('M17', 'D1','winners','W2','4th Round W2','W(M1)','W(M2)',   {wn:'M25',ws:'top', ln:'M39',ls:'bottom'});
+G('M18', 'D1','winners','W2','4th Round W2','W(M3)','W(M4)',   {wn:'M25',ws:'bottom', ln:'M40',ls:'bottom'});
+G('M19', 'D1','winners','W2','4th Round W2','W(M5)','W(M6)',   {wn:'M26',ws:'top', ln:'M41',ls:'bottom'});
+G('M20', 'D1','winners','W2','4th Round W2','W(M7)','W(M8)',   {wn:'M26',ws:'bottom', ln:'M42',ls:'bottom'});
+G('M21', 'D1','winners','W2','4th Round W2','W(M9)','W(M10)',  {wn:'M27',ws:'top', ln:'M43',ls:'bottom'});
+G('M22', 'D1','winners','W2','4th Round W2','W(M11)','W(M12)', {wn:'M27',ws:'bottom', ln:'M44',ls:'bottom'});
+G('M23', 'D1','winners','W2','4th Round W2','W(M13)','W(M14)', {wn:'M28',ws:'top', ln:'M45',ls:'bottom'});
+G('M24', 'D1','winners','W2','4th Round W2','W(M15)','W(M16)', {wn:'M28',ws:'bottom', ln:'M46',ls:'bottom'});
+
+// W3 (Round 5): 4 games — M25-M28
+G('M25', 'D1','winners','W3','4th Round W3','W(M17)','W(M18)', {wn:'M29',ws:'top', ln:'M51',ls:'bottom'});
+G('M26', 'D1','winners','W3','4th Round W3','W(M19)','W(M20)', {wn:'M29',ws:'bottom', ln:'M52',ls:'bottom'});
+G('M27', 'D1','winners','W3','4th Round W3','W(M21)','W(M22)', {wn:'M30',ws:'top', ln:'M53',ls:'bottom'});
+G('M28', 'D1','winners','W3','4th Round W3','W(M23)','W(M24)', {wn:'M30',ws:'bottom', ln:'M54',ls:'bottom'});
+
+// W4 (Round 8): 2 games — M29-M30
+G('M29', 'D1','winners','W4','11th Round W4','W(M25)','W(M26)', {wn:'M59',ws:'top', ln:'M57',ls:'bottom'});
+G('M30', 'D1','winners','W4','11th Round W4','W(M27)','W(M28)', {wn:'M60',ws:'top', ln:'M58',ls:'bottom'});
+
+// ═══ D1 LOSERS BRACKET ═══
+
+// L1 (Round 2): 8 games — M31-M38 — losers cascade to D3
+G('M31', 'D1','losers','L1','2nd Round L1','L(M1)','L(M2)',   {wn:'M39',ws:'top', st:'D3-S1'});
+G('M32', 'D1','losers','L1','2nd Round L1','L(M3)','L(M4)',   {wn:'M40',ws:'top', st:'D3-S2'});
+G('M33', 'D1','losers','L1','2nd Round L1','L(M5)','L(M6)',   {wn:'M41',ws:'top', st:'D3-S3'});
+G('M34', 'D1','losers','L1','2nd Round L1','L(M7)','L(M8)',   {wn:'M42',ws:'top', st:'D3-S4'});
+G('M35', 'D1','losers','L1','2nd Round L1','L(M9)','L(M10)',  {wn:'M43',ws:'top', st:'D3-S5'});
+G('M36', 'D1','losers','L1','2nd Round L1','L(M11)','L(M12)', {wn:'M44',ws:'top', st:'D3-S6'});
+G('M37', 'D1','losers','L1','2nd Round L1','L(M13)','L(M14)', {wn:'M45',ws:'top', st:'D3-S7'});
+G('M38', 'D1','losers','L1','2nd Round L1','L(M15)','L(M16)', {wn:'M46',ws:'top', st:'D3-S8'});
+
+// L2 (Round 4): 8 games — M39-M46 — losers cascade to D3
+G('M39', 'D1','losers','L2','3rd Round L2','W(M31)','L(M17)', {wn:'M47',ws:'top', st:'D3-S9'});
+G('M40', 'D1','losers','L2','3rd Round L2','W(M32)','L(M18)', {wn:'M47',ws:'bottom', st:'D3-S10'});
+G('M41', 'D1','losers','L2','3rd Round L2','W(M33)','L(M19)', {wn:'M48',ws:'top', st:'D3-S11'});
+G('M42', 'D1','losers','L2','3rd Round L2','W(M34)','L(M20)', {wn:'M48',ws:'bottom', st:'D3-S12'});
+G('M43', 'D1','losers','L2','3rd Round L2','W(M35)','L(M21)', {wn:'M49',ws:'top', st:'D3-S13'});
+G('M44', 'D1','losers','L2','3rd Round L2','W(M36)','L(M22)', {wn:'M49',ws:'bottom', st:'D3-S14'});
+G('M45', 'D1','losers','L2','3rd Round L2','W(M37)','L(M23)', {wn:'M50',ws:'top', st:'D3-S15'});
+G('M46', 'D1','losers','L2','3rd Round L2','W(M38)','L(M24)', {wn:'M50',ws:'bottom', st:'D3-S16'});
+
+// L3 (Round 6): 4 games — M47-M50 — losers cascade to D2
+G('M47', 'D1','losers','L3','6th Round L3','W(M39)','W(M40)', {wn:'M51',ws:'top', st:'D2-S1'});
+G('M48', 'D1','losers','L3','6th Round L3','W(M41)','W(M42)', {wn:'M52',ws:'top', st:'D2-S2'});
+G('M49', 'D1','losers','L3','6th Round L3','W(M43)','W(M44)', {wn:'M53',ws:'top', st:'D2-S3'});
+G('M50', 'D1','losers','L3','6th Round L3','W(M45)','W(M46)', {wn:'M54',ws:'top', st:'D2-S4'});
+
+// L4 (Round 7): 4 games — M51-M54 — losers cascade to D2
+G('M51', 'D1','losers','L4','8th Round L4','W(M47)','L(M25)', {wn:'M55',ws:'top', st:'D2-S5'});
+G('M52', 'D1','losers','L4','8th Round L4','W(M48)','L(M26)', {wn:'M55',ws:'bottom', st:'D2-S6'});
+G('M53', 'D1','losers','L4','8th Round L4','W(M49)','L(M27)', {wn:'M56',ws:'top', st:'D2-S7'});
+G('M54', 'D1','losers','L4','8th Round L4','W(M50)','L(M28)', {wn:'M56',ws:'bottom', st:'D2-S8'});
+
+// L5 (Round 9): 2 games — M55-M56
+G('M55', 'D1','losers','L5','11th Round L5','W(M51)','W(M52)', {wn:'M57',ws:'top'});
+G('M56', 'D1','losers','L5','11th Round L5','W(M53)','W(M54)', {wn:'M58',ws:'top'});
+
+// L6 (Round 10): 2 games — M57-M58
+G('M57', 'D1','losers','L6','13th Round L6','W(M55)','L(M29)', {wn:'M59',ws:'bottom'});
+G('M58', 'D1','losers','L6','13th Round L6','W(M56)','L(M30)', {wn:'M60',ws:'bottom'});
+
+// ═══ D1 FINALS ═══
+G('M59', 'D1','finals','SF','Semi-Final 1','W(M29)','W(M57)', {wn:'M62',ws:'top', ln:'M61',ls:'top', note:'Semi-Final 1'});
+G('M60', 'D1','finals','SF','Semi-Final 2','W(M30)','W(M58)', {wn:'M62',ws:'bottom', ln:'M61',ls:'bottom', note:'Semi-Final 2'});
+G('M61', 'D1','finals','3P','3rd Place','L(M59)','L(M60)',    {note:'3rd Place'});
+G('M62', 'D1','finals','F','Final','W(M59)','W(M60)',          {note:'FINAL — D1 Champion'});
+
+// ═══ D3 — SINGLE ELIMINATION (16 teams, 16 games) ═══
+
+// D3 W1 (8 games): M63-M70 — teams from D1 cascade
+G('M63', 'D3','winners','W1','7th Round W1','L(M31) [D3-S1]','L(M46) [D3-S16]',  {wn:'M71',ws:'top'});
+G('M64', 'D3','winners','W1','7th Round W1','L(M38) [D3-S8]','L(M39) [D3-S9]',   {wn:'M71',ws:'bottom'});
+G('M65', 'D3','winners','W1','7th Round W1','L(M34) [D3-S4]','L(M43) [D3-S13]',  {wn:'M72',ws:'top'});
+G('M66', 'D3','winners','W1','7th Round W1','L(M35) [D3-S5]','L(M42) [D3-S12]',  {wn:'M72',ws:'bottom'});
+G('M67', 'D3','winners','W1','7th Round W1','L(M32) [D3-S2]','L(M45) [D3-S15]',  {wn:'M73',ws:'top'});
+G('M68', 'D3','winners','W1','7th Round W1','L(M37) [D3-S7]','L(M40) [D3-S10]',  {wn:'M73',ws:'bottom'});
+G('M69', 'D3','winners','W1','7th Round W1','L(M33) [D3-S3]','L(M44) [D3-S14]',  {wn:'M74',ws:'top'});
+G('M70', 'D3','winners','W1','7th Round W1','L(M36) [D3-S6]','L(M41) [D3-S11]',  {wn:'M74',ws:'bottom'});
+
+// D3 W2 (4 games): M71-M74
+G('M71', 'D3','winners','W2','9th Round W2','W(M63)','W(M64)', {wn:'M75',ws:'top'});
+G('M72', 'D3','winners','W2','9th Round W2','W(M65)','W(M66)', {wn:'M75',ws:'bottom'});
+G('M73', 'D3','winners','W2','9th Round W2','W(M67)','W(M68)', {wn:'M76',ws:'top'});
+G('M74', 'D3','winners','W2','9th Round W2','W(M69)','W(M70)', {wn:'M76',ws:'bottom'});
+
+// D3 Semi-Finals: M75-M76
+G('M75', 'D3','finals','SF','Semi-Finals W3','W(M71)','W(M72)', {wn:'M78',ws:'top', ln:'M77',ls:'top', note:'Semi-Final 1'});
+G('M76', 'D3','finals','SF','Semi-Finals W3','W(M73)','W(M74)', {wn:'M78',ws:'bottom', ln:'M77',ls:'bottom', note:'Semi-Final 2'});
+
+// D3 Finals: M77-M78
+G('M77', 'D3','finals','3P','3rd Place','L(M75)','L(M76)', {note:'3rd Place'});
+G('M78', 'D3','finals','F','Final','W(M75)','W(M76)',       {note:'FINAL — D3 Champion'});
+
+
+// ═══ D2 — DOUBLE ELIMINATION (8 teams, 14 games) ═══
+
+// D2 W1 (4 games): M79-M82 — teams from D1 cascade
+G('M79', 'D2','winners','W1','10th Round W1','L(M47) [D2-S1]','L(M54) [D2-S8]', {wn:'M83',ws:'top', ln:'M85',ls:'top'});
+G('M80', 'D2','winners','W1','10th Round W1','L(M50) [D2-S4]','L(M51) [D2-S5]', {wn:'M83',ws:'bottom', ln:'M86',ls:'top', cross:true});
+G('M81', 'D2','winners','W1','10th Round W1','L(M48) [D2-S2]','L(M53) [D2-S7]', {wn:'M84',ws:'top', ln:'M86',ls:'bottom', cross:true});
+G('M82', 'D2','winners','W1','10th Round W1','L(M49) [D2-S3]','L(M52) [D2-S6]', {wn:'M84',ws:'bottom', ln:'M85',ls:'bottom', cross:true});
+
+// D2 W2 (2 games): M83-M84
+G('M83', 'D2','winners','W2','12th Round W2','W(M79)','W(M80)', {wn:'M89',ws:'top', ln:'M88',ls:'bottom', cross:true});
+G('M84', 'D2','winners','W2','12th Round W2','W(M81)','W(M82)', {wn:'M90',ws:'top', ln:'M87',ls:'bottom', cross:true});
+
+// D2 L2 (2 games): M85-M86 — CROSS-PAIRED
+G('M85', 'D2','losers','L2','12th Round L2','L(M79)','L(M82)', {wn:'M87',ws:'top', cross:true, note:'Cross: top vs bottom half'});
+G('M86', 'D2','losers','L2','12th Round L2','L(M80)','L(M81)', {wn:'M88',ws:'top', cross:true, note:'Cross: top vs bottom half'});
+
+// D2 L4 (2 games): M87-M88 — CROSS-PAIRED
+G('M87', 'D2','losers','L4','14th Round L4','W(M85)','L(M84)', {wn:'M89',ws:'bottom', cross:true, note:'Cross: L2-top W vs W2-bottom L'});
+G('M88', 'D2','losers','L4','14th Round L4','W(M86)','L(M83)', {wn:'M90',ws:'bottom', cross:true, note:'Cross: L2-bottom W vs W2-top L'});
+
+// D2 Semi-Finals: M89-M90
+G('M89', 'D2','finals','SF','Semi-Final 1','W(M83)','W(M87)', {wn:'M92',ws:'top', ln:'M91',ls:'top', note:'Semi-Final 1'});
+G('M90', 'D2','finals','SF','Semi-Final 2','W(M84)','W(M88)', {wn:'M92',ws:'bottom', ln:'M91',ls:'bottom', note:'Semi-Final 2'});
+
+// D2 Finals: M91-M92
+G('M91', 'D2','finals','3P','3rd Place','L(M89)','L(M90)', {note:'3rd Place'});
+G('M92', 'D2','finals','F','Final','W(M89)','W(M90)',       {note:'FINAL — D2 Champion'});
+
+// ─── SCHEDULING ──────────────────────────────────────────────
+
+const NUM_COURTS = 4;
+const SLOT_MINUTES = 20;
+const START_HOUR = 9; // 9:00 AM
+
+// Court availability tracker (minutes from midnight)
+const courtNext = new Array(NUM_COURTS).fill(START_HOUR * 60);
+
+// Game lookup
+const gameMap = {};
+games.forEach(g => gameMap[g.id] = g);
+
+function scheduleGames(matchIds) {
+  matchIds.forEach(id => {
+    const g = gameMap[id];
+    if (!g) return;
+    // Find earliest available court
+    let best = 0;
+    for (let c = 1; c < NUM_COURTS; c++) {
+      if (courtNext[c] < courtNext[best]) best = c;
+    }
+    g.court = best + 1;
+    const mins = courtNext[best];
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    g.time = `${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+    g.timeMinutes = mins;
+    courtNext[best] = mins + SLOT_MINUTES;
+  });
+}
+
+// Interleave per TDD §12 — restructured so finals go D3→D2→D1
+// NFA rule: last 3 games of the day are D3 Final, D2 Final, D1 Final
+const interleaveSteps = [
+  /* 1  D1 W1          */ ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12','M13','M14','M15','M16'],
+  /* 2  D1 L1          */ ['M31','M32','M33','M34','M35','M36','M37','M38'],
+  /* 3  D1 W2          */ ['M17','M18','M19','M20','M21','M22','M23','M24'],
+  /* 4  D1 L2          */ ['M39','M40','M41','M42','M43','M44','M45','M46'],
+  /* 5  D1 W3          */ ['M25','M26','M27','M28'],
+  /* 6  D1 L3          */ ['M47','M48','M49','M50'],
+  /* 7  D1 L4          */ ['M51','M52','M53','M54'],
+  /* 8  D3 W1          */ ['M63','M64','M65','M66','M67','M68','M69','M70'],
+  /* 9  D1 W4          */ ['M29','M30'],
+  /* 10 D3 W2          */ ['M71','M72','M73','M74'],
+  /* 11 D1 L5          */ ['M55','M56'],
+  /* 12 D2 W1          */ ['M79','M80','M81','M82'],
+  /* 13 D1 L6          */ ['M57','M58'],
+  /* 14 D3 SF          */ ['M75','M76'],
+  /* 15 D2 W2 + D2 L2  */ ['M83','M84','M85','M86'],
+  /* 16 D2 L4          */ ['M87','M88'],
+  'BARRIER',
+  /* 17 D2 SF          */ ['M89','M90'],
+  'BARRIER',
+  /* 18 D1 SF + D3 3rd */ ['M59','M60','M77'],
+  'BARRIER',
+  /* 19 D2 3rd + D1 3rd*/ ['M91','M61'],
+  /* 20 D3 Final       */ ['M78'],
+  'BARRIER',
+  /* 21 D2 Final       */ ['M92'],
+  'BARRIER',
+  /* 22 D1 Final       */ ['M62'],
+];
+
+// Barrier: align all courts to latest time (enforces dependency ordering)
+function barrier() {
+  const maxTime = Math.max(...courtNext);
+  courtNext.fill(maxTime);
+}
+
+interleaveSteps.forEach(step => {
+  if (step === 'BARRIER') { barrier(); }
+  else { scheduleGames(step); }
+});
+
+// ─── CHRONOLOGICAL M-NUMBER ASSIGNMENT ──────────────────────
+// NFA numbers games in scheduling order across ALL divisions
+// Sort all games by time, then by court (tiebreaker)
+const sortedGames = [...games].sort((a, b) => {
+  if (a.timeMinutes !== b.timeMinutes) return a.timeMinutes - b.timeMinutes;
+  return a.court - b.court;
+});
+
+// Assign display match numbers M1-M92
+const displayNumMap = {}; // internal id → display "M##"
+sortedGames.forEach((g, i) => {
+  const displayNum = `M${i + 1}`;
+  displayNumMap[g.id] = displayNum;
+  g.displayNum = displayNum;
+});
+
+// Helper: resolve a team label to use display M-numbers
+// e.g. "W(M17)" → "W(M##)" where M## is M17's display number
+// e.g. "L(M31) [D3-S1]" → "L(M##) [D3-S1]"
+function resolveLabel(label) {
+  return label.replace(/([WL])\(M(\d+)\)/g, (match, wl, num) => {
+    const internalId = `M${num}`;
+    const display = displayNumMap[internalId] || internalId;
+    return `${wl}(${display})`;
+  });
+}
+
+// ─── RENDERING ───────────────────────────────────────────────
+
+function renderMatchCard(g) {
+  const cascadeHtml = g.seedTarget
+    ? `<span class="cascade-badge">→ ${g.seedTarget}</span>`
+    : '';
+  const crossHtml = g.cross
+    ? `<span class="cross-badge">⚡ CROSS</span>`
+    : '';
+  const noteHtml = g.note
+    ? `<div class="match-footer">${g.note}</div>`
+    : '';
+
+  // Use display M-number (chronological across all divisions)
+  const displayNum = g.displayNum || g.id;
+  // Resolve team labels to use display M-numbers
+  const teamALabel = resolveLabel(g.teamA);
+  const teamBLabel = resolveLabel(g.teamB);
+
+  return `
+    <div class="match-card" data-game-id="${g.id}">
+      <div class="match-header">
+        <span class="match-num">${displayNum}</span>
+        ${crossHtml}
+        <span class="match-court">C${g.court}</span>
+        <span class="match-time">${g.time}</span>
+      </div>
+      <div class="team-slot">
+        <span class="label">${teamALabel}<span class="slot-pos">(top)</span></span>
+      </div>
+      <div class="team-slot">
+        <span class="label">${teamBLabel}<span class="slot-pos">(bot)</span></span>
+        ${cascadeHtml}
+      </div>
+      ${noteHtml}
+    </div>
+  `;
+}
+
+function renderBracket(division) {
+  const divGames = games.filter(g => g.division === division);
+  const container = document.getElementById(`tab-${division.toLowerCase()}`);
+  const teamCount = division === 'D1' ? '32' : division === 'D3' ? '16' : '8';
+  const format = division === 'D3' ? 'Single Elim' : 'Double Elim';
+
+  let html = `<div class="summary-box">
+    <div class="summary-stat"><div class="num">${divGames.length}</div><div class="lbl">Total Games</div></div>
+    <div class="summary-stat"><div class="num">${division}</div><div class="lbl">Division</div></div>
+    <div class="summary-stat"><div class="num">${teamCount}</div><div class="lbl">Teams</div></div>
+    <div class="summary-stat"><div class="num">${format}</div><div class="lbl">Format</div></div>
+  </div>`;
+
+  // Define column layout per division (NFA PDF style: Winners → Finals → Losers mirrored)
+  const columns = getColumnDefs(division);
+
+  html += `<div class="bracket-horizontal">`;
+
+  columns.forEach(col => {
+    if (col.type === 'divider') {
+      html += `<div class="section-divider"></div>`;
+      return;
+    }
+
+    // Filter games for this column
+    const colGames = divGames.filter(g =>
+      col.rounds.includes(g.round) && col.sections.includes(g.section)
+    );
+
+    // Sort games in finals columns
+    if (col.finalsStack) {
+      const order = { SF: 0, F: 1, '3P': 2 };
+      colGames.sort((a, b) => (order[a.round] ?? 9) - (order[b.round] ?? 9));
+    }
+    if (col.finalsPair) {
+      const order = { F: 0, '3P': 1 };
+      colGames.sort((a, b) => (order[a.round] ?? 9) - (order[b.round] ?? 9));
+    }
+
+    html += `<div class="bracket-col">`;
+    html += `<div class="col-header ${col.headerClass}">${col.label}</div>`;
+    if (col.divisionTag) {
+      html += `<div class="division-tag ${col.divisionTag.cls}">${col.divisionTag.text}</div>`;
+    }
+    const extraClass = col.finalsStack ? ' finals-stack' : (col.finalsPair ? ' finals-pair' : '');
+    html += `<div class="col-games${extraClass}">`;
+    if (col.finalsStack) {
+      // SF games in normal flow (space-around aligns with feeders)
+      // F/3P absolutely centered between the two SFs
+      const sfGames = colGames.filter(g => g.round === 'SF');
+      const fpGames = colGames.filter(g => g.round === 'F' || g.round === '3P');
+      sfGames.forEach(g => { html += renderMatchCard(g); });
+      if (fpGames.length) {
+        html += `<div class="finals-center-group">`;
+        fpGames.forEach(g => { html += renderMatchCard(g); });
+        html += `</div>`;
+      }
+    } else if (col.finalsPair) {
+      // Final centered between SFs, 3rd Place below
+      const finalGame = colGames.find(g => g.round === 'F');
+      const thirdGame = colGames.find(g => g.round === '3P');
+      if (finalGame) {
+        html += `<div class="finals-main">${renderMatchCard(finalGame)}</div>`;
+      }
+      if (thirdGame) {
+        html += `<div class="finals-third">${renderMatchCard(thirdGame)}</div>`;
+      }
+    } else {
+      colGames.forEach(g => { html += renderMatchCard(g); });
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function getColumnDefs(division) {
+  if (division === 'D1') {
+    return [
+      // Winners bracket: left to right
+      { rounds: ['W1'], sections: ['winners'], label: '1st Round W1\n16 games', headerClass: 'winners' },
+      { rounds: ['W2'], sections: ['winners'], label: '4th Round W2\n8 games', headerClass: 'winners' },
+      { rounds: ['W3'], sections: ['winners'], label: '4th Round W3\n4 games', headerClass: 'winners' },
+      { rounds: ['W4'], sections: ['winners'], label: '11th Round W4\n2 games', headerClass: 'winners' },
+      // Finals: SF in flow, F/3P centered
+      { rounds: ['SF','F','3P'], sections: ['finals'], label: 'Finals\n4 games', headerClass: 'finals', finalsStack: true },
+      // Losers bracket: mirrored (L6 closest to finals, L1 on far right)
+      { rounds: ['L6'], sections: ['losers'], label: '13th Round L6\n2 games', headerClass: 'losers' },
+      { rounds: ['L5'], sections: ['losers'], label: '11th Round L5\n2 games', headerClass: 'losers' },
+      { rounds: ['L4'], sections: ['losers'], label: '8th Round L4\n4 games', headerClass: 'losers',
+        divisionTag: { text: '→ DIVISION 2', cls: 'd2-tag' } },
+      { rounds: ['L3'], sections: ['losers'], label: '6th Round L3\n4 games', headerClass: 'losers',
+        divisionTag: { text: '→ DIVISION 2', cls: 'd2-tag' } },
+      { rounds: ['L2'], sections: ['losers'], label: '3rd Round L2\n8 games', headerClass: 'losers',
+        divisionTag: { text: '→ DIVISION 3', cls: 'd3-tag' } },
+      { rounds: ['L1'], sections: ['losers'], label: '2nd Round L1\n8 games', headerClass: 'losers',
+        divisionTag: { text: '→ DIVISION 3', cls: 'd3-tag' } },
+    ];
+  }
+  if (division === 'D3') {
+    return [
+      { rounds: ['W1'], sections: ['winners'], label: '7th Round W1\n8 games', headerClass: 'winners' },
+      { rounds: ['W2'], sections: ['winners'], label: '9th Round W2\n4 games', headerClass: 'winners' },
+      { rounds: ['SF'], sections: ['finals'], label: 'Semi-Finals\n2 games', headerClass: 'finals' },
+      { rounds: ['F','3P'], sections: ['finals'], label: 'Finals\n2 games', headerClass: 'finals', finalsPair: true },
+    ];
+  }
+  if (division === 'D2') {
+    return [
+      // Winners
+      { rounds: ['W1'], sections: ['winners'], label: '10th Round W1\n4 games', headerClass: 'winners' },
+      { rounds: ['W2'], sections: ['winners'], label: '12th Round W2\n2 games', headerClass: 'winners' },
+      // Finals: SF in flow, F/3P centered
+      { rounds: ['SF','F','3P'], sections: ['finals'], label: 'Finals\n4 games', headerClass: 'finals', finalsStack: true },
+      // Losers mirrored
+      { rounds: ['L4'], sections: ['losers'], label: '14th Round L4\n2 games', headerClass: 'losers' },
+      { rounds: ['L2'], sections: ['losers'], label: '12th Round L2\n2 games', headerClass: 'losers' },
+    ];
+  }
+  return [];
+}
+
+function renderSchedule() {
+  const container = document.getElementById('tab-schedule');
+
+  // Collect all unique times and sort
+  const timeSet = new Set();
+  games.forEach(g => timeSet.add(g.timeMinutes));
+  const times = [...timeSet].sort((a, b) => a - b);
+
+  // Build schedule grid: time -> court -> games
+  const grid = {};
+  times.forEach(t => {
+    grid[t] = {};
+    for (let c = 1; c <= NUM_COURTS; c++) grid[t][c] = [];
+  });
+  games.forEach(g => {
+    if (grid[g.timeMinutes] && grid[g.timeMinutes][g.court]) {
+      grid[g.timeMinutes][g.court].push(g);
+    }
+  });
+
+  let html = `<div class="summary-box">
+    <div class="summary-stat"><div class="num">92</div><div class="lbl">Total Games</div></div>
+    <div class="summary-stat"><div class="num">4</div><div class="lbl">Courts</div></div>
+    <div class="summary-stat"><div class="num">${times.length}</div><div class="lbl">Time Slots</div></div>
+    <div class="summary-stat"><div class="num">${games[games.length-1].time}</div><div class="lbl">Last Game</div></div>
+  </div>`;
+
+  html += `<table class="schedule-table">`;
+  html += `<thead><tr><th>Time</th><th>Court 1</th><th>Court 2</th><th>Court 3</th><th>Court 4</th></tr></thead>`;
+  html += `<tbody>`;
+
+  times.forEach(t => {
+    const h = Math.floor(t / 60);
+    const m = t % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    const timeStr = `${h12}:${m.toString().padStart(2,'0')} ${ampm}`;
+
+    html += `<tr><td class="time-cell">${timeStr}</td>`;
+    for (let c = 1; c <= NUM_COURTS; c++) {
+      html += `<td>`;
+      const cellGames = grid[t][c];
+      cellGames.forEach(g => {
+        const divClass = g.division.toLowerCase();
+        const displayNum = g.displayNum || g.id;
+        html += `<div class="sched-card ${divClass}">
+          <span class="sched-match">${displayNum}</span>
+          <span class="sched-div ${divClass}">${g.division}</span>
+          ${g.cross ? '<span class="cross-badge" style="font-size:9px">⚡</span>' : ''}
+          <div class="sched-teams">${resolveLabel(g.teamA)} vs ${resolveLabel(g.teamB)}</div>
+        </div>`;
+      });
+      if (cellGames.length === 0) html += `<span style="color:var(--text-muted);font-size:11px">—</span>`;
+      html += `</td>`;
+    }
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+// ─── BRACKET CONNECTOR LINES ────────────────────────────────
+
+function drawBracketConnectors(divisionId) {
+  const container = document.getElementById(`tab-${divisionId.toLowerCase()}`);
+  if (!container) return;
+  const bracketEl = container.querySelector('.bracket-horizontal');
+  if (!bracketEl) return;
+
+  // Remove existing SVG overlay
+  const oldSvg = bracketEl.querySelector('.connector-svg');
+  if (oldSvg) oldSvg.remove();
+
+  // Gather card positions relative to bracket container
+  const cards = bracketEl.querySelectorAll('.match-card[data-game-id]');
+  const bracketRect = bracketEl.getBoundingClientRect();
+  const sl = bracketEl.scrollLeft;
+  const st = bracketEl.scrollTop;
+
+  const pos = {};
+  cards.forEach(card => {
+    const id = card.getAttribute('data-game-id');
+    const r = card.getBoundingClientRect();
+    pos[id] = {
+      l: r.left - bracketRect.left + sl,
+      r: r.right - bracketRect.left + sl,
+      t: r.top - bracketRect.top + st,
+      b: r.bottom - bracketRect.top + st,
+      cx: (r.left + r.right) / 2 - bracketRect.left + sl,
+      cy: (r.top + r.bottom) / 2 - bracketRect.top + st,
+      h: r.height,
+    };
+  });
+
+  // Create SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('connector-svg');
+  svg.setAttribute('width', bracketEl.scrollWidth);
+  svg.setAttribute('height', bracketEl.scrollHeight);
+
+  const divGames = games.filter(g => g.division === divisionId);
+  const divIds = new Set(divGames.map(g => g.id));
+
+  // Build lookups for section and round of each game
+  const sectionOf = {};
+  const roundOf = {};
+  divGames.forEach(g => { sectionOf[g.id] = g.section; roundOf[g.id] = g.round; });
+
+  // Games that are Final or 3rd Place — no connectors drawn TO these
+  const finalsRounds = new Set(['F', '3P']);
+
+  // Decide whether to draw a connection
+  function shouldDraw(srcId, tgtId) {
+    // Allow SF → Final connectors when in separate columns (single-elim layout)
+    if (roundOf[tgtId] === 'F' && roundOf[srcId] === 'SF') {
+      if (pos[tgtId] && pos[srcId] && pos[tgtId].cx > pos[srcId].cx + 50) return true;
+      return false; // same column (DE finalsStack) — skip
+    }
+    // Skip connectors to/from Final and 3rd Place
+    if (finalsRounds.has(roundOf[tgtId])) return false;
+    if (finalsRounds.has(roundOf[srcId])) return false;
+    const ss = sectionOf[srcId], ts = sectionOf[tgtId];
+    if (!ss || !ts) return false;
+    if (ss === ts) return true;
+    if (ts === 'finals' || ss === 'finals') return true;
+    return false;
+  }
+
+  divGames.forEach(g => {
+    if (g.winnerNext && divIds.has(g.winnerNext) && pos[g.id] && pos[g.winnerNext]) {
+      if (shouldDraw(g.id, g.winnerNext)) {
+        drawElbow(svg, pos[g.id], pos[g.winnerNext], g.winnerSlot, 'rgba(5,150,105,0.4)');
+      }
+    }
+    if (g.loserNext && divIds.has(g.loserNext) && pos[g.id] && pos[g.loserNext]) {
+      if (shouldDraw(g.id, g.loserNext)) {
+        drawElbow(svg, pos[g.id], pos[g.loserNext], g.loserSlot, 'rgba(234,88,12,0.4)');
+      }
+    }
+  });
+
+  bracketEl.appendChild(svg);
+}
+
+function drawElbow(svg, src, tgt, slot, color) {
+  const goRight = tgt.cx > src.cx;
+
+  const startX = goRight ? src.r + 1 : src.l - 1;
+  const startY = src.cy;
+  const endX   = goRight ? tgt.l - 1 : tgt.r + 1;
+
+  let endY;
+  if (slot === 'top')         endY = tgt.t + tgt.h * 0.33;
+  else if (slot === 'bottom') endY = tgt.b - tgt.h * 0.33;
+  else                        endY = tgt.cy;
+
+  // Straight line when source and target game centers are at ~same vertical level
+  const isStraight = Math.abs(src.cy - tgt.cy) < 15;
+  if (isStraight) endY = startY;
+
+  const midX = (startX + endX) / 2;
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  const d = isStraight
+    ? `M${startX},${startY} H${endX}`
+    : `M${startX},${startY} H${midX} V${endY} H${endX}`;
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(path);
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────
+
+function showTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#tabs button').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  const buttons = document.querySelectorAll('#tabs button');
+  const tabMap = { d1: 0, d2: 1, d3: 2, schedule: 3 };
+  if (tabMap[tabId] !== undefined) buttons[tabMap[tabId]].classList.add('active');
+
+  // Draw connectors after tab is visible (needs layout)
+  const divId = tabId.toUpperCase();
+  if (['D1','D2','D3'].includes(divId)) {
+    requestAnimationFrame(() => drawBracketConnectors(divId));
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+
+renderBracket('D1');
+renderBracket('D2');
+renderBracket('D3');
+renderSchedule();
+
+// Draw connectors for initially visible tab (D1)
+requestAnimationFrame(() => drawBracketConnectors('D1'));
+
+// Verify game count
+console.log(`Total games: ${games.length} (expected 92)`);
+console.log(`D1: ${games.filter(g=>g.division==='D1').length} (expected 62)`);
+console.log(`D3: ${games.filter(g=>g.division==='D3').length} (expected 16)`);
+console.log(`D2: ${games.filter(g=>g.division==='D2').length} (expected 14)`);
+</script>
+
+</body>
+</html>

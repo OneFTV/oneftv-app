@@ -1,220 +1,214 @@
 # Bracket Visualization Component — Detailed Specification
 
+> **Status:** Implemented (diverged from original design — see §3 Implementation Notes)
+> **Last updated:** 2026-03-10
+
 ## 1. Overview
 
-Build a `DoubleEliminationBracketView` component that renders winners bracket, losers bracket, and grand finals as a unified visualization. This component will be integrated into the existing `TournamentBracketView` smart wrapper and will activate when the tournament format is `bracket` (or `double_elimination`) and the game data contains rounds with W/L naming patterns (e.g., `W1`, `L1`, `W2`, `L2`, etc.).
+Build a bracket visualization for NFA cascade tournaments that renders all divisions (D1/D2/D3, and optionally D4) in a tabbed, horizontally-scrollable bracket view with live SVG connector lines between matches.
 
-## 2. Current State
-
-### What Exists
-- **`BracketView.tsx`**: Renders single-elimination brackets only. Filters to `roundType === 'knockout'` games, groups by `roundNumber`, renders columns with connector lines (desktop) or tabbed round pills (mobile).
-- **`MatchCard.tsx`**: Individual match card supporting live indicators, winner highlighting, Bo3 set scores, court/time footer. Fully theme-aware.
-- **`TournamentBracketView.tsx`**: Smart wrapper that selects `BracketView`, `GroupStageView`, or `RoundRobinView` based on format. Currently no double-elimination path.
-- **`bracketUtils.ts`**: Utilities for `groupGamesByRound()`, `groupGamesByGroup()`, `getRoundLabel()`. Interfaces: `BracketGame`, `RoundGroup`, `GroupCluster`.
-- **`theme.ts`**: `TournamentTheme` interface with bracket-specific tokens (`connectorBorder`, `roundLabel`, `bracketColumnMinWidth`). Light and dark themes.
-- **`LiveRefresh.tsx`**: Polling-based live refresh (30s interval, `router.refresh()`).
-- **NFA Orlando seed**: Real double-elimination data with rounds named `W1`, `L1`, `W2`, `L2`, `W3`, `L3`, `L4`, `W4`, `L5`, `L6`, `SF`, `Final`, `3rd Place`.
-
-### Data Model
-- Round names follow the pattern: `'Nth Round W1'`, `'Nth Round L1'`, `'SF'`, `'Final'`, `'3rd Place'`.
-- All rounds have `type: 'knockout'` — there is no separate `roundType` for winners vs losers.
-- The W/L designation is embedded in the round `name` field.
-- `BracketGame.roundName` carries the round name from the DB.
-
-## 3. Component Architecture
-
-### 3.1 New Utility: `classifyDoubleEliminationRounds()`
-
-**File**: `src/lib/bracketUtils.ts`
-
-```typescript
-export interface DoubleEliminationBracket {
-  winnersRounds: RoundGroup[];   // Rounds containing 'W' in name
-  losersRounds: RoundGroup[];    // Rounds containing 'L' in name
-  grandFinals: BracketGame[];    // SF + Final + 3rd Place games
-}
-
-export function classifyDoubleEliminationRounds(
-  games: BracketGame[]
-): DoubleEliminationBracket;
-```
-
-**Classification Logic**:
-1. Group all knockout games by round (using existing `groupGamesByRound`).
-2. For each round, inspect `roundName`:
-   - Contains ` W` (space+W followed by digit) → winners bracket
-   - Contains ` L` (space+L followed by digit) → losers bracket
-   - Contains `SF`, `Semi`, `Final`, `3rd`, or `Grand` → grand finals
-   - Fallback: if round has only 1-2 games and is the last or second-to-last round → grand finals; otherwise → winners bracket
-3. Return the three arrays sorted by `roundNumber`.
-
-**Detection helper**:
-```typescript
-export function isDoubleElimination(games: BracketGame[]): boolean;
-```
-Returns `true` if games contain at least one round with `L` pattern AND one with `W` pattern in the round name.
-
-### 3.2 New Component: `DoubleEliminationBracketView`
-
-**File**: `src/components/tournament/DoubleEliminationBracketView.tsx`
-
-**Props**:
-```typescript
-interface DoubleEliminationBracketViewProps {
-  games: BracketGame[];
-  dense?: boolean;
-  theme?: TournamentTheme;
-}
-```
-
-**Desktop Layout** (md+ breakpoint):
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ WINNERS BRACKET                                                 │
-│ ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐                   │
-│ │  W1  │───>│  W2  │───>│  W3  │───>│  W4  │──┐               │
-│ │(16gm)│    │(8gm) │    │(4gm) │    │(2gm) │  │               │
-│ └──────┘    └──────┘    └──────┘    └──────┘  │               │
-├────────────────────────────────────────────────┼───────────────┤
-│ LOSERS BRACKET                                 │  GRAND FINALS │
-│ ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐  │  ┌──────────┐ │
-│ │  L1  │───>│  L2  │───>│  L3  │───>│  L4  │──┤  │ Semifinal│ │
-│ │(8gm) │    │(8gm) │    │(4gm) │    │(4gm) │  │  │ 3rd Place│ │
-│ └──────┘    └──────┘    └──────┘    └──────┘  │  │ Final    │ │
-│             ┌──────┐    ┌──────┐              │  └──────────┘ │
-│             │  L5  │───>│  L6  │──────────────┘               │
-│             │(2gm) │    │(2gm) │                               │
-│             └──────┘    └──────┘                               │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The layout uses a vertically stacked approach:
-- **Section 1 — Winners Bracket**: Rendered using the existing `DesktopBracket` sub-component pattern (columns with connector lines). Section header: "WINNERS BRACKET" with a gold/accent accent bar.
-- **Section 2 — Losers Bracket**: Same column-based rendering. Section header: "LOSERS BRACKET" with a muted/secondary accent bar. Games are typically smaller (compact mode on inner cards).
-- **Section 3 — Grand Finals**: Rendered as a centered column showing SF, 3rd Place, and Final as vertically stacked `MatchCard` components with prominent styling. Header: "GRAND FINALS".
-
-Each section is independently horizontally scrollable.
-
-**Mobile Layout** (below md):
-- Tab navigation at the top with three pills: `Winners` | `Losers` | `Finals`
-- Within each tab, use the existing `MobileBracket` round-selector pattern (round pills + stacked cards)
-- Finals tab shows all grand final games as a simple vertical stack
-
-**Visual Enhancements**:
-- Section headers use theme-aware colors. Add new theme tokens:
-  - `sectionHeaderWinners: string` (e.g., `'bg-amber-500/10 text-amber-700'` light, `'bg-amber-500/20 text-amber-400'` dark)
-  - `sectionHeaderLosers: string` (e.g., `'bg-gray-100 text-gray-600'` light, `'bg-gray-800 text-gray-400'` dark)
-  - `sectionHeaderFinals: string` (e.g., `'bg-footvolley-primary/10 text-footvolley-primary'` light, dark variant)
-- Connector lines between winners/losers and grand finals sections are drawn as dashed vertical lines on desktop
-- Grand finals match cards use larger sizing (non-compact) with additional prominence styling
-
-### 3.3 Theme Extensions
-
-**File**: `src/components/tournament/theme.ts`
-
-Add to `TournamentTheme` interface:
-```typescript
-// Double elimination sections
-sectionHeaderWinners: string;
-sectionHeaderLosers: string;
-sectionHeaderFinals: string;
-sectionDivider: string;
-```
-
-Add corresponding values to `lightTheme` and `darkTheme`.
-
-### 3.4 Integration into `TournamentBracketView`
-
-**File**: `src/components/tournament/TournamentBracketView.tsx`
-
-Modify `renderBracketView()` to:
-1. Import `isDoubleElimination` and `DoubleEliminationBracketView`.
-2. Before the existing switch statement, check: `if (isDoubleElimination(games)) return <DoubleEliminationBracketView ... />`.
-3. This auto-detection means no format string changes are needed — the component inspects game data.
-4. Also handle the explicit case `case 'double_elimination':` in the switch to force this view.
-
-### 3.5 `getRoundLabel()` Enhancement
-
-**File**: `src/lib/bracketUtils.ts`
-
-Update `getRoundLabel()` to handle double-elimination round names more gracefully:
-- If `roundName` contains `W1`/`W2`/etc → display as "Winners R1", "Winners R2", etc.
-- If `roundName` contains `L1`/`L2`/etc → display as "Losers R1", "Losers R2", etc.
-- `SF` → "Semifinals"
-- `Final` → "Final"
-- `3rd` → "3rd Place"
-
-Add a new function:
-```typescript
-export function getDoubleElimRoundLabel(roundName: string): string;
-```
-
-## 4. Live Updates
-
-### Current Mechanism
-The app uses `LiveRefresh` (polling every 30s via `router.refresh()`). This works for Server Components because `router.refresh()` re-fetches server data without full page reload.
-
-### Enhancement for This Component
-- The `DoubleEliminationBracketView` is a client component receiving `games` as props.
-- Live updates flow through the parent page's server-side data fetch → re-render props down.
-- **No new WebSocket/SSE infrastructure needed** — the existing polling mechanism already handles this.
-- Add visual feedback: when a game transitions from `scheduled` → `in_progress`, the `MatchCard` already shows a pulsing red LIVE indicator.
-- Add a `lastUpdated` timestamp display in the component footer: "Last updated: X seconds ago" with a refresh countdown ring (purely cosmetic, driven by parent's LiveRefresh).
-- On the public event page (`/e/[id]`), the `LiveRefresh` component is already included. No changes needed.
-- On the tournament detail page (`/tournaments/[id]`), ensure `LiveRefresh` is included when the tournament status is `in_progress`.
-
-### Future Enhancement (Out of Scope)
-- Server-Sent Events (SSE) endpoint for real-time push updates could replace polling but is not required for this task.
-
-## 5. File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/lib/bracketUtils.ts` | Edit | Add `classifyDoubleEliminationRounds()`, `isDoubleElimination()`, `getDoubleElimRoundLabel()` |
-| `src/components/tournament/theme.ts` | Edit | Add 4 new theme tokens to interface + both theme objects |
-| `src/components/tournament/DoubleEliminationBracketView.tsx` | Create | New component with desktop (stacked sections) and mobile (tabbed) layouts |
-| `src/components/tournament/TournamentBracketView.tsx` | Edit | Add auto-detection + explicit `double_elimination` case |
-
-## 6. Edge Cases
-
-1. **Single-elimination tournaments with W/L-named rounds**: `isDoubleElimination()` requires BOTH W and L patterns. A tournament with only `W1, W2, SF, Final` (no losers rounds) will be treated as single-elimination and rendered by existing `BracketView`.
-2. **Incomplete brackets**: Games with `player1 === 'TBD'` render with reduced opacity (existing MatchCard behavior).
-3. **No games yet**: Falls through to existing empty state in `TournamentBracketView`.
-4. **Mixed round types**: Only `roundType === 'knockout'` games are included (consistent with existing `BracketView` filtering).
-5. **Varied double-elimination structures**: The NFA Orlando data shows multiple structures (32-team full DE, 8-team modified, 16-team single-elim). The classifier handles all via pattern matching on round names.
-6. **Category-aware**: Works per-category since games are already filtered by `categoryId` before reaching the component.
-
-## 7. Responsive Behavior
-
-- **Desktop (md+)**: Full bracket visualization with connector lines per section, horizontally scrollable sections.
-- **Mobile (<md)**: Tab-based navigation (Winners | Losers | Finals), round pills within each tab, vertically stacked match cards.
-- **Dense/Poster mode**: All sections rendered in desktop layout regardless of screen size, compact card sizing.
-
-## 8. Performance Considerations
-
-- All bracket classification happens client-side on the already-fetched games array (typically <100 games per category). No additional API calls.
-- Connector line rendering uses CSS flexbox (no canvas/SVG), consistent with existing `BracketView`.
-- Theme tokens use Tailwind classes — no runtime style computation.
+**Original design** specified a `DoubleEliminationBracketView` with three stacked sections (Winners / Losers / Grand Finals). **Actual implementation** replaced this with `NfaBracketView` — a multi-division tabbed component purpose-built for the NFA cascade format (where divisions are earned, not pre-assigned). See §3 for divergence rationale.
 
 ---
 
-## Acceptance Criteria
+## 2. Current State (as-built)
 
-- **[AC-1]** DoubleEliminationBracketView renders three labeled sections: Winners Bracket, Losers Bracket, and Grand Finals when given double-elimination game data
-- **[AC-2]** Winners bracket section displays all W-rounds (W1, W2, W3, W4) in column layout with connector lines on desktop
-- **[AC-3]** Losers bracket section displays all L-rounds (L1-L6) in column layout with connector lines on desktop
-- **[AC-4]** Grand Finals section displays Semifinal, 3rd Place, and Final matches prominently
-- **[AC-5]** isDoubleElimination() correctly detects double-elimination game data based on round name patterns
-- **[AC-6]** classifyDoubleEliminationRounds() correctly separates games into winners, losers, and grand finals arrays
-- **[AC-7]** TournamentBracketView auto-detects double elimination and renders DoubleEliminationBracketView
-- **[AC-8]** Mobile layout shows tab navigation with Winners, Losers, and Finals tabs
-- **[AC-9]** Component supports both light and dark themes via TournamentTheme prop
-- **[AC-10]** Live game indicators display correctly for in-progress matches
-- **[AC-11]** Component works with the existing LiveRefresh polling mechanism for live score updates
-- **[AC-12]** Dense/poster mode renders all sections in desktop layout regardless of viewport size
-- **[AC-13]** Single-elimination tournaments still render with existing BracketView
-- **[AC-14]** Empty state displays correctly when no games exist
-- **[AC-15]** TBD matches render with reduced opacity in all bracket sections
-- **[AC-16]** Round labels display context-appropriate names for double elimination
-- **[AC-17]** Component handles varied double-elimination bracket sizes (8-team modified, 32-team full)
-- **[AC-18]** Horizontal scrolling works independently per bracket section on desktop
+### What Was Built
+
+- **`NfaBracketView.tsx`** — Primary NFA bracket component. Tabbed per-division view (D1/D2/D3/D4 + Schedule). Each tab renders an independently horizontally-scrollable bracket via `NfaBracketHorizontal`. Client component (`'use client'`).
+- **`NfaBracketHorizontal`** — Inner component for one division. Renders `BracketColumn` list + `ConnectorOverlay` SVG. Uses `bracketRef` to anchor SVG positioning.
+- **`ConnectorOverlay`** — SVG overlay that draws elbow-path connector lines between match cards. Reads positions via `getBoundingClientRect()` on `[data-game-id]` elements. Re-draws on resize and after first paint (rAF fix).
+- **`BracketColumn`** — Single column in a bracket. Uses `finalsStack` (DE finals: SF1/SF2 in flow, F+3P centred) or `finalsPair` (SE finals: F centred, 3P below) layouts.
+- **`NfaMatchCard`** — Wrapper around `MatchCard` that attaches `data-game-id` attribute and renders `seedTarget` cascade badge.
+- **`nfaBracketLayout.ts`** — Column definitions per division+mode via `getColumnDefs(division, divisionCount)`. Returns `NfaBracketColumn[]`.
+- **`MatchCard.tsx`** — Individual match card (unchanged from original design). Dense mode with `min-w-[160px]`, Bo3 set scores, live indicator, winner highlight.
+- **`bracketUtils.ts`** — `BracketGame` interface extended with `winnerNextGameId`, `loserNextGameId`, `categoryId`, `matchNumber`, `bracketSide`, `seedTarget`.
+
+### Data Flow
+
+```
+Server component (page.tsx)
+  └─ GameService.listByTournament() per division category
+       └─ Prisma: game + round + players (includes winnerNextGameId, loserNextGameId)
+            └─ NfaBracketView (client component, receives all division games as props)
+                 └─ nfaGames = games.map() → adds division / section / round fields
+                      └─ NfaBracketHorizontal (per active tab)
+                           └─ ConnectorOverlay (SVG) + BracketColumn list
+```
+
+### Round / Section Derivation
+
+`deriveRound(game)` extracts a round code from `roundName`:
+- `"D3 QF"` → `"W1"`, `"D3 Semi-Final"` → `"SF"`, `"D3 Final"` → `"F"`, `"D3 Bronze"` → `"3P"` (via bracketSide fallback)
+- Round codes: `W1..Wn`, `L1..Ln`, `SF`, `F`, `3P`
+
+`deriveSection(game, round)` maps to bracket section — **round code checked first**:
+```typescript
+if (['SF', 'F', '3P'].includes(round)) return 'finals';  // ← must be first
+if (round.startsWith('L')) return 'losers';
+if (game.bracketSide) return game.bracketSide;
+return 'winners';
+```
+> **Critical:** SE brackets (D3/D4) store `bracketSide='winners'` on SF games. Without the round-first check, SF games land in the Winners column instead of Finals. This bug was fixed in commit e9a231d.
+
+---
+
+## 3. Implementation Notes (Divergence from Original Design)
+
+| Original Design | Actual Implementation | Reason |
+|---|---|---|
+| `DoubleEliminationBracketView` with 3 stacked sections | `NfaBracketView` with per-division tabs | NFA format has 3–4 separate division brackets, each with their own bracket type. A single DE view couldn't represent this. |
+| `classifyDoubleEliminationRounds()` utility | `getColumnDefs(division, divisionCount)` in `nfaBracketLayout.ts` | Column layout is division-specific and mode-specific (3-div vs 4-div). |
+| CSS flexbox connector lines | SVG `<path>` overlay via `ConnectorOverlay` | SVG elbow paths are more precise for complex routing. Uses `[data-game-id]` + `getBoundingClientRect()`. |
+| `isDoubleElimination()` auto-detection on `TournamentBracketView` | Explicit `isNfaCascade` check via `category.divisionLabel != null` | NFA cascade is detected structurally, not by round name patterns. |
+| Horizontal scroll per section | Horizontal scroll per division tab | One tab = one bracket = one scroll container. |
+| Theme tokens `sectionHeaderWinners` etc. | Column header color via `column.headerClass` ('winners'/'losers'/'finals') | Simpler — colour is a property of the column definition. |
+
+---
+
+## 4. Division Bracket Structures
+
+### Match Number Ranges (global, cross-division)
+
+| Division | Mode | Type | Match Range | Games |
+|---|---|---|---|---|
+| D1 | both | Double Elimination | M1 – M62 | 62 |
+| D3 | 3-div | Single Elimination (16-team) | M63 – M78 | 16 |
+| D3 | 4-div | Single Elimination (8-team) | M63 – M70 | 8 |
+| D2 | both | Double Elimination (8-team) | M79 – M92 | 14 |
+| D4 | 4-div only | Single Elimination (8-team) | M93 – M100 | 8 |
+
+### D1 (Double Elimination, 32-team)
+- Winners: W1(16) → W2(8) → W3(4) → W4(2) → Finals
+- Losers: L1(8) → L2(8) → L3(4) → L4(4) → L5(2) → L6(2) → Finals
+- Finals: SF1, SF2, Bronze, Final (`finalsStack` layout)
+- Column order: W1 | W2 | W3 | W4 | Finals | L6 | L5 | L4 | L3 | L2 | L1
+
+### D2 (Double Elimination, 8-team) — M79–M92
+- Winners: W1(4) → W2(2)
+- Losers: L1(2) → L2(2)
+- Finals: SF1, SF2, Bronze, Final
+- Column order: W1 | W2 | Finals | L2 | L1
+
+### D3 — 3-div mode (Single Elimination, 16-team) — M63–M78
+- W1(8) → W2(4) → SF(2) → Final + Bronze (`finalsPair` layout)
+- Column order: W1 | W2 | SF+Finals
+
+### D3 — 4-div mode (Single Elimination, 8-team) — M63–M70
+- QF(4) → SF(2) → Final + Bronze (`finalsPair` layout)
+- Column order: QF | SF+Finals
+
+### D4 — 4-div only (Single Elimination, 8-team) — M93–M100
+- QF(4) → SF(2) → Final + Bronze (`finalsPair` layout)
+- Column order: QF | SF+Finals
+
+---
+
+## 5. ConnectorOverlay — SVG Routing Lines
+
+### How It Works
+1. `useLayoutEffect` → calls `draw()` after React commits DOM changes.
+2. `draw()` gathers positions: `bracketEl.querySelectorAll('[data-game-id]')` → `getBoundingClientRect()` relative to bracket container.
+3. For each game with `winnerNextGameId` or `loserNextGameId` set, and both IDs present in `pos[]`, compute an elbow path and push to `paths[]`.
+4. `setDims({ w: el.scrollWidth, h: el.scrollHeight })` + `setPaths(newPaths)`.
+5. If `paths.length === 0 || dims.w === 0` → return `null` (no SVG rendered).
+6. SVG is `absolute top-0 left-0` inside the `relative` bracket container, covers full `scrollWidth × scrollHeight`.
+
+### Elbow Path Shape
+```
+M{startX},{startY} H{midX} V{endY} H{endX}
+```
+Right-angle connector: horizontal → vertical → horizontal.
+Straight line (`H{endX}`) when vertical difference < 15px.
+
+### Colors & Stroke
+- Winners: `rgba(52,211,153,0.9)` (emerald-400)
+- Losers: `rgba(251,146,60,0.9)` (orange-400)
+- `strokeWidth={2.5}`, `strokeLinecap="round"`, `strokeLinejoin="round"`
+
+### `shouldDrawConnector` Rules
+- `SF → F` in separate columns: draw if `pos[tgt].cx > pos[src].cx + 50` (separates SE cross-column from DE same-column)
+- Skip if target round is `F` or `3P` (except the SF→F case above)
+- Skip if source round is `F` or `3P`
+- Draw if same section OR target/source is `finals` section
+
+### Known Issue Fixed: Hydration Timing
+`useLayoutEffect` during Next.js SSR hydration fires before card positions are stable. The SVG produced 0 paths and returned `null`, so connectors were invisible on first load — only appearing after a browser `resize` event.
+
+**Fix:** Added `requestAnimationFrame(() => draw())` inside the `useEffect` resize handler:
+```typescript
+useEffect(() => {
+  const handler = () => draw();
+  window.addEventListener('resize', handler);
+  const raf = requestAnimationFrame(() => draw()); // post-paint re-draw
+  return () => {
+    window.removeEventListener('resize', handler);
+    cancelAnimationFrame(raf);
+  };
+}, [draw]);
+```
+
+### Prerequisite: `winnerNextGameId` Must Be Wired in DB
+If `winnerNextGameId` / `loserNextGameId` is `null` on game records, `draw()` finds 0 valid connections → `paths.length === 0` → SVG returns `null` → no connectors.
+
+**Diagnosis:** `document.querySelectorAll('svg')` — if no wide SVG found, routing is unwired. Confirm via React fiber: `game.winnerNextGameId` on the card's fiber props.
+
+**Fix endpoint:** `POST /api/tournaments/[id]/schedule/wire-routing` — patches only routing FK fields on existing games without touching scores/status/players. Safe to call on live tournaments.
+
+---
+
+## 6. Column Min-Width Fix
+
+Finals columns have no right-side bracket connectors to push them wider, so they stay at their CSS minimum. With `min-w-[185px]`, the name container (~147px) was too narrow for long team names ("Rodrigo Lima & Michel Bezerra" needs ~177px), causing `overflow-hidden` to clip text.
+
+**Fix:** Increased to `min-w-[240px]` on all `BracketColumn` wrappers. At 240px the name container (~186px) fits all observed team names. QF/SF columns naturally exceed 240px due to bracket connector hook elements.
+
+---
+
+## 7. File Changes (Actual)
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/tournament/NfaBracketView.tsx` | Created | Main NFA bracket component with tabs, columns, ConnectorOverlay |
+| `src/lib/nfaBracketLayout.ts` | Created | Column definitions per division/mode (`getColumnDefs`) |
+| `src/modules/scheduling/double-elimination.ts` | Extended | Added `generateD3Bracket8`, `generateD4Bracket`, `generateD2Bracket` generators + routing tables |
+| `src/modules/scheduling/scheduling.service.ts` | Extended | `generateEmptyDivisionBracket` with routing second-pass; `generateAllDivisionBrackets` |
+| `src/modules/scheduling/scheduling.repository.ts` | Extended | `updateGameRouting()`, `findGameByMatchNumber()` |
+| `src/app/api/tournaments/[id]/schedule/wire-routing/route.ts` | Created | Safe routing patch endpoint (no data loss) |
+| `src/app/(public)/e/[id]/[categoryId]/page.tsx` | Modified | NFA cascade detection + multi-division game fetch |
+| `src/lib/bracketUtils.ts` | Modified | `BracketGame` extended with `winnerNextGameId`, `loserNextGameId`, `categoryId`, `matchNumber`, `bracketSide`, `seedTarget` |
+| `src/components/tournament/MatchCard.tsx` | Minor edits | Dense mode sizing, `seedTarget` badge |
+| `src/components/tournament/TournamentBracketView.tsx` | Modified | Routes to `NfaBracketView` when `isNfaCascade` |
+
+---
+
+## 8. Acceptance Criteria — Updated Status
+
+| AC | Description | Status | Notes |
+|---|---|---|---|
+| AC-1 | Renders labeled sections per division | ✅ | Tabbed (D1/D2/D3/D4) instead of stacked sections |
+| AC-2 | Winners rounds in column layout with connector lines | ✅ | SVG ConnectorOverlay |
+| AC-3 | Losers rounds in column layout with connector lines | ✅ | SVG ConnectorOverlay |
+| AC-4 | Grand Finals section displays SF, 3P, Final prominently | ✅ | `finalsStack` (DE) / `finalsPair` (SE) layouts |
+| AC-5 | `isDoubleElimination()` detection | ⚠️ | Not used; NFA cascade detected via `category.divisionLabel` instead |
+| AC-6 | `classifyDoubleEliminationRounds()` separator | ⚠️ | Not used; `getColumnDefs` + `deriveSection/Round` replace this |
+| AC-7 | TournamentBracketView auto-detects and routes | ✅ | `isNfaCascade` check → `NfaBracketView` |
+| AC-8 | Mobile tab navigation | ✅ | Division tabs work on all viewports |
+| AC-9 | Light and dark theme support | ✅ | `darkTheme` applied throughout |
+| AC-10 | Live game indicators for in-progress matches | ✅ | Existing `MatchCard` live indicator |
+| AC-11 | Works with LiveRefresh polling | ✅ | Server component re-render passes fresh props |
+| AC-12 | Dense/poster mode renders all sections | ✅ | Dense mode on MatchCard |
+| AC-13 | Single-elimination tournaments still use BracketView | ✅ | Non-NFA categories route to `TournamentBracketView` |
+| AC-14 | Empty state when no games | ✅ | NfaBracketView empty state guard |
+| AC-15 | TBD matches render with reduced opacity | ✅ | Existing MatchCard behavior |
+| AC-16 | Context-appropriate round labels | ✅ | `deriveRound()` + column headers |
+| AC-17 | Handles varied bracket sizes (8-team, 32-team) | ✅ | 3-div and 4-div mode; D3 8/16 team variants |
+| AC-18 | Horizontal scrolling per section | ✅ | Per-division tab scroll container |
+
+---
+
+## 9. Known Remaining Gaps
+
+- **D2 column headers**: Column labels show raw round label string (e.g., "10TH ROUND W1") instead of clean labels ("Winners R1"). Cosmetic only — does not affect functionality.
+- **`deriveRound` for D2 Bronze**: Falls through to bracketSide heuristic, returns `'F'` instead of `'3P'`. Does not affect rendering (Bronze card renders correctly via `finalsPair` layout), but `shouldDrawConnector` filtering is affected.
+- **No unit tests**: Bracket generation, routing, and `deriveSection`/`deriveRound` logic have no automated test coverage. Recommend Vitest suite for `double-elimination.ts` routing tables.

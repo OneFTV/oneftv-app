@@ -90,15 +90,33 @@ Division 2 receives 8 teams seeded from D1 at the `L3/L4` elimination stage. It 
 ---
 
 ## 5. Division 3 - Bracket Structure
+
+D3 structure depends on `openDivisionCount` (3 vs 4 division mode):
+
+### 3-Division Mode (openDivisionCount = 3) — 16 teams, M63–M78
 Division 3 receives 16 teams seeded from D1 at the `L1/L2` elimination stage. It runs a single-elimination bracket.
 
-| Round | Matches | Notes |
-|---|---:|---|
-| `W1` (7th Round) | 8 | All 16 D3 seeds enter here |
-| `W2` (9th Round) | 4 | `W1` winners advance |
-| Semi-Finals `W3` | 2 | `W2` winners advance |
-| 3rd & 4th Place | 1 | Semi-final losers |
-| Final Match | 1 | Semi-final winners |
+| Round | Matches | Match Numbers | Notes |
+|---|---:|---|---|
+| `W1` (7th Round) | 8 | M63–M70 | All 16 D3 seeds enter here |
+| `W2` (9th Round) | 4 | M71–M74 | `W1` winners advance |
+| Semi-Finals `W3` | 2 | M75–M76 | `W2` winners advance |
+| 3rd & 4th Place | 1 | M77 | Semi-final losers |
+| Final Match | 1 | M78 | Semi-final winners |
+
+**Routing (3-div D3):** M63→M71, M64→M71, M65→M72, M66→M72, M67→M73, M68→M73, M69→M74, M70→M74 · M71→M75, M72→M75, M73→M76, M74→M76 · M75→M78(w)/M77(l), M76→M78(w)/M77(l)
+
+### 4-Division Mode (openDivisionCount = 4) — 8 teams, M63–M70
+Division 3 receives only 8 teams (L2 losers from D1). It runs a compact 8-team single-elimination bracket.
+
+| Round | Matches | Match Numbers | Notes |
+|---|---:|---|---|
+| `QF` | 4 | M63–M66 | All 8 D3 seeds enter here |
+| Semi-Finals | 2 | M67–M68 | QF winners advance |
+| 3rd & 4th Place | 1 | M69 | Semi-final losers |
+| Final Match | 1 | M70 | Semi-final winners |
+
+**Routing (4-div D3):** M63→M67(home), M64→M67(away), M65→M68(home), M66→M68(away) · M67→M70(w,home)/M69(l,home), M68→M70(w,away)/M69(l,away)
 
 **Note:** D3 is single-elimination due to time/court constraints while D1/D2 are active.
 
@@ -110,6 +128,21 @@ Division 3 receives 16 teams seeded from D1 at the `L1/L2` elimination stage. It
 | Runner-up | Felipe Netto / Bruno Vieira |
 | 3rd Place | Guiga Muller / Breno Soares |
 | 4th Place | Matheus Paes / Fe Schneider |
+
+---
+
+## 5a. Division 4 (4-Division Mode Only) — 8 teams, M93–M100
+
+Division 4 only exists when `openDivisionCount = 4`. It receives 8 teams seeded from D1 at the `L1` elimination stage (earliest losers). It runs an 8-team single-elimination bracket identical in structure to D3-4div.
+
+| Round | Matches | Match Numbers | Notes |
+|---|---:|---|---|
+| `QF` | 4 | M93–M96 | All 8 D4 seeds enter here |
+| Semi-Finals | 2 | M97–M98 | QF winners advance |
+| 3rd & 4th Place | 1 | M99 | Semi-final losers |
+| Final Match | 1 | M100 | Semi-final winners |
+
+**Routing:** M93→M97(home), M94→M97(away), M95→M98(home), M96→M98(away) · M97→M100(w,home)/M99(l,home), M98→M100(w,away)/M99(l,away)
 
 ---
 
@@ -211,11 +244,23 @@ Division 3 receives 16 teams seeded from D1 at the `L1/L2` elimination stage. It
 5. Create D1 finals: 2 semis, bronze, final.
 6. Pre-populate `winner_advances_to` and `loser_drops_to` before play starts.
 
-### 9.2 Division 2 & 3 Generation Steps
+### 9.2 Division 2, 3, and 4 Generation Steps
+
+**Implementation:** `SchedulingService.generateEmptyDivisionBracket()` creates game records then does a second-pass routing wire-up using `matchToGameId` map. The generators (`generateD3Bracket8`, `generateD4Bracket`, `generateD2Bracket` in `double-elimination.ts`) return `DEGameTemplate[]` arrays with `winnerGoesTo`/`loserGoesTo` matchNumber references that are resolved to DB IDs.
+
+**3-division mode:**
 1. Wait until D1 seeding is resolved.
-2. Seed D3 from `L1/L2` losers into D3 `W1` (16 teams).
-3. Seed D2 from `L3/L4` losers into D2 `W1` (8 teams).
+2. Seed D3 from `L1/L2` losers into D3 `W1` (16 teams, M63–M78).
+3. Seed D2 from `L3/L4` losers into D2 `W1` (8 teams, M79–M92).
 4. Build remaining rounds/finals per each division structure.
+
+**4-division mode:**
+1. Seed D4 from D1 `L1` losers (8 teams, M93–M100).
+2. Seed D3 from D1 `L2` losers (8 teams, M63–M70).
+3. Seed D2 from D1 `L3/L4` losers (8 teams, M79–M92, same as 3-div).
+4. Build all three sub-brackets with `generateD4Bracket`, `generateD3Bracket8`, `generateD2Bracket`.
+
+**Critical:** After game creation, `winnerNextGameId`/`loserNextGameId` must be wired via the second pass. If this is missed (e.g., partial regeneration), bracket connector lines will not render. Use `POST /api/tournaments/[id]/schedule/wire-routing` to re-wire without clearing results.
 
 ---
 
@@ -329,20 +374,27 @@ Court assignment uses first-available court (`1..4`) with stable sort by round s
 - Show shared tournament header at top: event name, date, courts, legend.
 
 ### 13.2 Column Order (Left to Right)
-1. `W1`
-2. `W2`
-3. `W3`
-4. `W4`
-5. `D1 Finals` (SF1, SF2, Bronze, Final)
-6. `L6`
-7. `L5`
-8. `L4`
-9. `L3`
-10. `L2`
-11. `L1`
 
-- Winners rounds should appear on the left side of D1 Finals.
-- Losers ladder should appear on the right side of D1 Finals (mirrored flow toward finals).
+**Implementation:** `getColumnDefs(division, divisionCount)` in `nfaBracketLayout.ts` returns `NfaBracketColumn[]`. Each column filters games by `rounds[]` + `sections[]`. Columns use `min-w-[240px]` with `flex-shrink-0`; the bracket container is `overflow-x-auto`.
+
+**D1 bracket (per-division tab):**
+1. `W1` through `W4` (winners bracket)
+2. `D1 Finals` column — `finalsStack` layout (SF1, SF2 in flow; F + 3P centred between)
+3. `L6` through `L1` (losers ladder, right side)
+
+**D2 bracket (DE, 8-team):**
+- W1 | W2 | Finals (SF/F/3P) | L2 | L1  _(losers on right, mirroring D1 pattern)_
+
+**D3 bracket (SE, 8-team, 4-div):**
+- QF | SF + Finals  _(finalsPair layout: F centred, 3P below)_
+
+**D3 bracket (SE, 16-team, 3-div):**
+- W1 | W2 | SF + Finals  _(finalsPair layout)_
+
+**D4 bracket (SE, 8-team):** Identical column layout to D3-4div.
+
+- Winners rounds appear left of Finals column.
+- Losers (DE brackets) appear right of Finals column (mirrored flow toward finals).
 
 ### 13.3 Division Zoning
 - Apply colored section bands:
@@ -364,10 +416,13 @@ Optional badges:
 - `LIVE`, `FINAL`, `PENDING`
 
 ### 13.5 Connector Lines and Flow
-- Draw clear connector lines from each match to next match slot.
-- Use solid lines for winner path, dashed lines for loser drop-down path.
-- Arrowheads indicate direction of advancement.
-- Cross-division drops (D1 -> D2 or D3 seeding) must use labeled connectors (`Seed D2`, `Seed D3`).
+- **Implementation:** `ConnectorOverlay` component (in `NfaBracketView.tsx`) renders an absolute-positioned SVG overlay inside the scrollable bracket container.
+- Positions gathered via `getBoundingClientRect()` on `[data-game-id]` card elements relative to the bracket container.
+- Elbow path shape: `M${startX},${startY} H${midX} V${endY} H${endX}` (right-angle connector).
+- Winner connectors: `rgba(52,211,153,0.9)` (emerald-400), losers: `rgba(251,146,60,0.9)` (orange-400), strokeWidth 2.5.
+- **Hydration fix:** `useLayoutEffect` fires before card positions are stable during Next.js SSR hydration. A `requestAnimationFrame(() => draw())` in `useEffect` ensures a post-paint re-draw.
+- **Prerequisite:** All games must have `winnerNextGameId` / `loserNextGameId` populated in DB. If null, SVG returns null (0 paths). Use `POST /api/tournaments/[id]/schedule/wire-routing` to fix without losing results.
+- Cross-division drops use `seedTarget` badge on the card (e.g., `→ D2-S3`). No connector line drawn for cross-division drops.
 
 ### 13.6 Finals Emphasis
 - D1 Finals cards should be visually larger than regular cards.

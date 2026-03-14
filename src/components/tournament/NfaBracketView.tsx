@@ -295,7 +295,7 @@ function BracketColumn({
     : '';
 
   return (
-    <div className="flex flex-col min-w-[185px] flex-shrink-0">
+    <div className="flex flex-col min-w-[240px] flex-shrink-0">
       {/* Header */}
       <div
         className={`py-1 px-1.5 text-center text-[10px] font-bold uppercase tracking-wide leading-snug whitespace-pre-line rounded-t text-white ${headerBg}`}
@@ -533,7 +533,7 @@ function ConnectorOverlay({
           const slot = g.matchNumber != null ? (g.matchNumber % 2 === 1 ? 'top' : 'bottom') : null;
           newPaths.push({
             d: elbowPath(pos[g.id], pos[g.winnerNextGameId], slot),
-            color: 'rgba(5,150,105,0.4)',
+            color: 'rgba(52,211,153,0.9)',
           });
         }
       }
@@ -544,7 +544,7 @@ function ConnectorOverlay({
           const slot = g.matchNumber != null ? (g.matchNumber % 2 === 1 ? 'top' : 'bottom') : null;
           newPaths.push({
             d: elbowPath(pos[g.id], pos[g.loserNextGameId], slot),
-            color: 'rgba(234,88,12,0.4)',
+            color: 'rgba(251,146,60,0.9)',
           });
         }
       }
@@ -559,11 +559,19 @@ function ConnectorOverlay({
     draw();
   }, [draw]);
 
-  // Redraw on window resize
+  // Redraw on window resize; also schedule a post-paint draw for initial mount.
+  // useLayoutEffect during SSR hydration fires before card positions are stable
+  // in the Next.js server component flow, so we re-draw after the first paint.
   useEffect(() => {
     const handler = () => draw();
     window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    // requestAnimationFrame ensures we draw after the browser has painted and
+    // all card positions are computed (fixes SSR/hydration timing issue).
+    const raf = requestAnimationFrame(() => draw());
+    return () => {
+      window.removeEventListener('resize', handler);
+      cancelAnimationFrame(raf);
+    };
   }, [draw]);
 
   if (paths.length === 0 || dims.w === 0) return null;
@@ -580,7 +588,7 @@ function ConnectorOverlay({
           d={p.d}
           fill="none"
           stroke={p.color}
-          strokeWidth={1.5}
+          strokeWidth={2.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />

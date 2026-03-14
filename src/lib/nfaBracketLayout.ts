@@ -149,13 +149,13 @@ export function getColumnDefs(
       {
         rounds: ['SF'],
         sections: ['finals'],
-        label: 'Semi-Finals\n2 games',
+        label: 'Semi-Finals W3\n2 games',
         headerClass: 'finals',
       },
       {
         rounds: ['F', '3P'],
         sections: ['finals'],
-        label: 'Finals\n2 games',
+        label: 'Round FINALS\n2 games',
         headerClass: 'finals',
         finalsPair: true,
       },
@@ -168,19 +168,19 @@ export function getColumnDefs(
       {
         rounds: ['W1'],
         sections: ['winners'],
-        label: 'Quarter-Finals\n4 games',
+        label: '9th Round W1\n4 games',
         headerClass: 'winners',
       },
       {
         rounds: ['SF'],
         sections: ['finals'],
-        label: 'Semi-Finals\n2 games',
+        label: 'Semi-Finals W2\n2 games',
         headerClass: 'finals',
       },
       {
         rounds: ['F', '3P'],
         sections: ['finals'],
-        label: 'Finals\n2 games',
+        label: 'Round FINALS\n2 games',
         headerClass: 'finals',
         finalsPair: true,
       },
@@ -193,19 +193,19 @@ export function getColumnDefs(
       {
         rounds: ['W1'],
         sections: ['winners'],
-        label: 'Quarter-Finals\n4 games',
+        label: '7th Round W1\n4 games',
         headerClass: 'winners',
       },
       {
         rounds: ['SF'],
         sections: ['finals'],
-        label: 'Semi-Finals\n2 games',
+        label: 'Semi-Finals W2\n2 games',
         headerClass: 'finals',
       },
       {
         rounds: ['F', '3P'],
         sections: ['finals'],
-        label: 'Finals\n2 games',
+        label: 'Round FINALS\n2 games',
         headerClass: 'finals',
         finalsPair: true,
       },
@@ -237,14 +237,17 @@ export function getColumnDefs(
         finalsStack: true,
       },
       // Losers mirrored
+      // NOTE: DB stores D2 losers as roundLabel 'D2 L1' / 'D2 L2' (sequential within D2).
+      // deriveRound extracts 'L1' and 'L2' from those names.
+      // Column codes must match those extracted values, not the NFA schedule round names.
       {
-        rounds: ['L4'],
+        rounds: ['L2'],
         sections: ['losers'],
         label: '14th Round L4\n2 games',
         headerClass: 'losers',
       },
       {
-        rounds: ['L2'],
+        rounds: ['L1'],
         sections: ['losers'],
         label: '12th Round L2\n2 games',
         headerClass: 'losers',
