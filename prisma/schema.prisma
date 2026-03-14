@@ -620,7 +620,7 @@ model StudentEvaluation {
 
   // Tático / Físico
   posicionamento  Int?  // Posicionamento em quadra e leitura de jogo
-  bloqueio        Int?  // Defesa na rede (peito/cabeça/ombro)
+  bloqueio        Int?  // Bloqueio na rede — geralmente via shark, raramente cabeça
   weaknesses      String?        @db.Text
   strengths       String?        @db.Text
   recommendations String?        @db.Text

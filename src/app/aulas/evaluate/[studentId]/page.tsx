@@ -45,7 +45,7 @@ const skillGroups = [
     skills: [
       { key: 'saque', label: 'Saque (Serve) — qualidade e variedade' },
       { key: 'posicionamento', label: 'Posicionamento e Leitura de Jogo' },
-      { key: 'bloqueio', label: 'Bloqueio — defesa na rede' },
+      { key: 'bloqueio', label: 'Bloqueio — na rede, geralmente via shark' },
     ],
   },
 ];
