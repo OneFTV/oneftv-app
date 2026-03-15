@@ -114,13 +114,16 @@ export default function CoachPublicPage() {
     }
   };
 
-  // Get next date for a given day of week
+  // Get next date for a given day of week (local timezone safe)
   const getNextDate = (dayOfWeek: number) => {
-    const today = new Date();
-    const diff = (dayOfWeek - today.getDay() + 7) % 7 || 7;
-    const next = new Date(today);
-    next.setDate(today.getDate() + diff);
-    return next.toISOString().split('T')[0];
+    const now = new Date();
+    const todayDow = now.getDay();
+    const diff = (dayOfWeek - todayDow + 7) % 7 || 7;
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+    const yyyy = next.getFullYear();
+    const mm = String(next.getMonth() + 1).padStart(2, '0');
+    const dd = String(next.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" /></div>;
