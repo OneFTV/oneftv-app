@@ -923,7 +923,7 @@ export default function ManageTournamentPage() {
         )}
 
         {/* Wire Division Brackets */}
-        {tournament.Category?.some(cat => cat.divisionLabel === 'D1') && (
+        {tournament.Category?.some(cat => cat.divisionLabel != null) && (
           <div className="bg-slate-800/50 border border-orange-400/20 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-1">Division Brackets</h2>
             <p className="text-sm text-slate-400 mb-4">Generate empty lower-division bracket structures and wire D1 loser routing. Run this after generating the D1 schedule.</p>

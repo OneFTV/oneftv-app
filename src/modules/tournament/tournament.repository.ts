@@ -129,7 +129,7 @@ export class TournamentRepository {
     // 1. Null out self-referential game links first
     await prisma.game.updateMany({
       where: { tournamentId: id },
-      data: { winnerNextGameId: null },
+      data: { winnerNextGameId: null, loserNextGameId: null },
     })
     // 2. Delete games
     await prisma.game.deleteMany({ where: { tournamentId: id } })

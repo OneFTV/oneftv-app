@@ -8,6 +8,7 @@ import BracketView from '@/components/tournament/BracketView';
 import DoubleEliminationBracketView from '@/components/tournament/DoubleEliminationBracketView';
 import GroupStageView from '@/components/tournament/GroupStageView';
 import RoundRobinView from '@/components/tournament/RoundRobinView';
+import NfaBracketView from '@/components/tournament/NfaBracketView';
 import { darkTheme } from '@/components/tournament/theme';
 import { isDoubleElimination } from '@/lib/bracketUtils';
 import type { BracketGame } from '@/lib/bracketUtils';
@@ -52,7 +53,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 export default async function FullBracketPage({ params, searchParams }: PageProps) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, openDivisionCount: true },
   });
 
   if (!tournament) notFound();
@@ -64,6 +65,8 @@ export default async function FullBracketPage({ params, searchParams }: PageProp
       id: true,
       name: true,
       format: true,
+      divisionLabel: true,
+      bracketType: true,
       _count: { select: { TournamentPlayer: true } },
     },
   });
@@ -146,7 +149,15 @@ export default async function FullBracketPage({ params, searchParams }: PageProp
         <div className="sticky top-24 z-30 bg-dark-bg/80 backdrop-blur-sm border-b border-dark-border no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex overflow-x-auto gap-2 py-2 -mx-1 px-1">
-              {categoriesWithGames.map((cat) => (
+              {categoriesWithGames.some((c) => c.divisionLabel != null) && (
+                <a
+                  href="#cat-nfa"
+                  className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap bg-dark-elevated text-gray-400 hover:text-white hover:bg-dark-divider transition-colors"
+                >
+                  Open Division
+                </a>
+              )}
+              {categoriesWithGames.filter((c) => c.divisionLabel == null).map((cat) => (
                 <a
                   key={cat.id}
                   href={`#cat-${cat.id}`}
@@ -162,44 +173,76 @@ export default async function FullBracketPage({ params, searchParams }: PageProp
 
       {/* Category sections */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
-        {categoriesWithGames.map((cat, idx) => (
-          <section key={cat.id} id={`cat-${cat.id}`} className={idx > 0 ? 'bracket-section' : ''}>
-            {/* Category heading */}
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-lg font-bold text-white">{cat.name}</h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-dark-elevated text-gray-400">
-                {formatLabels[cat.format] || cat.format}
-              </span>
-              <span className="text-xs text-gray-500">
-                {cat._count.TournamentPlayer} teams
-              </span>
-            </div>
+        {(() => {
+          // Separate NFA cascade categories from regular ones
+          const nfaCats = categoriesWithGames.filter((c) => c.divisionLabel != null);
+          const regularCats = categoriesWithGames.filter((c) => c.divisionLabel == null);
+          const divisionCount = (tournament.openDivisionCount === 4 ? 4 : 3) as 3 | 4;
 
-            {/* Full bracket — poster mode (always desktop, full game info) */}
-            {cat.games.length > 0 ? (
-              (() => {
-                const f = cat.format.toLowerCase().replace(/[^a-z_]/g, '_');
-                if (f === 'double_elimination' || isDoubleElimination(cat.games)) {
-                  return <DoubleEliminationBracketView games={cat.games} dense theme={darkTheme} />;
-                }
-                if (f === 'group_knockout' || f === 'king_of_the_beach' || cat.games.some((g) => g.groupName)) {
-                  return <GroupStageView games={cat.games} theme={darkTheme} />;
-                }
-                if (f === 'round_robin') {
-                  return <RoundRobinView games={cat.games} theme={darkTheme} />;
-                }
-                return <BracketView games={cat.games} dense theme={darkTheme} />;
-              })()
-            ) : (
-              <p className="text-gray-500 text-sm py-4">No games scheduled yet</p>
-            )}
+          const sections: React.ReactNode[] = [];
 
-            {/* Divider (not after last) */}
-            {idx < categoriesWithGames.length - 1 && (
-              <div className="mt-8 border-t border-dark-border" />
-            )}
-          </section>
-        ))}
+          // Render NFA cascade as a single unified bracket view
+          if (nfaCats.length > 0) {
+            const allNfaGames = nfaCats.flatMap((c) => c.games);
+            const nfaDivisionCategories = nfaCats.map((c) => ({
+              id: c.id,
+              name: c.name,
+              divisionLabel: c.divisionLabel!,
+            }));
+            sections.push(
+              <section key="nfa-cascade" id="cat-nfa" className="">
+                <NfaBracketView
+                  games={allNfaGames}
+                  categories={nfaDivisionCategories}
+                  divisionCount={divisionCount}
+                  initialCategoryId={nfaCats[0].id}
+                />
+              </section>
+            );
+          }
+
+          // Render regular categories individually
+          regularCats.forEach((cat, idx) => {
+            const sectionIdx = nfaCats.length > 0 ? idx + 1 : idx;
+            sections.push(
+              <section key={cat.id} id={`cat-${cat.id}`} className={sectionIdx > 0 ? 'bracket-section' : ''}>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-lg font-bold text-white">{cat.name}</h2>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-dark-elevated text-gray-400">
+                    {formatLabels[cat.format] || cat.format}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {cat._count.TournamentPlayer} teams
+                  </span>
+                </div>
+
+                {cat.games.length > 0 ? (
+                  (() => {
+                    const f = cat.format.toLowerCase().replace(/[^a-z_]/g, '_');
+                    if (f === 'double_elimination' || isDoubleElimination(cat.games)) {
+                      return <DoubleEliminationBracketView games={cat.games} dense theme={darkTheme} />;
+                    }
+                    if (f === 'group_knockout' || f === 'king_of_the_beach' || cat.games.some((g) => g.groupName)) {
+                      return <GroupStageView games={cat.games} theme={darkTheme} />;
+                    }
+                    if (f === 'round_robin') {
+                      return <RoundRobinView games={cat.games} theme={darkTheme} />;
+                    }
+                    return <BracketView games={cat.games} dense theme={darkTheme} />;
+                  })()
+                ) : (
+                  <p className="text-gray-500 text-sm py-4">No games scheduled yet</p>
+                )}
+
+                {idx < regularCats.length - 1 && (
+                  <div className="mt-8 border-t border-dark-border" />
+                )}
+              </section>
+            );
+          });
+
+          return sections;
+        })()}
       </div>
     </>
   );

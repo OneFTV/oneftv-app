@@ -25,6 +25,66 @@ export class GameService {
   static async listByTournament(tournamentId: string, categoryId?: string): Promise<GameListItem[]> {
     const games = await GameRepository.findByTournament(tournamentId, categoryId)
 
+    // Build reverse routing map: gameId → { homeSource, awaySource }
+    // For each game, find which other games feed into its home/away slots
+    const sourceMap = new Map<string, { homeSource: string | null; awaySource: string | null }>()
+    for (const g of games) {
+      if (g.winnerNextGameId) {
+        const entry = sourceMap.get(g.winnerNextGameId) || { homeSource: null, awaySource: null }
+        const label = g.matchNumber != null ? `WM${g.matchNumber}` : null
+        if (g.winnerSlot === 'home') entry.homeSource = label
+        else if (g.winnerSlot === 'away') entry.awaySource = label
+        sourceMap.set(g.winnerNextGameId, entry)
+      }
+      if (g.loserNextGameId) {
+        const entry = sourceMap.get(g.loserNextGameId) || { homeSource: null, awaySource: null }
+        const label = g.matchNumber != null ? `LM${g.matchNumber}` : null
+        if (g.loserSlot === 'home') entry.homeSource = label
+        else if (g.loserSlot === 'away') entry.awaySource = label
+        sourceMap.set(g.loserNextGameId, entry)
+      }
+    }
+
+    // Cross-category routing: find games from OTHER categories that feed into
+    // this category's games (e.g. D1 losers → D2 first round)
+    if (categoryId) {
+      const gameIds = new Set(games.map((g) => g.id))
+      const crossCategoryFeeders = await prisma.game.findMany({
+        where: {
+          tournamentId,
+          categoryId: { not: categoryId },
+          OR: [
+            { winnerNextGameId: { in: [...gameIds] } },
+            { loserNextGameId: { in: [...gameIds] } },
+          ],
+        },
+        select: {
+          matchNumber: true,
+          winnerNextGameId: true,
+          winnerSlot: true,
+          loserNextGameId: true,
+          loserSlot: true,
+          Round: { select: { name: true } },
+        },
+      })
+      for (const f of crossCategoryFeeders) {
+        if (f.winnerNextGameId && gameIds.has(f.winnerNextGameId)) {
+          const entry = sourceMap.get(f.winnerNextGameId) || { homeSource: null, awaySource: null }
+          const label = f.matchNumber != null ? `WM${f.matchNumber}` : null
+          if (f.winnerSlot === 'home') entry.homeSource = label
+          else if (f.winnerSlot === 'away') entry.awaySource = label
+          sourceMap.set(f.winnerNextGameId, entry)
+        }
+        if (f.loserNextGameId && gameIds.has(f.loserNextGameId)) {
+          const entry = sourceMap.get(f.loserNextGameId) || { homeSource: null, awaySource: null }
+          const label = f.matchNumber != null ? `LM${f.matchNumber}` : null
+          if (f.loserSlot === 'home') entry.homeSource = label
+          else if (f.loserSlot === 'away') entry.awaySource = label
+          sourceMap.set(f.loserNextGameId, entry)
+        }
+      }
+    }
+
     return games.map((game) => {
       const homePlayers = [game.User_Game_player1HomeIdToUser?.name, game.User_Game_player2HomeIdToUser?.name]
         .filter(Boolean)
@@ -33,6 +93,11 @@ export class GameService {
         .filter(Boolean)
         .join(' & ')
 
+      // Show source game reference instead of TBD (e.g. "WM17" = winner of M17)
+      const sources = sourceMap.get(game.id)
+      const homeLabel = homePlayers || sources?.homeSource || 'TBD'
+      const awayLabel = awayPlayers || sources?.awaySource || 'TBD'
+
       return {
         id: game.id,
         roundName: game.Round?.name || 'Unassigned',
@@ -40,8 +105,8 @@ export class GameService {
         roundType: game.Round?.type ?? null,
         court: game.courtNumber,
         scheduledTime: game.scheduledTime?.toISOString() || null,
-        player1: homePlayers || 'TBD',
-        player2: awayPlayers || 'TBD',
+        player1: homeLabel,
+        player2: awayLabel,
         player1HomeId: game.player1HomeId,
         player2HomeId: game.player2HomeId,
         player1AwayId: game.player1AwayId,

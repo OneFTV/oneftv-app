@@ -29,6 +29,8 @@ interface NfaBracketViewProps {
   numCourts?: number;
   /** Category ID from the URL — pre-selects the matching division tab */
   initialCategoryId?: string;
+  /** When true, render all divisions stacked vertically instead of tabs */
+  stacked?: boolean;
 }
 
 interface CategoryInfo {
@@ -805,6 +807,7 @@ export default function NfaBracketView({
   tournamentName,
   numCourts = 4,
   initialCategoryId,
+  stacked = false,
 }: NfaBracketViewProps) {
   const theme = darkTheme;
   const divisions = getDivisionKeys(divisionCount);
@@ -879,6 +882,75 @@ export default function NfaBracketView({
     );
   }
 
+  // Stacked mode: all divisions vertically with jump buttons
+  if (stacked) {
+    return (
+      <div className="min-h-[400px]">
+        {/* Sticky jump buttons */}
+        <div className="sticky top-24 z-30 bg-dark-bg/80 backdrop-blur-sm border-b border-dark-border">
+          <div className="flex overflow-x-auto gap-2 py-2 px-1">
+            {divisions.map((div) => {
+              const badgeColor = divisionBadgeColors[div] || 'bg-slate-500';
+              const count = gameCounts[div] || 0;
+              return (
+                <a
+                  key={div}
+                  href={`#division-${div}`}
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap bg-dark-elevated text-gray-300 hover:text-white hover:bg-dark-divider transition-colors flex items-center gap-2"
+                >
+                  Division {div.slice(1)}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold text-white ${badgeColor}`}>
+                    {count}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* All divisions stacked */}
+        <div className="space-y-12 py-6">
+          {divisions.map((div) => {
+            const info = divisionInfo[div] || { teams: 0, format: 'Unknown' };
+            const badgeColor = divisionBadgeColors[div] || 'bg-slate-500';
+            return (
+              <section key={div} id={`division-${div}`} className="scroll-mt-32">
+                {/* Division header */}
+                <div className="flex items-center gap-3 mb-4 px-2">
+                  <span className={`w-3 h-3 rounded-full ${badgeColor}`} />
+                  <h2 className="text-xl font-bold text-white">Division {div.slice(1)}</h2>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-dark-elevated text-gray-400">
+                    {info.format}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {info.teams} teams
+                  </span>
+                </div>
+
+                <DivisionSummary
+                  division={div}
+                  gameCount={gameCounts[div] || 0}
+                  teamCount={info.teams}
+                  format={info.format}
+                />
+                <NfaBracketHorizontal
+                  division={div}
+                  divisionCount={divisionCount}
+                  games={nfaGames}
+                  theme={theme}
+                />
+
+                {/* Separator between divisions */}
+                <div className="mt-8 border-t border-slate-700/50" />
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Tabbed mode (default)
   return (
     <div className="min-h-[400px]">
       {/* Header */}

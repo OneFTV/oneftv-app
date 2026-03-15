@@ -66,7 +66,13 @@ export async function POST(
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
       include: {
-        Category: { include: { _count: { select: { TournamentPlayer: true } } } },
+        Category: {
+          select: {
+            id: true, name: true, format: true, gender: true, skillLevel: true,
+            maxTeams: true, divisionLabel: true, seedingFromCategoryId: true,
+            _count: { select: { TournamentPlayer: true } },
+          },
+        },
       },
     })
 
@@ -74,8 +80,8 @@ export async function POST(
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
     }
 
-    // Exclude cascade sub-divisions (D2/D3/D4) — they receive teams from D1 losers, not direct registration
-    const categories = tournament.Category.filter(c => !c.divisionLabel || c.divisionLabel === 'D1')
+    // Exclude cascade sub-divisions — they receive teams from the root division's losers, not direct registration
+    const categories = tournament.Category.filter(c => !c.divisionLabel || !c.seedingFromCategoryId)
     const womensCats = categories.filter(c => c.gender === 'female' || c.name.toLowerCase().includes('women'))
     const coedCats = categories.filter(c => c.gender === 'coed' || c.name.toLowerCase().includes('coed') || c.name.toLowerCase().includes('mix'))
     const openCats = categories.filter(c =>
