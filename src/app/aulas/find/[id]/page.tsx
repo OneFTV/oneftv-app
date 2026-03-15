@@ -97,7 +97,7 @@ export default function CoachPublicPage() {
       const res = await fetch('/api/aulas/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ availabilityId: bookingSlot.id, date: bookingDate }),
+        body: JSON.stringify({ coachId: coach.id, availabilityId: bookingSlot.id, date: bookingDate }),
       });
       const data = await res.json();
       if (res.ok) {
