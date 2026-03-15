@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -11,8 +11,14 @@ export async function GET() {
     const coach = await prisma.coachProfile.findUnique({ where: { userId: session.user.id } })
     if (!coach) return NextResponse.json({ error: 'Not a coach' }, { status: 403 })
 
+    const { searchParams } = new URL(req.url)
+    const statusFilter = searchParams.get('status')
+
+    const where: any = { coachId: coach.id }
+    if (statusFilter) where.status = statusFilter
+
     const students = await prisma.coachStudent.findMany({
-      where: { coachId: coach.id },
+      where,
       include: {
         student: {
           include: {

@@ -18,8 +18,13 @@ export async function GET() {
     const weekEnd = new Date(weekStart)
     weekEnd.setDate(weekStart.getDate() + 7)
 
-    const [totalStudents, classesThisWeek, upcomingClasses, totalReviews, reviews] = await Promise.all([
+    const [totalStudents, pendingStudents, classesThisWeek, upcomingClasses, totalReviews, reviews, pendingBookings] = await Promise.all([
       prisma.coachStudent.count({ where: { coachId: coach.id, status: 'active' } }),
+      prisma.coachStudent.findMany({
+        where: { coachId: coach.id, status: 'pending' },
+        include: { student: { include: { user: { select: { name: true, email: true } } } } },
+        orderBy: { createdAt: 'desc' },
+      }),
       prisma.class.count({ where: { coachId: coach.id, scheduledAt: { gte: weekStart, lt: weekEnd } } }),
       prisma.class.findMany({
         where: { coachId: coach.id, scheduledAt: { gte: now }, status: 'scheduled' },
@@ -29,13 +34,30 @@ export async function GET() {
       }),
       prisma.coachReview.count({ where: { coachId: coach.id } }),
       prisma.coachReview.findMany({ where: { coachId: coach.id }, select: { rating: true } }),
+      prisma.classBooking.findMany({
+        where: { class: { coachId: coach.id }, status: 'pending' },
+        include: {
+          student: { include: { user: { select: { name: true, email: true } } } },
+          class: { select: { id: true, title: true, scheduledAt: true, locationName: true } },
+        },
+        orderBy: { requestedAt: 'desc' },
+      }),
     ])
 
     const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0
 
     return NextResponse.json({
-      stats: { totalStudents, classesThisWeek, avgRating: Math.round(avgRating * 10) / 10, totalReviews },
+      stats: {
+        totalStudents,
+        classesThisWeek,
+        avgRating: Math.round(avgRating * 10) / 10,
+        totalReviews,
+        pendingStudentsCount: pendingStudents.length,
+        pendingBookingsCount: pendingBookings.length,
+      },
       upcomingClasses,
+      pendingStudents,
+      pendingBookings,
       coachId: coach.id,
     })
   } catch (error) {

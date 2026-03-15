@@ -17,18 +17,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Coach não especificado' }, { status: 400 })
     }
 
-    // Verify coach exists
-    const coach = await prisma.coachProfile.findUnique({ where: { id: coachId } })
+    const coach = await prisma.coachProfile.findUnique({
+      where: { id: coachId },
+      include: { settings: true },
+    })
     if (!coach) {
       return NextResponse.json({ error: 'Coach não encontrado' }, { status: 404 })
     }
 
-    // Check if user is trying to enroll with themselves
     if (coach.userId === session.user.id) {
       return NextResponse.json({ error: 'Você não pode se inscrever como aluno de si mesmo' }, { status: 400 })
     }
 
-    // Create or update student profile
     let student = await prisma.studentProfile.findUnique({
       where: { userId: session.user.id },
     })
@@ -46,7 +46,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Check if already enrolled with this coach
     const existing = await prisma.coachStudent.findFirst({
       where: { coachId, studentId: student.id },
     })
@@ -55,34 +54,60 @@ export async function POST(req: NextRequest) {
       if (existing.status === 'active') {
         return NextResponse.json({ error: 'Você já é aluno deste coach' }, { status: 400 })
       }
-      // Reactivate if inactive
+      if (existing.status === 'pending') {
+        return NextResponse.json({ error: 'Sua inscrição está aguardando aprovação do coach' }, { status: 400 })
+      }
+      // Reactivate if inactive/rejected
+      const autoApprove = coach.settings?.autoApproveEnrollment ?? false
+      const newStatus = autoApprove ? 'active' : 'pending'
       await prisma.coachStudent.update({
         where: { id: existing.id },
-        data: { status: 'active', startDate: new Date() },
+        data: {
+          status: newStatus,
+          startDate: new Date(),
+          rejectedAt: null,
+          rejectionReason: null,
+          approvedAt: autoApprove ? new Date() : null,
+        },
       })
-      return NextResponse.json({ success: true, message: 'Inscrição reativada' })
+      if (autoApprove) {
+        const coachCount = await prisma.coachStudent.count({
+          where: { studentId: student.id, status: 'active' },
+        })
+        await prisma.studentProfile.update({
+          where: { id: student.id },
+          data: { totalCoaches: coachCount },
+        })
+        return NextResponse.json({ success: true, status: 'active', message: 'Inscrição confirmada!' })
+      }
+      return NextResponse.json({ success: true, status: 'pending', message: 'Inscrição enviada! Aguardando aprovação do coach.' })
     }
 
-    // Create coach-student relationship
+    const autoApprove = coach.settings?.autoApproveEnrollment ?? false
+    const enrollStatus = autoApprove ? 'active' : 'pending'
+
     await prisma.coachStudent.create({
       data: {
         coachId,
         studentId: student.id,
-        status: 'active',
+        status: enrollStatus,
         startDate: new Date(),
+        approvedAt: autoApprove ? new Date() : null,
       },
     })
 
-    // Update totalCoaches count
-    const coachCount = await prisma.coachStudent.count({
-      where: { studentId: student.id, status: 'active' },
-    })
-    await prisma.studentProfile.update({
-      where: { id: student.id },
-      data: { totalCoaches: coachCount },
-    })
+    if (autoApprove) {
+      const coachCount = await prisma.coachStudent.count({
+        where: { studentId: student.id, status: 'active' },
+      })
+      await prisma.studentProfile.update({
+        where: { id: student.id },
+        data: { totalCoaches: coachCount },
+      })
+      return NextResponse.json({ success: true, status: 'active', message: 'Inscrição confirmada!' })
+    }
 
-    return NextResponse.json({ success: true, message: 'Inscrição confirmada' })
+    return NextResponse.json({ success: true, status: 'pending', message: 'Inscrição enviada! Aguardando aprovação do coach.' })
   } catch (error) {
     console.error('Enroll error:', error)
     return NextResponse.json({ error: 'Erro ao processar inscrição' }, { status: 500 })

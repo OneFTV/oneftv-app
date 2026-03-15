@@ -492,6 +492,8 @@ model CoachProfile {
   evaluations    StudentEvaluation[]
   packages       ClassPackage[]
   reviews        CoachReview[]
+  availabilities CoachAvailability[]
+  settings       CoachSettings?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -513,6 +515,7 @@ model StudentProfile {
   coaches          CoachStudent[]
   evaluations      StudentEvaluation[]
   classAttendances ClassAttendance[]
+  bookings         ClassBooking[]
   payments         AulaPayment[]
   reviews          CoachReview[]
   createdAt        DateTime          @default(now())
@@ -520,17 +523,20 @@ model StudentProfile {
 }
 
 model CoachStudent {
-  id        String         @id @default(cuid())
-  coachId   String
-  coach     CoachProfile   @relation(fields: [coachId], references: [id])
-  studentId String
-  student   StudentProfile @relation(fields: [studentId], references: [id])
-  status    String         @default("active")
-  startDate DateTime       @default(now())
-  endDate   DateTime?
-  notes     String?        @db.Text
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  coachId         String
+  coach           CoachProfile   @relation(fields: [coachId], references: [id])
+  studentId       String
+  student         StudentProfile @relation(fields: [studentId], references: [id])
+  status          String         @default("pending")
+  startDate       DateTime       @default(now())
+  endDate         DateTime?
+  notes           String?        @db.Text
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?        @db.Text
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@unique([coachId, studentId])
   @@index([coachId])
@@ -538,32 +544,37 @@ model CoachStudent {
 }
 
 model Class {
-  id             String            @id @default(cuid())
-  coachId        String
-  coach          CoachProfile      @relation(fields: [coachId], references: [id])
-  title          String
-  description    String?           @db.Text
-  type           String
-  maxStudents    Int               @default(1)
-  scheduledAt    DateTime
-  duration       Int
-  timezone       String            @default("America/New_York")
-  locationName   String?
-  latitude       Decimal?          @db.Decimal(10, 7)
-  longitude      Decimal?          @db.Decimal(10, 7)
-  price          Decimal?          @db.Decimal(10, 2)
-  currency       String            @default("USD")
-  status         String            @default("scheduled")
-  notes          String?           @db.Text
-  isRecurring    Boolean           @default(false)
-  recurrenceRule String?
-  attendances    ClassAttendance[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String             @id @default(cuid())
+  coachId         String
+  coach           CoachProfile       @relation(fields: [coachId], references: [id])
+  title           String
+  description     String?            @db.Text
+  type            String
+  maxStudents     Int                @default(1)
+  scheduledAt     DateTime
+  duration        Int
+  timezone        String             @default("America/New_York")
+  locationName    String?
+  latitude        Decimal?           @db.Decimal(10, 7)
+  longitude       Decimal?           @db.Decimal(10, 7)
+  price           Decimal?           @db.Decimal(10, 2)
+  currency        String             @default("USD")
+  status          String             @default("scheduled")
+  notes           String?            @db.Text
+  isRecurring     Boolean            @default(false)
+  recurrenceRule  String?
+  level           String?
+  availabilityId  String?
+  availability    CoachAvailability? @relation(fields: [availabilityId], references: [id])
+  attendances     ClassAttendance[]
+  bookings        ClassBooking[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([coachId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([availabilityId])
 }
 
 model ClassAttendance {
@@ -685,6 +696,65 @@ model AulaPayment {
 
   @@index([studentId])
   @@index([paidAt])
+}
+
+model CoachAvailability {
+  id           String       @id @default(cuid())
+  coachId      String
+  coach        CoachProfile @relation(fields: [coachId], references: [id])
+  dayOfWeek    Int          // 0=Sunday, 6=Saturday
+  startTime    String       // "HH:mm"
+  endTime      String       // "HH:mm"
+  level        String       @default("all") // beginner|intermediate|advanced|pro|all
+  maxStudents  Int          @default(1)
+  isActive     Boolean      @default(true)
+  locationName String?
+  classes      Class[]
+  bookings     ClassBooking[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([coachId])
+  @@index([dayOfWeek])
+}
+
+model CoachSettings {
+  id                      String       @id @default(cuid())
+  coachId                 String       @unique
+  coach                   CoachProfile @relation(fields: [coachId], references: [id])
+  autoApproveEnrollment   Boolean      @default(false)
+  autoApproveBooking      Boolean      @default(false)
+  cancellationPolicyHours Int          @default(24)
+  noShowPolicy            String?      @db.Text
+  requirePaymentUpfront   Boolean      @default(false)
+  autoAdjustLevel         Boolean      @default(false)
+  notifyByEmail           Boolean      @default(true)
+  notifyInApp             Boolean      @default(true)
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+}
+
+model ClassBooking {
+  id                String            @id @default(cuid())
+  studentId         String
+  student           StudentProfile    @relation(fields: [studentId], references: [id])
+  classId           String
+  class             Class             @relation(fields: [classId], references: [id])
+  availabilityId    String?
+  availability      CoachAvailability? @relation(fields: [availabilityId], references: [id])
+  status            String            @default("pending") // pending|confirmed|rejected|cancelled|no_show
+  requestedAt       DateTime          @default(now())
+  respondedAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?          @db.Text
+  coachNotes        String?           @db.Text
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([studentId])
+  @@index([classId])
+  @@index([availabilityId])
+  @@index([status])
 }
 
 model CoachReview {
