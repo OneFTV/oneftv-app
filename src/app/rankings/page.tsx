@@ -108,6 +108,12 @@ export default function RankingsPage() {
             <h2 className="text-lg font-bold text-white">{t('rankings.overall_rankings')}</h2>
             <div className="flex items-center gap-3">
               <Link
+                href="/rankings/nfa"
+                className="px-4 py-2 rounded-lg border border-yellow-400/30 text-yellow-300 hover:bg-yellow-500/10 transition-colors font-semibold"
+              >
+                🏆 NFA Rankings
+              </Link>
+              <Link
                 href="/rankings/popularity"
                 className="px-4 py-2 rounded-lg border border-blue-400/30 text-blue-300 hover:bg-blue-500/10 transition-colors font-semibold"
               >

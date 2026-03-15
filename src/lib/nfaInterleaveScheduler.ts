@@ -184,7 +184,7 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
     }
   }
 
-  // ── Step 2: Fetch all games with their rounds ──
+  // ── Step 2: Fetch all games with their rounds and player IDs ──
   const categoryIds = categories.map((c) => c.id)
 
   const allGames = await prisma.game.findMany({
@@ -197,6 +197,10 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
       matchNumber: true,
       categoryId: true,
       roundId: true,
+      player1HomeId: true,
+      player2HomeId: true,
+      player1AwayId: true,
+      player2AwayId: true,
       Round: {
         select: {
           id: true,
@@ -207,15 +211,57 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
     },
   })
 
+  // Fetch team registrations for seed lookups
+  const teamRegs = await prisma.teamRegistration.findMany({
+    where: { categoryId: { in: categoryIds } },
+    select: { id: true, seed: true, player1Id: true, player2Id: true, categoryId: true },
+  })
+
+  // Map player1Id → seed (within category) for seed lookups
+  const playerSeedMap = new Map<string, number>()
+  for (const reg of teamRegs) {
+    if (reg.seed != null) {
+      playerSeedMap.set(`${reg.categoryId}::${reg.player1Id}`, reg.seed)
+      if (reg.player2Id) playerSeedMap.set(`${reg.categoryId}::${reg.player2Id}`, reg.seed)
+    }
+  }
+
   if (allGames.length === 0) {
     throw new Error('No games found across division categories')
   }
 
-  // Build lookup: (divisionLabel, roundLabel) → game IDs (sorted by matchNumber)
-  // roundLabel comes from Round.name in the database
+  // Build lookup: (divisionLabel, roundLabel) → game refs (sorted by matchNumber)
   type GameRef = {
     gameId: string
     matchNumber: number | null
+    division: string
+    roundLabel: string
+    bestSeed: number  // lowest (best) seed among the teams in this game
+  }
+
+  // Helper: get all player IDs for a game (for rest time checks)
+  function getGamePlayers(gameId: string): string[] {
+    const game = allGames.find(g => g.id === gameId)
+    if (!game) return []
+    const players: string[] = []
+    if (game.player1HomeId) players.push(game.player1HomeId)
+    if (game.player2HomeId) players.push(game.player2HomeId)
+    if (game.player1AwayId) players.push(game.player1AwayId)
+    if (game.player2AwayId) players.push(game.player2AwayId)
+    return players
+  }
+
+  // Helper: get best (lowest) seed for a game
+  function getGameBestSeed(game: typeof allGames[0]): number {
+    let best = 999
+    const catId = game.categoryId
+    if (!catId) return best
+    for (const pid of [game.player1HomeId, game.player1AwayId]) {
+      if (!pid) continue
+      const seed = playerSeedMap.get(`${catId}::${pid}`)
+      if (seed != null && seed < best) best = seed
+    }
+    return best
   }
 
   const gamesByDivisionRound = new Map<string, GameRef[]>()
@@ -232,12 +278,23 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
     gamesByDivisionRound.get(key)!.push({
       gameId: game.id,
       matchNumber: game.matchNumber,
+      division: cat.divisionLabel,
+      roundLabel: game.Round.name,
+      bestSeed: getGameBestSeed(game),
     })
   }
 
   // Sort each round's games by matchNumber for consistent ordering
   for (const [, games] of gamesByDivisionRound) {
     games.sort((a, b) => (a.matchNumber ?? 0) - (b.matchNumber ?? 0))
+  }
+
+  // ── Req 2: For D1 W1, re-sort so worst seeds (highest seed numbers) play first ──
+  const d1W1Key = 'D1::W1'
+  const d1W1Games = gamesByDivisionRound.get(d1W1Key)
+  if (d1W1Games) {
+    // Sort descending by bestSeed: worst seeds first, top seeds last
+    d1W1Games.sort((a, b) => b.bestSeed - a.bestSeed)
   }
 
   // ── Step 3: Build the interleave step array ──
@@ -248,6 +305,9 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
   // ── Step 4: Schedule games following the interleave order ──
   // Court availability tracker: minutes from midnight for each court
   const courtNext = new Array(numCourts).fill(startHour * 60)
+
+  // Req 1: Track when each player last played (minutes from midnight)
+  const playerLastTime = new Map<string, number>()
 
   // Track scheduled games with their time and court assignment
   interface ScheduleEntry {
@@ -266,40 +326,110 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
       continue
     }
 
-    // Collect all game IDs for this step in order
-    const stepGameIds: string[] = []
+    // Collect all game refs for this step in order
+    const stepGames: GameRef[] = []
 
     for (const { division, roundLabel } of step) {
       const key = `${division}::${roundLabel}`
       const games = gamesByDivisionRound.get(key)
       if (games) {
         for (const g of games) {
-          stepGameIds.push(g.gameId)
+          stepGames.push(g)
         }
       }
     }
 
-    // Assign each game to the earliest available court
-    for (const gameId of stepGameIds) {
-      // Find the court with the earliest available time
-      let bestCourt = 0
-      for (let c = 1; c < numCourts; c++) {
-        if (courtNext[c] < courtNext[bestCourt]) {
+    // Req 6: Within each step, prioritize games whose players have been waiting longest
+    // (max 2 slots / 40min idle). Sort so "coldest" players go first.
+    const maxWaitSlots = 2
+    const currentMinTime = Math.min(...courtNext)
+    stepGames.sort((a, b) => {
+      const aPlayers = getGamePlayers(a.gameId)
+      const bPlayers = getGamePlayers(b.gameId)
+      // Get the oldest (smallest) lastTime among each game's players
+      const aLastTime = aPlayers.reduce((min, p) => {
+        const t = playerLastTime.get(p)
+        return t != null && t < min ? t : min
+      }, Infinity)
+      const bLastTime = bPlayers.reduce((min, p) => {
+        const t = playerLastTime.get(p)
+        return t != null && t < min ? t : min
+      }, Infinity)
+      // Games with players who haven't played yet (Infinity) keep original order
+      if (aLastTime === Infinity && bLastTime === Infinity) return 0
+      if (aLastTime === Infinity) return 1  // b has been waiting, prioritize b
+      if (bLastTime === Infinity) return -1 // a has been waiting, prioritize a
+      // Prioritize the game whose players have been waiting longer (lower lastTime = longer wait)
+      // But only reorder if someone is at risk of exceeding maxWaitSlots
+      const aWait = currentMinTime - aLastTime
+      const bWait = currentMinTime - bLastTime
+      const aUrgent = aWait >= maxWaitSlots * slotMinutes
+      const bUrgent = bWait >= maxWaitSlots * slotMinutes
+      if (aUrgent && !bUrgent) return -1
+      if (!aUrgent && bUrgent) return 1
+      if (aUrgent && bUrgent) return aLastTime - bLastTime // longest wait first
+      return 0 // preserve original order if neither is urgent
+    })
+
+    // Assign each game to the earliest available court, respecting rest and court preferences
+    for (const gameRef of stepGames) {
+      const gamePlayers = getGamePlayers(gameRef.gameId)
+
+      // Find the latest time any of this game's players last played
+      let playerEarliestStart = 0
+      for (const playerId of gamePlayers) {
+        const lastTime = playerLastTime.get(playerId)
+        if (lastTime != null) {
+          // Need at least 1 slot (slotMinutes) rest after their last game
+          const earliest = lastTime + slotMinutes
+          if (earliest > playerEarliestStart) playerEarliestStart = earliest
+        }
+      }
+
+      // Req 3: D1 top seeds (seed 1-8) prefer court 1 (index 0)
+      const isD1TopSeed = gameRef.division === 'D1' && gameRef.bestSeed <= 8
+
+      // Find the best court considering rest time and court preference
+      let bestCourt = -1
+      let bestTime = Infinity
+
+      for (let c = 0; c < numCourts; c++) {
+        const courtTime = Math.max(courtNext[c], playerEarliestStart)
+        // Prefer court 0 (court 1) for D1 top seeds when times are equal
+        if (courtTime < bestTime || (courtTime === bestTime && isD1TopSeed && c === 0)) {
+          bestTime = courtTime
           bestCourt = c
         }
       }
 
-      const timeMinutes = courtNext[bestCourt]
+      // If rest time pushes beyond what a non-rest slot would be, check if it's reasonable
+      // Don't enforce rest if it would delay the tournament excessively (>2 extra slots)
+      const noRestBestTime = Math.min(...courtNext)
+      if (bestTime > noRestBestTime + slotMinutes * 2) {
+        // Fallback: skip rest enforcement, use earliest court
+        bestCourt = 0
+        for (let c = 1; c < numCourts; c++) {
+          if (courtNext[c] < courtNext[bestCourt]) bestCourt = c
+        }
+        bestTime = courtNext[bestCourt]
+      }
+
+      const timeMinutes = bestTime
       const courtNumber = bestCourt + 1 // 1-indexed
 
       scheduled.push({
-        gameId,
+        gameId: gameRef.gameId,
         courtNumber,
         timeMinutes,
       })
 
-      // Advance this court's availability
+      // Update court availability
       courtNext[bestCourt] = timeMinutes + slotMinutes
+
+      // Update player last play times
+      for (const playerId of gamePlayers) {
+        playerLastTime.set(playerId, timeMinutes)
+      }
     }
   }
 
@@ -426,6 +556,10 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
       matchNumber: true,
       categoryId: true,
       roundId: true,
+      player1HomeId: true,
+      player2HomeId: true,
+      player1AwayId: true,
+      player2AwayId: true,
       Round: {
         select: {
           id: true,
@@ -440,9 +574,45 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
     throw new Error('No games found across division categories')
   }
 
+  // Fetch team registrations for seed lookups
+  const pTeamRegs = await prisma.teamRegistration.findMany({
+    where: { categoryId: { in: categoryIds } },
+    select: { id: true, seed: true, player1Id: true, player2Id: true, categoryId: true },
+  })
+  const pPlayerSeedMap = new Map<string, number>()
+  for (const reg of pTeamRegs) {
+    if (reg.seed != null) {
+      pPlayerSeedMap.set(`${reg.categoryId}::${reg.player1Id}`, reg.seed)
+      if (reg.player2Id) pPlayerSeedMap.set(`${reg.categoryId}::${reg.player2Id}`, reg.seed)
+    }
+  }
+
+  function getPreviewGamePlayers(gameId: string): string[] {
+    const game = allGames.find(g => g.id === gameId)
+    if (!game) return []
+    const players: string[] = []
+    if (game.player1HomeId) players.push(game.player1HomeId)
+    if (game.player2HomeId) players.push(game.player2HomeId)
+    if (game.player1AwayId) players.push(game.player1AwayId)
+    if (game.player2AwayId) players.push(game.player2AwayId)
+    return players
+  }
+
+  function getPreviewBestSeed(game: typeof allGames[0]): number {
+    let best = 999
+    const catId = game.categoryId
+    if (!catId) return best
+    for (const pid of [game.player1HomeId, game.player1AwayId]) {
+      if (!pid) continue
+      const seed = pPlayerSeedMap.get(`${catId}::${pid}`)
+      if (seed != null && seed < best) best = seed
+    }
+    return best
+  }
+
   // Build lookup
-  type GameRef = { gameId: string; matchNumber: number | null }
-  const gamesByDivisionRound = new Map<string, GameRef[]>()
+  type PreviewGameRef = { gameId: string; matchNumber: number | null; division: string; roundLabel: string; bestSeed: number }
+  const gamesByDivisionRound = new Map<string, PreviewGameRef[]>()
 
   for (const game of allGames) {
     if (!game.Round || !game.categoryId) continue
@@ -456,11 +626,21 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
     gamesByDivisionRound.get(key)!.push({
       gameId: game.id,
       matchNumber: game.matchNumber,
+      division: cat.divisionLabel,
+      roundLabel: game.Round.name,
+      bestSeed: getPreviewBestSeed(game),
     })
   }
 
   for (const [, games] of gamesByDivisionRound) {
     games.sort((a, b) => (a.matchNumber ?? 0) - (b.matchNumber ?? 0))
+  }
+
+  // Req 2: D1 W1 worst seeds first
+  const d1W1Key = 'D1::W1'
+  const d1W1Games = gamesByDivisionRound.get(d1W1Key)
+  if (d1W1Games) {
+    d1W1Games.sort((a, b) => b.bestSeed - a.bestSeed)
   }
 
   // Schedule
@@ -469,6 +649,7 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
     : get3DivInterleaveSteps()
 
   const courtNext = new Array(numCourts).fill(startHour * 60)
+  const playerLastTime = new Map<string, number>()
 
   interface ScheduleEntry {
     gameId: string
@@ -485,30 +666,86 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
       continue
     }
 
-    const stepGameIds: string[] = []
+    const stepGames: PreviewGameRef[] = []
     for (const { division, roundLabel } of step) {
       const key = `${division}::${roundLabel}`
       const games = gamesByDivisionRound.get(key)
       if (games) {
         for (const g of games) {
-          stepGameIds.push(g.gameId)
+          stepGames.push(g)
         }
       }
     }
 
-    for (const gameId of stepGameIds) {
-      let bestCourt = 0
-      for (let c = 1; c < numCourts; c++) {
-        if (courtNext[c] < courtNext[bestCourt]) {
+    // Req 6: Prioritize games whose players have been waiting longest
+    const pCurrentMinTime = Math.min(...courtNext)
+    const pMaxWaitSlots = 2
+    stepGames.sort((a, b) => {
+      const aPlayers = getPreviewGamePlayers(a.gameId)
+      const bPlayers = getPreviewGamePlayers(b.gameId)
+      const aLastTime = aPlayers.reduce((min, p) => {
+        const t = playerLastTime.get(p)
+        return t != null && t < min ? t : min
+      }, Infinity)
+      const bLastTime = bPlayers.reduce((min, p) => {
+        const t = playerLastTime.get(p)
+        return t != null && t < min ? t : min
+      }, Infinity)
+      if (aLastTime === Infinity && bLastTime === Infinity) return 0
+      if (aLastTime === Infinity) return 1
+      if (bLastTime === Infinity) return -1
+      const aWait = pCurrentMinTime - aLastTime
+      const bWait = pCurrentMinTime - bLastTime
+      const aUrgent = aWait >= pMaxWaitSlots * slotMinutes
+      const bUrgent = bWait >= pMaxWaitSlots * slotMinutes
+      if (aUrgent && !bUrgent) return -1
+      if (!aUrgent && bUrgent) return 1
+      if (aUrgent && bUrgent) return aLastTime - bLastTime
+      return 0
+    })
+
+    for (const gameRef of stepGames) {
+      const gamePlayers = getPreviewGamePlayers(gameRef.gameId)
+
+      let playerEarliestStart = 0
+      for (const playerId of gamePlayers) {
+        const lastTime = playerLastTime.get(playerId)
+        if (lastTime != null) {
+          const earliest = lastTime + slotMinutes
+          if (earliest > playerEarliestStart) playerEarliestStart = earliest
+        }
+      }
+
+      const isD1TopSeed = gameRef.division === 'D1' && gameRef.bestSeed <= 8
+      let bestCourt = -1
+      let bestTime = Infinity
+
+      for (let c = 0; c < numCourts; c++) {
+        const courtTime = Math.max(courtNext[c], playerEarliestStart)
+        if (courtTime < bestTime || (courtTime === bestTime && isD1TopSeed && c === 0)) {
+          bestTime = courtTime
           bestCourt = c
         }
       }
 
-      const timeMinutes = courtNext[bestCourt]
+      const noRestBestTime = Math.min(...courtNext)
+      if (bestTime > noRestBestTime + slotMinutes * 2) {
+        bestCourt = 0
+        for (let c = 1; c < numCourts; c++) {
+          if (courtNext[c] < courtNext[bestCourt]) bestCourt = c
+        }
+        bestTime = courtNext[bestCourt]
+      }
+
+      const timeMinutes = bestTime
       const courtNumber = bestCourt + 1
 
-      scheduled.push({ gameId, courtNumber, timeMinutes })
+      scheduled.push({ gameId: gameRef.gameId, courtNumber, timeMinutes })
       courtNext[bestCourt] = timeMinutes + slotMinutes
+
+      for (const playerId of gamePlayers) {
+        playerLastTime.set(playerId, timeMinutes)
+      }
     }
   }
 

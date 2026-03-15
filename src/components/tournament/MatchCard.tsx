@@ -139,12 +139,14 @@ export default function MatchCard({ game, compact = false, dense = false, theme 
             )}
             <span>Ct {game.court}</span>
           </span>
-          {isLive && (
+          {isLive ? (
             <span className="flex items-center gap-0.5">
               <span className="inline-flex h-1 w-1 rounded-full bg-red-500" />
               <span className="font-bold text-red-500">LIVE</span>
             </span>
-          )}
+          ) : game.scheduledTime ? (
+            <span>{new Date(game.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+          ) : null}
         </div>
       ) : (
         <div className={`flex items-center justify-between px-3 py-1 ${theme.cardFooterBg} text-[11px] ${theme.cardFooterText} border-t ${theme.cardDivider}`}>
