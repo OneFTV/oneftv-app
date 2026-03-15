@@ -2,12 +2,14 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from '@/contexts/TranslationContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const { t } = useTranslation();
   const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
@@ -71,7 +73,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError(t('auth.invalid_credentials'));
       } else if (result?.ok) {
-        router.push('/dashboard');
+        router.push(callbackUrl);
       }
     } catch {
       setError(t('common.error_occurred'));
@@ -163,7 +165,7 @@ export default function LoginPage() {
 
           {/* Register Link */}
           <Link
-            href="/register"
+            href={callbackUrl !== '/dashboard' ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/register'}
             className="w-full block text-center py-3 border-2 border-blue-400 text-blue-300 rounded-lg font-bold text-lg hover:bg-blue-400/10 transition-all"
           >
             {t('auth.create_account')}

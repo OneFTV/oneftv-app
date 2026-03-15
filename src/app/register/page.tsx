@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslation } from '@/contexts/TranslationContext';
 
@@ -65,6 +65,8 @@ const SKILL_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Pro'];
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const { t } = useTranslation();
   const { data: session, status } = useSession();
   const [formData, setFormData] = useState<FormData>({
@@ -139,14 +141,14 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           redirect: false,
-          callbackUrl: '/dashboard',
+          callbackUrl,
         });
 
         if (signInResult?.ok) {
-          router.push(signInResult.url || '/dashboard');
+          router.push(callbackUrl);
         } else {
           // Auto-login failed, still send to dashboard via login
-          router.push('/login?callbackUrl=%2Fdashboard');
+          router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         }
       } else {
         const data = await res.json();
@@ -207,7 +209,7 @@ export default function RegisterPage() {
         </form>
         <p className="text-slate-400 text-center mt-6">
           {t('auth.already_have_account')}{' '}
-          <Link href="/login" className="text-blue-400 hover:text-blue-300">{t('common.sign_in')}</Link>
+          <Link href={callbackUrl !== '/dashboard' ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'} className="text-blue-400 hover:text-blue-300">{t('common.sign_in')}</Link>
         </p>
       </div>
     </div>

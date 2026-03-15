@@ -61,7 +61,7 @@ export default function CoachPublicPage() {
   }, [enrollStatus, params.id, studentLevel]);
 
   const handleEnroll = async () => {
-    if (!session?.user) { router.push('/login'); return; }
+    if (!session?.user) { router.push(`/login?callbackUrl=${encodeURIComponent(`/aulas/find/${params.id}`)}`); return; }
     setShowForm(true);
   };
 
