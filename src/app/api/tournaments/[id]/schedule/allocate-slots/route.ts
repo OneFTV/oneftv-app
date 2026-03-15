@@ -46,19 +46,107 @@ export async function POST(
       }
 
       const divisionCount = (tournament.openDivisionCount === 4 ? 4 : 3) as 3 | 4
+      const numCourts = body.numCourts ?? tournament.numCourts ?? 4
+      const slotMinutes = body.slotMinutes ?? 30
+      const startHour = body.startHour ?? 9
+
       const results = await scheduleNFAInterleave({
         tournamentId: params.id,
-        numCourts: body.numCourts ?? tournament.numCourts ?? 4,
-        slotMinutes: body.slotMinutes ?? 30,
-        startHour: body.startHour ?? 9,
+        numCourts,
+        slotMinutes,
+        startHour,
         divisionCount,
       })
 
+      // ── Schedule non-division categories (Women's, Master, Beginners, etc.) ──
+      // These categories don't have divisionLabel and are not handled by the interleave scheduler.
+      const divisionCategoryIds = divisionCategories.map(c => c.id)
+      const nonDivisionGames = await prisma.game.findMany({
+        where: {
+          tournamentId: params.id,
+          categoryId: { notIn: divisionCategoryIds },
+        },
+        select: {
+          id: true,
+          matchNumber: true,
+          categoryId: true,
+          Round: { select: { name: true, roundNumber: true } },
+        },
+        orderBy: [
+          { categoryId: 'asc' },
+          { Round: { roundNumber: 'asc' } },
+          { matchNumber: 'asc' },
+        ],
+      })
+
+      let nonDivResults: Array<{ gameId: string; courtNumber: number; scheduledTime: Date; displayMatchNumber: number }> = []
+
+      if (nonDivisionGames.length > 0) {
+        // Find the latest scheduled time from interleave results to continue from there
+        let maxTimeMinutes = startHour * 60
+        if (results.length > 0) {
+          const latestTime = Math.max(...results.map(r => {
+            const d = r.scheduledTime
+            return d.getHours() * 60 + d.getMinutes()
+          }))
+          maxTimeMinutes = latestTime + slotMinutes
+        }
+
+        // Simple court-round-robin scheduling for remaining games
+        const courtNext = new Array(numCourts).fill(maxTimeMinutes)
+        let displayNum = results.length + 1
+
+        // Fetch tournament date for base
+        const t = await prisma.tournament.findUnique({
+          where: { id: params.id },
+          select: { date: true },
+        })
+        const baseDate = t?.date ?? new Date()
+
+        for (const game of nonDivisionGames) {
+          // Find earliest available court
+          let bestCourt = 0
+          for (let c = 1; c < numCourts; c++) {
+            if (courtNext[c] < courtNext[bestCourt]) bestCourt = c
+          }
+
+          const timeMinutes = courtNext[bestCourt]
+          const scheduledTime = new Date(baseDate)
+          scheduledTime.setHours(Math.floor(timeMinutes / 60), timeMinutes % 60, 0, 0)
+
+          nonDivResults.push({
+            gameId: game.id,
+            courtNumber: bestCourt + 1,
+            scheduledTime,
+            displayMatchNumber: displayNum++,
+          })
+
+          courtNext[bestCourt] = timeMinutes + slotMinutes
+        }
+
+        // Write to database
+        await prisma.$transaction(
+          nonDivResults.map(r =>
+            prisma.game.update({
+              where: { id: r.gameId },
+              data: {
+                scheduledTime: r.scheduledTime,
+                courtNumber: r.courtNumber,
+                displayMatchNumber: r.displayMatchNumber,
+              },
+            })
+          )
+        )
+      }
+
+      const allResults = [...results, ...nonDivResults]
+
       return NextResponse.json({
-        slots: results,
+        slots: allResults,
         mode: 'nfa_interleave',
-        totalGames: results.length,
+        totalGames: allResults.length,
         divisionCount,
+        nonDivisionGamesScheduled: nonDivResults.length,
       })
     }
 

@@ -199,77 +199,99 @@ export async function generateNFACascade(
   })
   let nextSort = (maxSort._max.sortOrder ?? 0) + 1
 
-  // Step 3: Create D4 category (4-div only — L1 losers, 8-team single elimination)
-  let d4CategoryId: string | null = null
-  if (createD4) {
-    const d4 = await prisma.category.create({
-      data: {
-        tournamentId,
-        name: `${openCategory.name} - Division 4`,
-        format: 'double_elimination',
-        gender: openCategory.gender,
-        skillLevel: openCategory.skillLevel,
-        maxTeams: d4Teams,
-        pointsPerSet: openCategory.pointsPerSet,
-        numSets: openCategory.numSets,
-        sortOrder: nextSort++,
-        status: 'draft',
-        bracketType: 'single_elimination',
-        divisionLabel: 'D4',
-        seedingSource: 'D1_L1',
-        seedingFromCategoryId: openCategoryId,
-      },
+  // Step 2.5: Find existing categories that match division names to avoid duplicates
+  // Look for pre-existing categories like "Open Division 2", "Open Division 3", etc.
+  const existingCategories = await prisma.category.findMany({
+    where: {
+      tournamentId,
+      id: { not: openCategoryId },
+    },
+    select: { id: true, name: true, divisionLabel: true },
+  })
+
+  // Helper: find an existing category that matches a division name pattern
+  function findExistingDivisionCategory(divisionNum: number): typeof existingCategories[0] | undefined {
+    const baseName = openCategory!.name.replace(/\s*-?\s*Division\s*\d+/i, '').trim()
+    return existingCategories.find(cat => {
+      const nameNorm = cat.name.trim()
+      // Match patterns: "Open Division 2", "Open - Division 2", "Open Division2"
+      const patterns = [
+        `${baseName} Division ${divisionNum}`,
+        `${baseName} - Division ${divisionNum}`,
+        `${baseName}Division ${divisionNum}`,
+      ]
+      return patterns.some(p => nameNorm.toLowerCase() === p.toLowerCase()) ||
+        cat.divisionLabel === `D${divisionNum}`
     })
-    d4CategoryId = d4.id
   }
 
-  // Step 4: Create D3 category (early losers — single elimination)
-  let d3CategoryId: string | null = null
-  if (createD3) {
-    const seedingSource = divisionCount === 4 ? 'D1_L2' : 'D1_L1_L2'
-    const d3 = await prisma.category.create({
+  // Helper: upsert a division category — reuse existing or create new
+  async function upsertDivisionCategory(
+    divisionNum: number,
+    divisionLabel: string,
+    bracketType: string,
+    seedingSource: string,
+    maxTeams: number,
+  ): Promise<string> {
+    const existing = findExistingDivisionCategory(divisionNum)
+    const targetName = `${openCategory!.name} - Division ${divisionNum}`
+
+    if (existing) {
+      // Reuse existing category — update its cascade fields
+      await prisma.category.update({
+        where: { id: existing.id },
+        data: {
+          name: targetName,
+          format: 'double_elimination',
+          bracketType,
+          divisionLabel,
+          seedingSource,
+          seedingFromCategoryId: openCategoryId,
+          maxTeams,
+        },
+      })
+      return existing.id
+    }
+
+    // Create new category
+    const created = await prisma.category.create({
       data: {
         tournamentId,
-        name: `${openCategory.name} - Division 3`,
+        name: targetName,
         format: 'double_elimination',
-        gender: openCategory.gender,
-        skillLevel: openCategory.skillLevel,
-        maxTeams: d3Teams,
-        pointsPerSet: openCategory.pointsPerSet,
-        numSets: openCategory.numSets,
+        gender: openCategory!.gender,
+        skillLevel: openCategory!.skillLevel,
+        maxTeams,
+        pointsPerSet: openCategory!.pointsPerSet,
+        numSets: openCategory!.numSets,
         sortOrder: nextSort++,
         status: 'draft',
-        bracketType: 'single_elimination',
-        divisionLabel: 'D3',
+        bracketType,
+        divisionLabel,
         seedingSource,
         seedingFromCategoryId: openCategoryId,
       },
     })
-    d3CategoryId = d3.id
+    return created.id
   }
 
-  // Step 5: Create D2 category (later losers — double elimination)
+  // Step 3: Create/reuse D4 category (4-div only — L1 losers, 8-team single elimination)
+  let d4CategoryId: string | null = null
+  if (createD4) {
+    d4CategoryId = await upsertDivisionCategory(4, 'D4', 'single_elimination', 'D1_L1', d4Teams)
+  }
+
+  // Step 4: Create/reuse D3 category (early losers — single elimination)
+  let d3CategoryId: string | null = null
+  if (createD3) {
+    const seedingSource = divisionCount === 4 ? 'D1_L2' : 'D1_L1_L2'
+    d3CategoryId = await upsertDivisionCategory(3, 'D3', 'single_elimination', seedingSource, d3Teams)
+  }
+
+  // Step 5: Create/reuse D2 category (later losers — double elimination)
   let d2CategoryId: string | null = null
   if (createD2) {
-    const d2 = await prisma.category.create({
-      data: {
-        tournamentId,
-        name: `${openCategory.name} - Division 2`,
-        format: 'double_elimination',
-        gender: openCategory.gender,
-        skillLevel: openCategory.skillLevel,
-        maxTeams: d2Teams,
-        pointsPerSet: openCategory.pointsPerSet,
-        numSets: openCategory.numSets,
-        sortOrder: nextSort++,
-        status: 'draft',
-        bracketType: 'double_elimination',
-        divisionLabel: 'D2',
-        seedingSource: 'D1_L3_L4',
-        seedingFromCategoryId: openCategoryId,
-      },
-    })
-    d2CategoryId = d2.id
+    d2CategoryId = await upsertDivisionCategory(2, 'D2', 'double_elimination', 'D1_L3_L4', d2Teams)
   }
 
   // Calculate expected game counts

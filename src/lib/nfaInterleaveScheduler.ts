@@ -156,6 +156,13 @@ function rr(division: string, roundLabel: string): Array<{ division: string; rou
 export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<ScheduledMatch[]> {
   const { tournamentId, numCourts, slotMinutes, startHour, divisionCount } = config
 
+  // ── Step 0: Fetch tournament date for scheduling base ──
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { date: true },
+  })
+  const tournamentDate = tournament?.date ?? undefined
+
   // ── Step 1: Fetch all division categories for this tournament ──
   const divisionLabels = divisionCount === 4
     ? ['D1', 'D2', 'D3', 'D4']
@@ -442,7 +449,7 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
   const results: ScheduledMatch[] = scheduled.map((entry, index) => ({
     gameId: entry.gameId,
     courtNumber: entry.courtNumber,
-    scheduledTime: minutesToDate(entry.timeMinutes),
+    scheduledTime: minutesToDate(entry.timeMinutes, tournamentDate),
     displayMatchNumber: index + 1, // M1, M2, ... Mn
   }))
 
@@ -470,10 +477,10 @@ export async function scheduleNFAInterleave(config: InterleaveConfig): Promise<S
 
 /**
  * Convert minutes from midnight into a Date object.
- * Uses today's date as the base.
+ * Uses the provided base date (tournament date) or today as fallback.
  */
-function minutesToDate(minutes: number): Date {
-  const date = new Date()
+function minutesToDate(minutes: number, baseDate?: Date): Date {
+  const date = baseDate ? new Date(baseDate) : new Date()
   date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
   return date
 }
@@ -523,6 +530,13 @@ export function getScheduleSummary(matches: ScheduledMatch[]): {
  */
 export async function previewNFAInterleave(config: InterleaveConfig): Promise<ScheduledMatch[]> {
   const { tournamentId, numCourts, slotMinutes, startHour, divisionCount } = config
+
+  // Fetch tournament date for scheduling base
+  const previewTournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { date: true },
+  })
+  const previewTournamentDate = previewTournament?.date ?? undefined
 
   // Fetch categories
   const divisionLabels = divisionCount === 4
@@ -758,7 +772,7 @@ export async function previewNFAInterleave(config: InterleaveConfig): Promise<Sc
   return scheduled.map((entry, index) => ({
     gameId: entry.gameId,
     courtNumber: entry.courtNumber,
-    scheduledTime: minutesToDate(entry.timeMinutes),
+    scheduledTime: minutesToDate(entry.timeMinutes, previewTournamentDate),
     displayMatchNumber: index + 1,
   }))
 }
