@@ -56,8 +56,8 @@ async function main() {
     data: {
       name: '2026 NFA Tour - Miami, FL',
       description: 'NFA National Footvolley Association Tour 2026 - Miami, FL. Features Open Division 1/2/3, Women\'s, Master, and Beginners divisions.',
-      date: new Date('2026-04-18T09:00:00Z'),
-      endDate: new Date('2026-04-19T19:00:00Z'),
+      date: new Date('2026-04-18T13:00:00Z'),
+      endDate: new Date('2026-04-19T18:00:00Z'),
       location: 'South Beach',
       city: 'Miami',
       state: 'FL',

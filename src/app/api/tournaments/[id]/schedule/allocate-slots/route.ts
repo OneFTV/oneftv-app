@@ -3,7 +3,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/shared/database/prisma'
 import { allocateTimeSlots } from '@/lib/timeSlotAllocator'
-import { scheduleNFAInterleave } from '@/lib/nfaInterleaveScheduler'
+import { scheduleNFAInterleave, ScheduledMatch } from '@/lib/nfaInterleaveScheduler'
+
+function parseTime(timeStr: string): { hours: number; minutes: number } {
+  const [h, m] = timeStr.split(':').map(Number)
+  return { hours: h, minutes: m ?? 0 }
+}
 
 export async function POST(
   req: NextRequest,
@@ -17,7 +22,16 @@ export async function POST(
 
     const tournament = await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { organizerId: true, numCourts: true, openDivisionCount: true },
+      select: {
+        organizerId: true,
+        numCourts: true,
+        numDays: true,
+        openDivisionCount: true,
+        date: true,
+        endDate: true,
+        startTime: true,
+        endTime: true,
+      },
     })
 
     if (!tournament) {
@@ -28,125 +42,113 @@ export async function POST(
       return NextResponse.json({ error: 'Only the organizer can allocate time slots' }, { status: 403 })
     }
 
-    // Auto-detect NFA cascade: check if tournament has multiple division categories
+    // Auto-detect NFA cascade: check if tournament has division categories
     const divisionCategories = await prisma.category.findMany({
       where: {
         tournamentId: params.id,
         divisionLabel: { not: null },
       },
-      select: { id: true, divisionLabel: true },
+      select: { id: true, divisionLabel: true, scheduledDay: true },
     })
 
     if (divisionCategories.length >= 2) {
-      // NFA cascade tournament — use interleave scheduler
+      // NFA cascade tournament — use unified interleave scheduler per day
       const body = await req.json().catch(() => ({})) as {
         slotMinutes?: number
-        startHour?: number
         numCourts?: number
       }
 
       const divisionCount = (tournament.openDivisionCount === 4 ? 4 : 3) as 3 | 4
       const numCourts = body.numCourts ?? tournament.numCourts ?? 4
       const slotMinutes = body.slotMinutes ?? 30
-      const startHour = body.startHour ?? 9
+      const numDays = tournament.numDays || 1
 
-      const results = await scheduleNFAInterleave({
-        tournamentId: params.id,
-        numCourts,
-        slotMinutes,
-        startHour,
-        divisionCount,
+      const defaultStart = tournament.startTime ? parseTime(tournament.startTime) : { hours: 9, minutes: 0 }
+      const defaultEnd = tournament.endTime ? parseTime(tournament.endTime) : { hours: 18, minutes: 0 }
+
+      // Get per-day time overrides from categories
+      const allCategories = await prisma.category.findMany({
+        where: { tournamentId: params.id },
+        select: { id: true, scheduledDay: true, dayStartTime: true, dayEndTime: true },
       })
 
-      // ── Schedule non-division categories (Women's, Master, Beginners, etc.) ──
-      // These categories don't have divisionLabel and are not handled by the interleave scheduler.
-      const divisionCategoryIds = divisionCategories.map(c => c.id)
-      const nonDivisionGames = await prisma.game.findMany({
-        where: {
-          tournamentId: params.id,
-          categoryId: { notIn: divisionCategoryIds },
-        },
-        select: {
-          id: true,
-          matchNumber: true,
-          categoryId: true,
-          Round: { select: { name: true, roundNumber: true } },
-        },
-        orderBy: [
-          { categoryId: 'asc' },
-          { Round: { roundNumber: 'asc' } },
-          { matchNumber: 'asc' },
-        ],
-      })
+      // Compute per-day start/end times (use category overrides if available)
+      function getDayTimes(day: number) {
+        const dayCats = allCategories.filter(c => (c.scheduledDay ?? 1) === day)
+        let start = defaultStart
+        let end = defaultEnd
 
-      let nonDivResults: Array<{ gameId: string; courtNumber: number; scheduledTime: Date; displayMatchNumber: number }> = []
-
-      if (nonDivisionGames.length > 0) {
-        // Find the latest scheduled time from interleave results to continue from there
-        let maxTimeMinutes = startHour * 60
-        if (results.length > 0) {
-          const latestTime = Math.max(...results.map(r => {
-            const d = r.scheduledTime
-            return d.getHours() * 60 + d.getMinutes()
-          }))
-          maxTimeMinutes = latestTime + slotMinutes
-        }
-
-        // Simple court-round-robin scheduling for remaining games
-        const courtNext = new Array(numCourts).fill(maxTimeMinutes)
-        let displayNum = results.length + 1
-
-        // Fetch tournament date for base
-        const t = await prisma.tournament.findUnique({
-          where: { id: params.id },
-          select: { date: true },
-        })
-        const baseDate = t?.date ?? new Date()
-
-        for (const game of nonDivisionGames) {
-          // Find earliest available court
-          let bestCourt = 0
-          for (let c = 1; c < numCourts; c++) {
-            if (courtNext[c] < courtNext[bestCourt]) bestCourt = c
+        // Use the earliest start and latest end from category overrides
+        for (const cat of dayCats) {
+          if (cat.dayStartTime) {
+            const parsed = parseTime(cat.dayStartTime)
+            if (parsed.hours * 60 + parsed.minutes < start.hours * 60 + start.minutes) {
+              start = parsed
+            }
           }
-
-          const timeMinutes = courtNext[bestCourt]
-          const scheduledTime = new Date(baseDate)
-          scheduledTime.setHours(Math.floor(timeMinutes / 60), timeMinutes % 60, 0, 0)
-
-          nonDivResults.push({
-            gameId: game.id,
-            courtNumber: bestCourt + 1,
-            scheduledTime,
-            displayMatchNumber: displayNum++,
-          })
-
-          courtNext[bestCourt] = timeMinutes + slotMinutes
+          if (cat.dayEndTime) {
+            const parsed = parseTime(cat.dayEndTime)
+            if (parsed.hours * 60 + parsed.minutes > end.hours * 60 + end.minutes) {
+              end = parsed
+            }
+          }
         }
-
-        // Write to database
-        await prisma.$transaction(
-          nonDivResults.map(r =>
-            prisma.game.update({
-              where: { id: r.gameId },
-              data: {
-                scheduledTime: r.scheduledTime,
-                courtNumber: r.courtNumber,
-                displayMatchNumber: r.displayMatchNumber,
-              },
-            })
-          )
-        )
+        return { start, end }
       }
 
-      const allResults = [...results, ...nonDivResults]
+      function getDayDate(day: number): Date {
+        const date = new Date(tournament!.date)
+        date.setDate(date.getDate() + (day - 1))
+        return date
+      }
+
+      // Schedule each day
+      const allResults: ScheduledMatch[] = []
+      let globalDisplayOffset = 0
+
+      for (let day = 1; day <= numDays; day++) {
+        const { start, end } = getDayTimes(day)
+
+        const dayResults = await scheduleNFAInterleave({
+          tournamentId: params.id,
+          numCourts,
+          slotMinutes,
+          startHour: start.hours,
+          startMinute: start.minutes,
+          endHour: end.hours,
+          endMinute: end.minutes,
+          divisionCount,
+          dayDate: getDayDate(day),
+          scheduledDay: day,
+        })
+
+        // Re-number displayMatchNumber with global offset
+        for (const r of dayResults) {
+          r.displayMatchNumber += globalDisplayOffset
+        }
+        globalDisplayOffset += dayResults.length
+
+        // Update the re-numbered displayMatchNumbers in DB
+        if (dayResults.length > 0) {
+          await prisma.$transaction(
+            dayResults.map(r =>
+              prisma.game.update({
+                where: { id: r.gameId },
+                data: { displayMatchNumber: r.displayMatchNumber },
+              })
+            )
+          )
+        }
+
+        allResults.push(...dayResults)
+      }
 
       return NextResponse.json({
         slots: allResults,
         mode: 'nfa_interleave',
         totalGames: allResults.length,
         divisionCount,
-        nonDivisionGamesScheduled: nonDivResults.length,
+        numDays,
       })
     }
 
