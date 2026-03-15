@@ -204,11 +204,12 @@ export default function CategoryManager({ categories, onChange, maxCapacity, tem
             <div>
               <label className="block text-xs text-slate-400 mb-1">Max Teams</label>
               <input
-                type="number"
-                value={cat.maxTeams}
-                onChange={(e) => updateCategory(index, 'maxTeams', parseInt(e.target.value) || 0)}
-                min={2}
-                max={256}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={cat.maxTeams === 0 ? '' : cat.maxTeams}
+                onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); updateCategory(index, 'maxTeams', raw === '' ? 0 : parseInt(raw)); }}
+                onBlur={(e) => { const raw = e.target.value.replace(/\D/g, ''); updateCategory(index, 'maxTeams', raw === '' ? 2 : Math.max(2, Math.min(256, parseInt(raw)))); }}
                 className={inputClass}
               />
             </div>

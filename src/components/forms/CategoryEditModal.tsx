@@ -148,22 +148,24 @@ export default function CategoryEditModal({
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Máx. Duplas</label>
               <input
-                type="number"
-                value={form.maxTeams}
-                onChange={(e) => setForm((prev) => ({ ...prev, maxTeams: parseInt(e.target.value) || 16 }))}
-                min={2}
-                max={256}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.maxTeams === 0 ? '' : form.maxTeams}
+                onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); setForm((prev) => ({ ...prev, maxTeams: raw === '' ? 0 : parseInt(raw) })); }}
+                onBlur={(e) => { const raw = e.target.value.replace(/\D/g, ''); const num = raw === '' ? 16 : Math.max(2, Math.min(256, parseInt(raw))); setForm((prev) => ({ ...prev, maxTeams: num })); }}
                 className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Pontos por Set</label>
               <input
-                type="number"
-                value={form.pointsPerSet}
-                onChange={(e) => setForm((prev) => ({ ...prev, pointsPerSet: parseInt(e.target.value) || 18 }))}
-                min={1}
-                max={50}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.pointsPerSet === 0 ? '' : form.pointsPerSet}
+                onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); setForm((prev) => ({ ...prev, pointsPerSet: raw === '' ? 0 : parseInt(raw) })); }}
+                onBlur={(e) => { const raw = e.target.value.replace(/\D/g, ''); const num = raw === '' ? 18 : Math.max(1, Math.min(50, parseInt(raw))); setForm((prev) => ({ ...prev, pointsPerSet: num })); }}
                 className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -174,11 +176,12 @@ export default function CategoryEditModal({
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Tamanho do Grupo</label>
               <input
-                type="number"
-                value={form.groupSize}
-                onChange={(e) => setForm((prev) => ({ ...prev, groupSize: parseInt(e.target.value) || 4 }))}
-                min={2}
-                max={16}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={form.groupSize === 0 ? '' : form.groupSize}
+                onChange={(e) => { const raw = e.target.value.replace(/\D/g, ''); setForm((prev) => ({ ...prev, groupSize: raw === '' ? 0 : parseInt(raw) })); }}
+                onBlur={(e) => { const raw = e.target.value.replace(/\D/g, ''); const num = raw === '' ? 4 : Math.max(2, Math.min(16, parseInt(raw))); setForm((prev) => ({ ...prev, groupSize: num })); }}
                 className="w-full px-3 py-2 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

@@ -652,21 +652,23 @@ export default function CreateTournamentPage() {
                           </button>
                         )}
                         <input
-                          type="number"
-                          value={cat.maxTeams || ''}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={cat.maxTeams === 0 ? '' : cat.maxTeams}
                           onChange={(e) => {
                             const updated = [...categories];
-                            const num = parseInt(e.target.value);
-                            updated[i] = { ...updated[i], maxTeams: isNaN(num) ? 0 : num };
+                            const raw = e.target.value.replace(/\D/g, '');
+                            updated[i] = { ...updated[i], maxTeams: raw === '' ? 0 : parseInt(raw) };
                             setCategories(updated);
                           }}
                           onBlur={(e) => {
                             const updated = [...categories];
-                            const num = parseInt(e.target.value);
-                            updated[i] = { ...updated[i], maxTeams: Math.max(2, isNaN(num) ? 2 : num) };
+                            const raw = e.target.value.replace(/\D/g, '');
+                            const num = raw === '' ? 2 : Math.max(2, Math.min(256, parseInt(raw)));
+                            updated[i] = { ...updated[i], maxTeams: num };
                             setCategories(updated);
                           }}
-                          min={2} max={256}
                           className="w-16 px-2 py-1 text-sm text-center bg-slate-700/50 border border-slate-600/50 rounded text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         />
                       </div>
