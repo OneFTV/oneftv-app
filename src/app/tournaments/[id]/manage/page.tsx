@@ -114,6 +114,12 @@ export default function ManageTournamentPage() {
   const [collapsedRounds, setCollapsedRounds] = useState<Set<string>>(new Set());
   const [generatingCascade, setGeneratingCascade] = useState<string | null>(null);
   const [generatingDivisions, setGeneratingDivisions] = useState(false);
+  const [openDivisionCount, setOpenDivisionCount] = useState(3);
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [generateAllStep, setGenerateAllStep] = useState(0);
+  const [generateAllError, setGenerateAllError] = useState<string | null>(null);
+  const [generateAllSummary, setGenerateAllSummary] = useState<string | null>(null);
+  const [allocatingSlots, setAllocatingSlots] = useState(false);
 
   const originalScores = useRef<Record<string, SetScores>>({});
 
@@ -390,7 +396,7 @@ export default function ManageTournamentPage() {
       const res = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-cascade`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId, teamCount, openDivisionCount: 4 }),
+        body: JSON.stringify({ categoryId, teamCount, openDivisionCount }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -433,6 +439,119 @@ export default function ManageTournamentPage() {
       setError('Failed to generate division brackets');
     } finally {
       setGeneratingDivisions(false);
+    }
+  };
+
+  const handleAllocateSlots = async () => {
+    try {
+      setAllocatingSlots(true);
+      setError(null);
+      const res = await fetch(`/api/tournaments/${tournamentId}/schedule/allocate-slots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message || 'Time slots allocated!');
+        await fetchGames();
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(data.error || 'Failed to allocate time slots');
+      }
+    } catch {
+      setError('Failed to allocate time slots');
+    } finally {
+      setAllocatingSlots(false);
+    }
+  };
+
+  const handleGenerateAll = async () => {
+    setGeneratingAll(true);
+    setGenerateAllError(null);
+    setGenerateAllSummary(null);
+    setError(null);
+
+    const openCategories = tournament?.Category?.filter(cat =>
+      cat.format === 'double_elimination' &&
+      !cat.divisionLabel &&
+      ((cat._count?.TournamentPlayer || 0) > 0 || (cat._count?.TeamRegistration || 0) > 0)
+    ) || [];
+
+    try {
+      // Step 1: Generate NFA Cascade for each open category
+      setGenerateAllStep(1);
+      for (const cat of openCategories) {
+        const teamRegCount = cat._count?.TeamRegistration || 0;
+        const playerCount = cat._count?.TournamentPlayer || 0;
+        const teamCount = teamRegCount > 0 ? teamRegCount : Math.floor(playerCount / 2);
+        const res = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-cascade`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ categoryId: cat.id, teamCount, openDivisionCount }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(`Cascade failed for ${cat.name}: ${data.error || 'Unknown error'}`);
+        }
+      }
+      // Refresh tournament data
+      const tr = await fetch(`/api/tournaments/${tournamentId}`);
+      if (tr.ok) { const tj = await tr.json(); setTournament(tj.data || tj); }
+
+      // Step 2: Generate Brackets (all categories)
+      setGenerateAllStep(2);
+      const genRes = await fetch(`/api/tournaments/${tournamentId}/generate`, { method: 'POST' });
+      if (!genRes.ok) {
+        const data = await genRes.json();
+        throw new Error(`Generate brackets failed: ${data.error || 'Unknown error'}`);
+      }
+
+      // Step 3: Generate Divisions (D2/D3 wiring)
+      setGenerateAllStep(3);
+      const divRes = await fetch(`/api/tournaments/${tournamentId}/schedule/generate-divisions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!divRes.ok) {
+        const data = await divRes.json();
+        throw new Error(`Generate divisions failed: ${data.error || 'Unknown error'}`);
+      }
+
+      // Step 4: Allocate Slots
+      setGenerateAllStep(4);
+      const slotRes = await fetch(`/api/tournaments/${tournamentId}/schedule/allocate-slots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!slotRes.ok) {
+        const data = await slotRes.json();
+        throw new Error(`Allocate slots failed: ${data.error || 'Unknown error'}`);
+      }
+
+      // Refresh games
+      await fetchGames();
+
+      // Build summary
+      const allGamesRes = await fetch(`/api/tournaments/${tournamentId}/games`);
+      if (allGamesRes.ok) {
+        const allGames = await allGamesRes.json();
+        const times = allGames
+          .filter((g: Game) => g.scheduledTime)
+          .map((g: Game) => new Date(g.scheduledTime).getTime())
+          .sort((a: number, b: number) => a - b);
+        const first = times.length > 0 ? new Date(times[0]).toLocaleString() : 'N/A';
+        const last = times.length > 0 ? new Date(times[times.length - 1]).toLocaleString() : 'N/A';
+        setGenerateAllSummary(`✅ Pipeline complete! ${allGames.length} games created. First: ${first} | Last: ${last}`);
+      } else {
+        setGenerateAllSummary(`✅ Pipeline complete!`);
+      }
+      setSuccess('Full pipeline completed successfully!');
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setGenerateAllError(err instanceof Error ? err.message : 'Pipeline failed');
+    } finally {
+      setGeneratingAll(false);
+      setGenerateAllStep(0);
     }
   };
 
@@ -666,6 +785,59 @@ export default function ManageTournamentPage() {
           )}
         </div>
 
+        {/* Generate All Pipeline */}
+        {tournament.Category && tournament.Category.some(cat =>
+          cat.format === 'double_elimination' &&
+          !cat.divisionLabel &&
+          ((cat._count?.TournamentPlayer || 0) > 0 || (cat._count?.TeamRegistration || 0) > 0)
+        ) && (
+          <div className="bg-gradient-to-r from-slate-800/80 to-blue-900/40 border-2 border-cyan-400/30 rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-white mb-1">🚀 Generate All</h2>
+            <p className="text-sm text-slate-400 mb-4">Run the full pipeline: Cascade → Brackets → Divisions → Scheduling. One click.</p>
+            <div className="flex items-center gap-4 mb-4">
+              <label className="text-sm text-slate-300 font-medium">Open Divisions:</label>
+              <select
+                value={openDivisionCount}
+                onChange={e => setOpenDivisionCount(parseInt(e.target.value))}
+                disabled={generatingAll}
+                className="px-3 py-1.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:ring-1 focus:ring-cyan-400"
+              >
+                {[1, 2, 3, 4].map(n => (
+                  <option key={n} value={n}>{n} division{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleGenerateAll}
+              disabled={generatingAll}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-bold text-base hover:from-blue-700 hover:to-cyan-700 transition disabled:opacity-50 shadow-lg"
+            >
+              {generatingAll ? `⏳ Step ${generateAllStep}/4...` : '⚡ Generate All'}
+            </button>
+            {generatingAll && (
+              <div className="mt-4 space-y-1">
+                {['Generate NFA Cascade', 'Generate Brackets', 'Generate Divisions', 'Allocate Time Slots'].map((label, i) => (
+                  <div key={i} className={`flex items-center gap-2 text-sm ${
+                    generateAllStep > i + 1 ? 'text-green-400' : generateAllStep === i + 1 ? 'text-cyan-300 animate-pulse' : 'text-slate-500'
+                  }`}>
+                    {generateAllStep > i + 1 ? '✅' : generateAllStep === i + 1 ? '⏳' : '⬜'} {label}
+                  </div>
+                ))}
+              </div>
+            )}
+            {generateAllError && (
+              <div className="mt-4 p-3 bg-red-900/30 border border-red-400/30 rounded-lg text-red-300 text-sm">
+                ❌ {generateAllError}
+              </div>
+            )}
+            {generateAllSummary && (
+              <div className="mt-4 p-3 bg-green-900/30 border border-green-400/30 rounded-lg text-green-300 text-sm">
+                {generateAllSummary}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Category Selector */}
         {tournament.Category && tournament.Category.length > 0 && (
           <div className="bg-slate-800/50 border border-blue-400/20 rounded-lg shadow-sm p-6 mb-8">
@@ -719,7 +891,20 @@ export default function ManageTournamentPage() {
         ) && (
           <div className="bg-slate-800/50 border border-purple-400/20 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-1">NFA Cascade Bracket</h2>
-            <p className="text-sm text-slate-400 mb-4">Generate D1/D2/D3 division structure for Open categories. This converts the Open bracket into a multi-division cascade system.</p>
+            <p className="text-sm text-slate-400 mb-4">Generate division structure for Open categories. This converts the Open bracket into a multi-division cascade system.</p>
+            <div className="flex items-center gap-3 mb-4">
+              <label className="text-sm text-slate-300 font-medium">Divisions:</label>
+              <select
+                value={openDivisionCount}
+                onChange={e => setOpenDivisionCount(parseInt(e.target.value))}
+                disabled={!!generatingCascade}
+                className="px-3 py-1.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:ring-1 focus:ring-purple-400"
+              >
+                {[1, 2, 3, 4].map(n => (
+                  <option key={n} value={n}>{n} division{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex flex-wrap gap-3">
               {tournament.Category.filter(cat =>
                 cat.format === 'double_elimination' &&
@@ -741,12 +926,26 @@ export default function ManageTournamentPage() {
         {tournament.Category?.some(cat => cat.divisionLabel === 'D1') && (
           <div className="bg-slate-800/50 border border-orange-400/20 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-1">Division Brackets</h2>
-            <p className="text-sm text-slate-400 mb-4">Generate empty D4/D3/D2 bracket structures and wire D1 loser routing. Run this after generating the D1 schedule.</p>
+            <p className="text-sm text-slate-400 mb-4">Generate empty lower-division bracket structures and wire D1 loser routing. Run this after generating the D1 schedule.</p>
             <button
               onClick={handleGenerateDivisions}
               disabled={generatingDivisions}
               className="px-4 py-2 text-sm font-semibold bg-orange-700/40 text-orange-200 border border-orange-400/40 rounded-lg hover:bg-orange-600/50 transition disabled:opacity-50">
-              {generatingDivisions ? '⏳ Generating...' : '🔗 Generate D4/D3/D2 Brackets & Wire Routing'}
+              {generatingDivisions ? '⏳ Generating...' : `🔗 Generate ${openDivisionCount >= 4 ? 'D4/D3/D2' : openDivisionCount >= 3 ? 'D3/D2' : openDivisionCount >= 2 ? 'D2' : ''} Brackets & Wire Routing`}
+            </button>
+          </div>
+        )}
+
+        {/* Allocate Time Slots */}
+        {games.length > 0 && (
+          <div className="bg-slate-800/50 border border-teal-400/20 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-bold text-white mb-1">Schedule Games</h2>
+            <p className="text-sm text-slate-400 mb-4">Allocate time slots and courts for all generated games.</p>
+            <button
+              onClick={handleAllocateSlots}
+              disabled={allocatingSlots}
+              className="px-4 py-2 text-sm font-semibold bg-teal-700/40 text-teal-200 border border-teal-400/40 rounded-lg hover:bg-teal-600/50 transition disabled:opacity-50">
+              {allocatingSlots ? '⏳ Allocating...' : '📅 Allocate Time Slots'}
             </button>
           </div>
         )}
