@@ -83,9 +83,9 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/dashboard');
+      router.replace(callbackUrl);
     }
-  }, [status, router]);
+  }, [status, router, callbackUrl]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> & { submit?: string } = {};
