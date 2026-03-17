@@ -241,15 +241,15 @@ export function getColumnDefs(
       // deriveRound extracts 'L1' and 'L2' from those names.
       // Column codes must match those extracted values, not the NFA schedule round names.
       {
-        rounds: ['L2'],
+        rounds: ['L1'],
         sections: ['losers'],
-        label: '14th Round L4\n2 games',
+        label: 'D2 L1\n2 games',
         headerClass: 'losers',
       },
       {
-        rounds: ['L1'],
+        rounds: ['L2'],
         sections: ['losers'],
-        label: '12th Round L2\n2 games',
+        label: 'D2 L2\n2 games',
         headerClass: 'losers',
       },
     ];
