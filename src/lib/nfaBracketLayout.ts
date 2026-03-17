@@ -236,20 +236,19 @@ export function getColumnDefs(
         headerClass: 'finals',
         finalsStack: true,
       },
-      // Losers mirrored
+      // Losers mirrored (L2 closest to finals, L1 far right)
       // NOTE: DB stores D2 losers as roundLabel 'D2 L1' / 'D2 L2' (sequential within D2).
       // deriveRound extracts 'L1' and 'L2' from those names.
-      // Column codes must match those extracted values, not the NFA schedule round names.
-      {
-        rounds: ['L1'],
-        sections: ['losers'],
-        label: 'D2 L1\n2 games',
-        headerClass: 'losers',
-      },
       {
         rounds: ['L2'],
         sections: ['losers'],
-        label: 'D2 L2\n2 games',
+        label: '14th Round L2\n2 games',
+        headerClass: 'losers',
+      },
+      {
+        rounds: ['L1'],
+        sections: ['losers'],
+        label: '12th Round L1\n2 games',
         headerClass: 'losers',
       },
     ];
